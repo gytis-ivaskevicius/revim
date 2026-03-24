@@ -39,3 +39,10 @@ Use the Justfile as the entrypoint:
 - ThreadsafeFunction behavior requires integration tests (can't unit test cross-thread callbacks easily)
 - Use `bun test` for TypeScript-side validation
 - Use `cargo test` for Rust-side logic
+
+## TUI Testing Notes
+
+- TUI components require manual verification during development
+- Integration tests for TUI: use expect-style testing (e.g., `expect-test` crate) for frame rendering
+- E2E tests: use terminal automation tools (e.g., `pty-test` or similar) for keyboard input simulation
+- Manual testing checklist: cursor movement, edge wrapping, exit handling
