@@ -105,9 +105,9 @@ The cursor wraps around edges.
 #### Acceptance Criteria
 
 - `lib/src/tui.rs` module exists with TUI state struct
-- State struct contains: terminal instance, cursor position (row, col), demo text
+- State struct contains: cursor position (row, col), demo text
 - `#[napi]` function `init_tui()` creates terminal and returns success
-- `#[napi]` function `render_frame(cursor_row: u16, cursor_col: u16)` renders current frame
+- Internal `render_frame_internal()` renders current frame (called by move_cursor)
 - `#[napi]` function `shutdown_tui()` cleans up terminal
 - Terminal enters alternate screen mode and raw mode on init
 - Terminal restores original mode on shutdown
