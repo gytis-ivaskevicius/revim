@@ -1,0 +1,15 @@
+[package]
+name = "revim-lib"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "3.8.3", features = ["tokio_rt", "async"] }
+napi-derive = "3.5.2"
+tokio = { version = "1", features = ["full"] }
+
+[build-dependencies]
+napi-build = "2.3.1"

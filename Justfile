@@ -2,17 +2,21 @@
 default:
     @just --list
 
-# Run the application
+# Build the Rust library and generate .node binary
+build:
+    cd lib && npm run build
+
+# Run the demo application
 dev:
-    echo "TODO: add dev command"
+    cd app && bun run dev
 
 # Run tests
 test:
-    echo "TODO: add test command"
+    cd lib && cargo test
 
 # Run linter
 lint:
-    echo "TODO: add lint command"
+    cd lib && cargo clippy -- -D warnings
 
 # Run tests and linter
 check: test lint
