@@ -2,24 +2,25 @@
 description: Read when writing or modifying tests. Defines framework, file conventions, coverage targets, and test priorities.
 ---
 
-<!--
-Explore the codebase to identify existing test patterns, frameworks, and file conventions.
-Present what you find as defaults and discuss with the user. Key things to resolve:
-- Test framework and assertion library (e.g., Vitest, Jest, Playwright)
-- Where test files live (colocated *.test.ts, __tests__/ dir, separate test/ tree)
-- Coverage expectations per layer
-Once agreed, update this file and delete this comment.
--->
-
 # Testing Strategy
 
 ## Framework & Tooling
 
-<!-- e.g., Vitest + React Testing Library, Jest, Playwright -->
+- **Rust**: `cargo test` (invoked via `just test`)
+- **TypeScript/Bun**: `bun test` (invoked via `just test`)
+- **NAPI bindings**: Manual verification for POC, automated integration tests for production
+
+## Running Tests
+
+Use the Justfile as the entrypoint:
+- `just test` — run all tests
+- `just lint` — run all linters
+- `just check` — run tests and linters together
 
 ## File Conventions
 
-<!-- e.g., colocated *.test.ts next to source, or __tests__/ directories -->
+- Rust tests: `#[cfg(test)]` modules in same file as code, or `tests/` directory for integration tests
+- TypeScript tests: `*.test.ts` files colocated with source
 
 ## Test Priority
 
@@ -33,3 +34,8 @@ Once agreed, update this file and delete this comment.
 - UI: 80%
 - Project minimum: 90%
 
+## NAPI-RS Testing Notes
+
+- ThreadsafeFunction behavior requires integration tests (can't unit test cross-thread callbacks easily)
+- Use `bun test` for TypeScript-side validation
+- Use `cargo test` for Rust-side logic
