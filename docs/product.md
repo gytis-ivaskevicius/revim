@@ -5,6 +5,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 ## Features
 
 - **NAPI-RS FFI POC** — Proof-of-concept demonstrating TypeScript↔Rust FFI via NAPI-RS with sync/async calls and event subscriptions ([story](stories/001-napi-ffi-poc/story.md))
+- **Basic TUI** — Terminal UI with ratatui, demo text, and cursor movement controlled by TypeScript via event-driven architecture ([story](stories/002-add-ratatui-tui/story.md))
 
 ## Non-Goals
 
@@ -14,5 +15,5 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 
 ## Known Limitations
 
-- POC stage only - no actual editor functionality yet
+- Basic TUI only - no text editing functionality yet
 - No cross-platform binary builds configured
