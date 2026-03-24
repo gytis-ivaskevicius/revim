@@ -1,0 +1,16 @@
+{
+  "name": "@revim/lib",
+  "version": "0.1.0",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "binaryName": "revim-lib",
+    "targets": ["x86_64-unknown-linux-gnu"]
+  },
+  "scripts": {
+    "build": "napi build --platform --release"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "3.5.1"
+  }
+}

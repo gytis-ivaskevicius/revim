@@ -1,0 +1,11 @@
+{
+  "name": "@revim/app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@revim/lib": "workspace:*"
+  }
+}
