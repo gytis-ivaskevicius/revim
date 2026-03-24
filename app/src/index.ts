@@ -1,29 +1,42 @@
-import { greet, fetchData, startCounter } from "@revim/lib";
+import { initTui, shutdownTui, startKeyboardListener, moveCursor } from "@revim/lib";
 
-console.log("=== Sync Function Demo ===");
-const syncResult = greet("Bun");
-console.log(`greet("Bun") = ${syncResult}`);
+async function main() {
+  initTui();
+  
+  try {
+    await new Promise<void>((resolve) => {
+      startKeyboardListener((err, event) => {
+        if (err) {
+          console.error("Error:", err);
+          return;
+        }
+        
+        if (event.key === "c" && event.modifiers.includes("Ctrl")) {
+          resolve();
+          return;
+        }
+        
+        const directionMap: Record<string, string> = {
+          ArrowUp: "up",
+          ArrowDown: "down",
+          ArrowLeft: "left",
+          ArrowRight: "right",
+        };
+        
+        const direction = directionMap[event.key];
+        if (direction) {
+          moveCursor(direction);
+        }
+      });
+    });
+  } finally {
+    shutdownTui();
+  }
+  
+  process.exit(0);
+}
 
-console.log("\n=== Async Function Demo ===");
-console.time("fetch_data");
-const asyncResult = await fetchData(1);
-console.timeEnd("fetch_data");
-console.log(`fetchData(1) = ${asyncResult}`);
-
-console.log("\n=== Event Emitter Demo ===");
-let eventCount = 0;
-await new Promise<void>((resolve) => {
-  startCounter((err, value) => {
-    if (err) {
-      console.error("Error:", err);
-      return;
-    }
-    eventCount++;
-    console.log(`Event ${eventCount}: ${value}`);
-    if (eventCount === 5) {
-      resolve();
-    }
-  });
+main().catch((error) => {
+  console.error("Fatal error:", error);
+  process.exit(1);
 });
-
-console.log("\n=== All demos complete ===");
