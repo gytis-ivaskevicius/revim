@@ -24,6 +24,7 @@ struct TuiState {
     cursor_row: u16,
     cursor_col: u16,
     demo_text: &'static [&'static str],
+    // Cached to avoid recomputation on every cursor movement
     max_rows: u16,
     max_cols: u16,
 }
@@ -54,16 +55,12 @@ impl TuiState {
 static TUI_STATE: Mutex<Option<TuiState>> = Mutex::new(None);
 static TUI_TERMINAL: Mutex<Option<Terminal<CrosstermBackend<std::io::Stdout>>>> = Mutex::new(None);
 
-fn err<E: std::fmt::Display>(e: E) -> Error {
+fn to_napi_error<E: std::fmt::Display>(e: E) -> Error {
     Error::from_reason(e.to_string())
 }
 
 fn wrap_decrement(val: u16, max: u16) -> u16 {
-    if val == 0 {
-        max - 1
-    } else {
-        val - 1
-    }
+    (val + max - 1) % max
 }
 
 fn wrap_increment(val: u16, max: u16) -> u16 {
@@ -84,24 +81,44 @@ fn extract_modifiers(modifiers: KeyModifiers) -> Vec<String> {
     mods
 }
 
+fn build_highlighted_line(line: &str, cursor_col: u16) -> Line<'_> {
+    let chars: Vec<char> = line.chars().collect();
+    let col = cursor_col as usize;
+    let spans: Vec<Span> = chars
+        .iter()
+        .enumerate()
+        .map(|(i, ch)| {
+            if i == col {
+                Span::styled(
+                    ch.to_string(),
+                    Style::default().add_modifier(Modifier::REVERSED),
+                )
+            } else {
+                Span::raw(ch.to_string())
+            }
+        })
+        .collect();
+    Line::from(spans)
+}
+
 #[napi]
 pub fn init_tui() -> Result<()> {
-    enable_raw_mode().map_err(err)?;
+    enable_raw_mode().map_err(to_napi_error)?;
     let mut stdout = std::io::stdout();
     execute!(stdout, EnterAlternateScreen).map_err(|e| {
         let _ = disable_raw_mode();
-        err(e)
+        to_napi_error(e)
     })?;
 
     let backend = CrosstermBackend::new(stdout);
     let terminal = Terminal::new(backend).map_err(|e| {
         let _ = disable_raw_mode();
         let _ = execute!(std::io::stdout(), LeaveAlternateScreen);
-        err(e)
+        to_napi_error(e)
     })?;
 
-    *TUI_STATE.lock().map_err(err)? = Some(TuiState::new());
-    *TUI_TERMINAL.lock().map_err(err)? = Some(terminal);
+    *TUI_STATE.lock().map_err(to_napi_error)? = Some(TuiState::new());
+    *TUI_TERMINAL.lock().map_err(to_napi_error)? = Some(terminal);
 
     TUI_RUNNING.store(true, Ordering::SeqCst);
     render_frame_internal()?;
@@ -110,46 +127,30 @@ pub fn init_tui() -> Result<()> {
 }
 
 fn render_frame_internal() -> Result<()> {
-    let state_guard = TUI_STATE.lock().map_err(err)?;
-    let state = state_guard
-        .as_ref()
-        .ok_or_else(|| err("TUI not initialized"))?;
-
-    let cursor_row = state.cursor_row;
-    let cursor_col = state.cursor_col;
-    let demo_text = state.demo_text;
+    let (cursor_row, cursor_col, demo_text) = {
+        let state_guard = TUI_STATE.lock().map_err(to_napi_error)?;
+        let state = state_guard
+            .as_ref()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        (state.cursor_row, state.cursor_col, state.demo_text)
+    };
 
     let lines: Vec<Line> = demo_text
         .iter()
         .enumerate()
         .map(|(row, line)| {
             if row == cursor_row as usize {
-                let chars: Vec<char> = line.chars().collect();
-                let col = cursor_col as usize;
-                let spans: Vec<Span> = chars
-                    .iter()
-                    .enumerate()
-                    .map(|(i, ch)| {
-                        if i == col {
-                            Span::styled(
-                                ch.to_string(),
-                                Style::default().add_modifier(Modifier::REVERSED),
-                            )
-                        } else {
-                            Span::raw(ch.to_string())
-                        }
-                    })
-                    .collect();
-                Line::from(spans)
+                build_highlighted_line(line, cursor_col)
             } else {
                 Line::from(*line)
             }
         })
         .collect();
-    drop(state_guard);
 
-    let mut term = TUI_TERMINAL.lock().map_err(err)?;
-    let terminal = term.as_mut().ok_or_else(|| err("TUI not initialized"))?;
+    let mut term = TUI_TERMINAL.lock().map_err(to_napi_error)?;
+    let terminal = term
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
 
     terminal
         .draw(|f| {
@@ -159,7 +160,7 @@ fn render_frame_internal() -> Result<()> {
                 .alignment(ratatui::layout::Alignment::Center);
             f.render_widget(paragraph, size);
         })
-        .map_err(err)?;
+        .map_err(to_napi_error)?;
 
     Ok(())
 }
@@ -168,12 +169,12 @@ fn render_frame_internal() -> Result<()> {
 pub fn shutdown_tui() -> Result<()> {
     TUI_RUNNING.store(false, Ordering::SeqCst);
 
-    *TUI_TERMINAL.lock().map_err(err)? = None;
+    *TUI_TERMINAL.lock().map_err(to_napi_error)? = None;
 
-    disable_raw_mode().map_err(err)?;
-    execute!(std::io::stdout(), LeaveAlternateScreen).map_err(err)?;
+    disable_raw_mode().map_err(to_napi_error)?;
+    execute!(std::io::stdout(), LeaveAlternateScreen).map_err(to_napi_error)?;
 
-    *TUI_STATE.lock().map_err(err)? = None;
+    *TUI_STATE.lock().map_err(to_napi_error)? = None;
 
     Ok(())
 }
@@ -218,22 +219,22 @@ pub fn start_keyboard_listener(callback: ThreadsafeFunction<KeyboardEvent>) {
 
 #[napi]
 pub fn move_cursor(direction: String) -> Result<CursorPosition> {
-    let mut state_guard = TUI_STATE.lock().map_err(err)?;
-    let state = state_guard
-        .as_mut()
-        .ok_or_else(|| err("TUI not initialized"))?;
+    let (row, col) = {
+        let mut state_guard = TUI_STATE.lock().map_err(to_napi_error)?;
+        let state = state_guard
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
 
-    match direction.as_str() {
-        "up" => state.cursor_row = wrap_decrement(state.cursor_row, state.max_rows),
-        "down" => state.cursor_row = wrap_increment(state.cursor_row, state.max_rows),
-        "left" => state.cursor_col = wrap_decrement(state.cursor_col, state.max_cols),
-        "right" => state.cursor_col = wrap_increment(state.cursor_col, state.max_cols),
-        _ => return Err(err(format!("Invalid direction: {}", direction))),
-    }
+        match direction.as_str() {
+            "up" => state.cursor_row = wrap_decrement(state.cursor_row, state.max_rows),
+            "down" => state.cursor_row = wrap_increment(state.cursor_row, state.max_rows),
+            "left" => state.cursor_col = wrap_decrement(state.cursor_col, state.max_cols),
+            "right" => state.cursor_col = wrap_increment(state.cursor_col, state.max_cols),
+            _ => return Err(to_napi_error(format!("Invalid direction: {}", direction))),
+        }
 
-    let row = state.cursor_row;
-    let col = state.cursor_col;
-    drop(state_guard);
+        (state.cursor_row, state.cursor_col)
+    };
 
     render_frame_internal()?;
 
