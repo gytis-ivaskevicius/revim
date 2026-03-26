@@ -1,48 +1,45 @@
 ---
-description: Read when writing or modifying tests. Defines framework, file conventions, coverage targets, and test priorities.
+description: Read when writing or modifying tests. Defines framework, file conventions, and test priorities.
 ---
 
 # Testing Strategy
 
+## Principle
+
+**E2E-first**: Cover as much functionality as possible through E2E tests. Only write unit/integration tests when E2E is impractical (e.g., performance, complex setup).
+
 ## Framework & Tooling
 
-- **Rust**: `cargo test` (invoked via `just test`)
-- **TypeScript/Bun**: `bun test` (invoked via `just test`)
-- **NAPI bindings**: Manual verification for POC, automated integration tests for production
+- **E2E**: `bun test` + `node-pty` + `ansi-escapes` + `ansi-styles`
+- **Rust**: `cargo test`
 
 ## Running Tests
 
-Use the Justfile as the entrypoint:
 - `just test` — run all tests
-- `just lint` — run all linters
-- `just check` — run tests and linters together
+- `just test-e2e` — E2E tests only
+- `just test-rust` — Rust tests only
+- `just check` — tests + linters
 
 ## File Conventions
 
-- Rust tests: `#[cfg(test)]` modules in same file as code, or `tests/` directory for integration tests
-- TypeScript tests: `*.test.ts` files colocated with source
+- E2E: `app/tests/e2e/*.test.ts`
+- Helpers: `app/tests/e2e/test-helpers.ts`
+- Snapshots: `__snapshots__/*.snap`
+- Rust: `#[cfg(test)]` in same file
 
-## Test Priority
+## E2E Architecture
 
-1. Unit tests (preferred)
-2. Integration tests
-3. E2E
+1. **node-pty** spawns app in pseudo-terminal
+2. **ansi-escapes** sends keypresses
+3. **ansi-styles** detects cursor position (reversed colors)
+4. **Bun snapshots** compare output
 
-## Coverage
+```typescript
+import { arrowUp, ctrlC } from 'ansi-escapes';
+pty.write(arrowUp);
+```
 
-- Core logic: 100%
-- UI: 80%
-- Project minimum: 90%
+## Updates
 
-## NAPI-RS Testing Notes
-
-- ThreadsafeFunction behavior requires integration tests (can't unit test cross-thread callbacks easily)
-- Use `bun test` for TypeScript-side validation
-- Use `cargo test` for Rust-side logic
-
-## TUI Testing Notes
-
-- TUI components require manual verification during development
-- Integration tests for TUI: use expect-style testing (e.g., `expect-test` crate) for frame rendering
-- E2E tests: use terminal automation tools (e.g., `pty-test` or similar) for keyboard input simulation
-- Manual testing checklist: cursor movement, edge wrapping, exit handling
+- Update snapshots: `bun test --update`
+- Project minimum coverage: 90%
