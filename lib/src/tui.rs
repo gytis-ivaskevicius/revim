@@ -292,10 +292,18 @@ fn build_highlighted_line<'a>(
 ) -> Line<'a> {
     let chars: Vec<char> = line.chars().collect();
     let col = cursor_col as usize;
-    let spans: Vec<Span> = chars
+    let max_highlight_end = highlights
         .iter()
-        .enumerate()
-        .map(|(i, ch)| {
+        .map(|(_, end)| *end as usize)
+        .max()
+        .unwrap_or(0);
+    let width = chars
+        .len()
+        .max(max_highlight_end)
+        .max(col.saturating_add(1));
+    let spans: Vec<Span> = (0..width)
+        .map(|i| {
+            let ch = chars.get(i).copied().unwrap_or(' ');
             let is_cursor = i == col;
             let is_highlighted = highlights
                 .iter()
@@ -353,7 +361,7 @@ fn render_frame_internal() -> Result<()> {
         visual_mode,
         demo_text,
         highlights,
-        selections,
+        _selections,
     ) = {
         let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
@@ -418,17 +426,15 @@ fn render_frame_internal() -> Result<()> {
                     }
                     VisualMode::Line => (row_index >= sel_start_row && row_index <= sel_end_row)
                         .then_some((0, line_len)),
-                    VisualMode::Block => selections.iter().find_map(|selection| {
-                        if selection.anchor_line as u16 != row_index {
-                            return None;
+                    VisualMode::Block => {
+                        if row_index >= sel_start_row && row_index <= sel_end_row {
+                            let start = anchor_col.min(cursor_col);
+                            let end = anchor_col.max(cursor_col) + 1;
+                            Some((start, end))
+                        } else {
+                            None
                         }
-
-                        let start = selection.anchor_ch.min(selection.head_ch) as u16;
-                        let end = selection.anchor_ch.max(selection.head_ch) as u16;
-                        let start = start.min(line_len);
-                        let end = end.min(line_len);
-                        (start < end).then_some((start, end))
-                    }),
+                    }
                 };
 
                 if let Some((start, end)) = selection_range.filter(|(start, end)| start < end) {
@@ -809,10 +815,39 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
             .collect::<Vec<_>>();
 
         let primary = clipped[0].clone();
-        state.anchor_row = primary.anchor_line as u16;
-        state.anchor_col = primary.anchor_ch as u16;
-        state.cursor_row = primary.head_line as u16;
-        state.cursor_col = primary.head_ch as u16;
+        if state.visual_mode == VisualMode::Block {
+            let min_line = clipped
+                .iter()
+                .map(|selection| selection.anchor_line.min(selection.head_line))
+                .min()
+                .unwrap_or(primary.anchor_line);
+            let max_line = clipped
+                .iter()
+                .map(|selection| selection.anchor_line.max(selection.head_line))
+                .max()
+                .unwrap_or(primary.head_line);
+            let min_col = clipped
+                .iter()
+                .map(|selection| selection.anchor_ch.min(selection.head_ch))
+                .min()
+                .unwrap_or(primary.anchor_ch);
+            let max_col = clipped
+                .iter()
+                .map(|selection| selection.anchor_ch.max(selection.head_ch))
+                .max()
+                .unwrap_or(primary.head_ch)
+                .saturating_sub(1);
+
+            state.anchor_row = min_line as u16;
+            state.anchor_col = min_col as u16;
+            state.cursor_row = max_line as u16;
+            state.cursor_col = max_col as u16;
+        } else {
+            state.anchor_row = primary.anchor_line as u16;
+            state.anchor_col = primary.anchor_ch as u16;
+            state.cursor_row = primary.head_line as u16;
+            state.cursor_col = primary.head_ch as u16;
+        }
         state.selections = clipped;
     }
 
