@@ -105,6 +105,13 @@ impl TuiState {
             .unwrap_or_default()
     }
 
+    fn char_to_byte_index(text: &str, ch: u16) -> usize {
+        text.char_indices()
+            .nth(ch as usize)
+            .map(|(idx, _)| idx)
+            .unwrap_or(text.len())
+    }
+
     fn get_range(&self, start_line: u16, start_ch: u16, end_line: u16, end_ch: u16) -> String {
         let (start_line, start_ch, end_line, end_ch) =
             Self::ordered_range(start_line, start_ch, end_line, end_ch);
@@ -114,11 +121,14 @@ impl TuiState {
         }
         let start_line_str = &self.demo_text[start_line as usize];
         if start_line == end_line {
-            let end_ch = end_ch.min(start_line_str.len() as u16);
+            let end_ch = end_ch.min(start_line_str.chars().count() as u16);
             let start_ch = start_ch.min(end_ch);
-            return start_line_str[start_ch as usize..end_ch as usize].to_string();
+            let start_idx = Self::char_to_byte_index(start_line_str, start_ch);
+            let end_idx = Self::char_to_byte_index(start_line_str, end_ch);
+            return start_line_str[start_idx..end_idx].to_string();
         }
-        let mut result = start_line_str[start_ch as usize..].to_string();
+        let start_idx = Self::char_to_byte_index(start_line_str, start_ch);
+        let mut result = start_line_str[start_idx..].to_string();
         for i in (start_line + 1)..end_line {
             if let Some(line) = self.demo_text.get(i as usize) {
                 result.push('\n');
@@ -127,8 +137,9 @@ impl TuiState {
         }
         if let Some(end_line_str) = self.demo_text.get(end_line as usize) {
             result.push('\n');
-            let end_ch = end_ch.min(end_line_str.len() as u16);
-            result.push_str(&end_line_str[..end_ch as usize]);
+            let end_ch = end_ch.min(end_line_str.chars().count() as u16);
+            let end_idx = Self::char_to_byte_index(end_line_str, end_ch);
+            result.push_str(&end_line_str[..end_idx]);
         }
         result
     }
@@ -153,10 +164,12 @@ impl TuiState {
 
         let start_line_str = self.demo_text[start_line as usize].clone();
         let end_line_str = self.demo_text[end_line as usize].clone();
-        let start_ch = start_ch.min(start_line_str.len() as u16);
-        let end_ch = end_ch.min(end_line_str.len() as u16);
-        let prefix = start_line_str[..start_ch as usize].to_string();
-        let suffix = end_line_str[end_ch as usize..].to_string();
+        let start_ch = start_ch.min(start_line_str.chars().count() as u16);
+        let end_ch = end_ch.min(end_line_str.chars().count() as u16);
+        let start_idx = Self::char_to_byte_index(&start_line_str, start_ch);
+        let end_idx = Self::char_to_byte_index(&end_line_str, end_ch);
+        let prefix = start_line_str[..start_idx].to_string();
+        let suffix = end_line_str[end_idx..].to_string();
         let mut replacement_lines: Vec<String> =
             text.split('\n').map(|line| line.to_string()).collect();
 
@@ -180,7 +193,7 @@ impl TuiState {
     fn clip_pos(&self, line: u16, ch: u16) -> (u16, u16) {
         let max_line = self.max_rows().saturating_sub(1);
         let line = line.min(max_line);
-        let max_ch = self.get_line(line).len() as u16;
+        let max_ch = self.get_line(line).chars().count() as u16;
         let ch = ch.min(max_ch);
         (line, ch)
     }
@@ -189,7 +202,7 @@ impl TuiState {
         let mut offset = 0u32;
         for i in 0..line {
             if let Some(text) = self.demo_text.get(i as usize) {
-                offset += text.len() as u32 + 1;
+                offset += text.chars().count() as u32 + 1;
             }
         }
         offset + ch as u32
@@ -198,7 +211,7 @@ impl TuiState {
     fn pos_from_index(&self, offset: u32) -> (u16, u16) {
         let mut current_offset = 0u32;
         for (i, line) in self.demo_text.iter().enumerate() {
-            let line_len = line.len() as u32 + 1;
+            let line_len = line.chars().count() as u32 + 1;
             if current_offset + line_len > offset {
                 return (i as u16, (offset - current_offset) as u16);
             }
@@ -206,7 +219,7 @@ impl TuiState {
         }
 
         let last_line = self.max_rows().saturating_sub(1);
-        (last_line, self.get_line(last_line).len() as u16)
+        (last_line, self.get_line(last_line).chars().count() as u16)
     }
 
     fn sync_primary_selection(&mut self) {
@@ -900,11 +913,11 @@ pub fn trigger_action(action: String) -> Result<()> {
             let cursor = get_cursor_pos()?;
             let line = get_line(cursor.line)?;
             replace_range(
-                format!("\n{}", line),
+                "\n".to_string(),
                 cursor.line,
-                line.len() as u32,
+                line.chars().count() as u32,
                 cursor.line,
-                line.len() as u32,
+                line.chars().count() as u32,
             )
         }
         _ => Err(to_napi_error(format!(
