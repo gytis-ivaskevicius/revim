@@ -403,6 +403,12 @@ pub fn start_keyboard_listener(callback: ThreadsafeFunction<KeyboardEvent>) {
                         KeyCode::Down => "ArrowDown".to_string(),
                         KeyCode::Left => "ArrowLeft".to_string(),
                         KeyCode::Right => "ArrowRight".to_string(),
+                        KeyCode::Delete => "Delete".to_string(),
+                        KeyCode::Insert => "Insert".to_string(),
+                        KeyCode::Home => "Home".to_string(),
+                        KeyCode::End => "End".to_string(),
+                        KeyCode::PageUp => "PageUp".to_string(),
+                        KeyCode::PageDown => "PageDown".to_string(),
                         KeyCode::Char(c) => c.to_string(),
                         KeyCode::Enter => "Enter".to_string(),
                         KeyCode::Backspace => "Backspace".to_string(),
@@ -861,7 +867,7 @@ pub fn get_scroll_info() -> Result<ScrollInfo> {
 
 #[napi]
 pub fn scroll_to(_y: u32) -> Result<()> {
-    Ok(())
+    render_frame_internal()
 }
 
 #[napi]
@@ -909,22 +915,22 @@ pub fn trigger_action(action: String) -> Result<()> {
 
 #[napi]
 pub fn set_vim_mode(_active: bool) -> Result<()> {
-    Ok(())
+    render_frame_internal()
 }
 
 #[napi]
 pub fn set_replace_mode(_active: bool) -> Result<()> {
-    Ok(())
+    render_frame_internal()
 }
 
 #[napi]
 pub fn set_highlights(_ranges: Vec<HighlightRange>) -> Result<()> {
-    Ok(())
+    render_frame_internal()
 }
 
 #[napi]
 pub fn scroll_to_line(_line: u32, _position: String) -> Result<()> {
-    Ok(())
+    render_frame_internal()
 }
 
 #[napi(object)]
@@ -940,5 +946,5 @@ pub fn get_visible_lines() -> Result<VisibleLines> {
 
 #[napi]
 pub fn focus_editor() -> Result<()> {
-    Ok(())
+    render_frame_internal()
 }

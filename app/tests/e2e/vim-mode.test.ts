@@ -40,16 +40,41 @@ test("insert mode supports backspace and delete", async ({ terminal }) => {
   await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
   terminal.keyBackspace();
   await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
+  let bufferText = terminal.getViewableBuffer().map((row) => row.join("")).join("\n");
+  if (!bufferText.includes("abWelcome to ReVim!")) {
+    throw new Error(`Unexpected buffer after backspace:\n${bufferText}`);
+  }
+
+  terminal.keyEscape();
+  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
+});
+
+test("insert mode delete removes the character under the cursor", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+
+  terminal.keyPress("i");
+  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
+  terminal.keyPress("a");
+  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
+  terminal.keyPress("b");
+  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
+  terminal.keyEscape();
+  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
   terminal.keyLeft();
+  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
+  terminal.keyPress("i");
   await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
   terminal.keyDelete();
   await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
   terminal.keyEscape();
   await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
 
-  const bufferText = terminal.getViewableBuffer().map((row) => row.join("")).join("\n");
-  if (!bufferText.includes("abWelcome to ReVim!")) {
-    throw new Error(`Unexpected buffer after backspace/delete:\n${bufferText}`);
+  const bufferTextAfterDelete = terminal
+    .getViewableBuffer()
+    .map((row) => row.join(""))
+    .join("\n");
+  if (!bufferTextAfterDelete.includes("bWelcome to ReVim!")) {
+    throw new Error(`Unexpected buffer after delete:\n${bufferTextAfterDelete}`);
   }
 });
 
