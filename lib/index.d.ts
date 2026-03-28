@@ -84,6 +84,8 @@ export declare function setSelections(selections: Array<Selection>): void
 
 export declare function setVimMode(active: boolean): void
 
+export declare function setVisualMode(mode: string): void
+
 export declare function shutdownTui(): void
 
 export declare function startKeyboardListener(callback: ((err: Error | null, arg: KeyboardEvent) => any)): void

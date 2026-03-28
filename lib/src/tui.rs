@@ -3,8 +3,8 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use napi::bindgen_prelude::*;
 use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
+use napi::{bindgen_prelude::*, Env};
 use napi_derive::napi;
 use ratatui::{
     backend::CrosstermBackend,
@@ -34,9 +34,18 @@ struct TuiState {
     cursor_col: u16,
     anchor_row: u16,
     anchor_col: u16,
+    visual_mode: VisualMode,
     demo_text: Vec<String>,
     selections: Vec<Selection>,
     highlights: Vec<HighlightRange>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum VisualMode {
+    None,
+    Char,
+    Line,
+    Block,
 }
 
 #[derive(Clone)]
@@ -64,6 +73,7 @@ impl TuiState {
             cursor_col: 0,
             anchor_row: 0,
             anchor_col: 0,
+            visual_mode: VisualMode::None,
             demo_text,
             selections: vec![Selection {
                 anchor_line: 0,
@@ -292,7 +302,7 @@ fn build_highlighted_line<'a>(
                 .any(|(start, end)| i >= *start as usize && i < *end as usize);
             let mut style = Style::default();
             if is_highlighted {
-                style = style.add_modifier(Modifier::UNDERLINED);
+                style = style.add_modifier(Modifier::REVERSED);
             }
             if is_cursor {
                 style = style.add_modifier(Modifier::REVERSED);
@@ -335,7 +345,16 @@ pub fn init_tui() -> Result<()> {
 }
 
 fn render_frame_internal() -> Result<()> {
-    let (cursor_row, cursor_col, demo_text, highlights) = {
+    let (
+        cursor_row,
+        cursor_col,
+        anchor_row,
+        anchor_col,
+        visual_mode,
+        demo_text,
+        highlights,
+        selections,
+    ) = {
         let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
             .as_ref()
@@ -344,20 +363,79 @@ fn render_frame_internal() -> Result<()> {
         let state = context.state.lock().unwrap();
         let cursor_row = state.cursor_row;
         let cursor_col = state.cursor_col;
+        let anchor_row = state.anchor_row;
+        let anchor_col = state.anchor_col;
+        let visual_mode = state.visual_mode;
         let demo_text: Vec<String> = state.demo_text.clone();
         let highlights = state.highlights.clone();
-        (cursor_row, cursor_col, demo_text, highlights)
+        let selections = state.selections.clone();
+        (
+            cursor_row,
+            cursor_col,
+            anchor_row,
+            anchor_col,
+            visual_mode,
+            demo_text,
+            highlights,
+            selections,
+        )
     };
+
+    let selection_active = visual_mode != VisualMode::None;
+    let (sel_start_row, sel_start_col, sel_end_row, sel_end_col) =
+        TuiState::ordered_range(anchor_row, anchor_col, cursor_row, cursor_col);
 
     let lines: Vec<Line> = demo_text
         .iter()
         .enumerate()
         .map(|(row, line)| {
-            let row_highlights: Vec<(u16, u16)> = highlights
+            let mut row_highlights: Vec<(u16, u16)> = highlights
                 .iter()
                 .filter(|range| range.start_line == row as u32 && range.end_line == row as u32)
                 .map(|range| (range.start_ch as u16, range.end_ch as u16))
                 .collect();
+
+            if selection_active {
+                let row_index = row as u16;
+                let line_len = line.chars().count() as u16;
+                let selection_range = match visual_mode {
+                    VisualMode::None => None,
+                    VisualMode::Char => {
+                        if sel_start_row == sel_end_row {
+                            (row_index == sel_start_row).then_some((
+                                sel_start_col.min(line_len),
+                                (sel_end_col + 1).min(line_len),
+                            ))
+                        } else if row_index == sel_start_row {
+                            Some((sel_start_col.min(line_len), line_len))
+                        } else if row_index == sel_end_row {
+                            Some((0, (sel_end_col + 1).min(line_len)))
+                        } else if row_index > sel_start_row && row_index < sel_end_row {
+                            Some((0, line_len))
+                        } else {
+                            None
+                        }
+                    }
+                    VisualMode::Line => (row_index >= sel_start_row && row_index <= sel_end_row)
+                        .then_some((0, line_len)),
+                    VisualMode::Block => selections.iter().find_map(|selection| {
+                        if selection.anchor_line as u16 != row_index {
+                            return None;
+                        }
+
+                        let start = selection.anchor_ch.min(selection.head_ch) as u16;
+                        let end = selection.anchor_ch.max(selection.head_ch) as u16;
+                        let start = start.min(line_len);
+                        let end = end.min(line_len);
+                        (start < end).then_some((start, end))
+                    }),
+                };
+
+                if let Some((start, end)) = selection_range.filter(|(start, end)| start < end) {
+                    row_highlights.push((start, end));
+                }
+            }
+
             if row == cursor_row as usize {
                 build_highlighted_line(line, cursor_col, &row_highlights)
             } else if !row_highlights.is_empty() {
@@ -414,8 +492,13 @@ pub struct CursorPosition {
     pub ch: u32,
 }
 
+#[allow(deprecated)]
 #[napi]
-pub fn start_keyboard_listener(callback: ThreadsafeFunction<KeyboardEvent>) {
+pub fn start_keyboard_listener(
+    env: Env,
+    mut callback: ThreadsafeFunction<KeyboardEvent>,
+) -> Result<()> {
+    callback.unref(&env)?;
     thread::spawn(move || {
         while TUI_RUNNING.load(Ordering::SeqCst) {
             if matches!(event::poll(Duration::from_millis(100)), Ok(true)) {
@@ -448,6 +531,8 @@ pub fn start_keyboard_listener(callback: ThreadsafeFunction<KeyboardEvent>) {
             }
         }
     });
+
+    Ok(())
 }
 
 #[napi]
@@ -645,23 +730,26 @@ pub fn get_selection() -> Result<String> {
 
 #[napi]
 pub fn set_selection(anchor_line: u32, anchor_ch: u32, head_line: u32, head_ch: u32) -> Result<()> {
-    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let state = &mut ctx
-        .as_mut()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?
-        .state
-        .lock()
-        .unwrap();
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .unwrap();
 
-    let (anchor_line, anchor_ch) = state.clip_pos(anchor_line as u16, anchor_ch as u16);
-    let (head_line, head_ch) = state.clip_pos(head_line as u16, head_ch as u16);
+        let (anchor_line, anchor_ch) = state.clip_pos(anchor_line as u16, anchor_ch as u16);
+        let (head_line, head_ch) = state.clip_pos(head_line as u16, head_ch as u16);
 
-    state.anchor_row = anchor_line;
-    state.anchor_col = anchor_ch;
-    state.cursor_row = head_line;
-    state.cursor_col = head_ch;
-    state.sync_primary_selection();
+        state.anchor_row = anchor_line;
+        state.anchor_col = anchor_ch;
+        state.cursor_row = head_line;
+        state.cursor_col = head_ch;
+        state.sync_primary_selection();
+    }
 
+    render_frame_internal()?;
     Ok(())
 }
 
@@ -695,37 +783,63 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
         return Ok(());
     }
 
-    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let state = &mut ctx
-        .as_mut()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?
-        .state
-        .lock()
-        .unwrap();
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .unwrap();
 
-    let clipped = selections
-        .into_iter()
-        .map(|selection| {
-            let (anchor_line, anchor_ch) =
-                state.clip_pos(selection.anchor_line as u16, selection.anchor_ch as u16);
-            let (head_line, head_ch) =
-                state.clip_pos(selection.head_line as u16, selection.head_ch as u16);
-            Selection {
-                anchor_line: anchor_line as u32,
-                anchor_ch: anchor_ch as u32,
-                head_line: head_line as u32,
-                head_ch: head_ch as u32,
-            }
-        })
-        .collect::<Vec<_>>();
+        let clipped = selections
+            .into_iter()
+            .map(|selection| {
+                let (anchor_line, anchor_ch) =
+                    state.clip_pos(selection.anchor_line as u16, selection.anchor_ch as u16);
+                let (head_line, head_ch) =
+                    state.clip_pos(selection.head_line as u16, selection.head_ch as u16);
+                Selection {
+                    anchor_line: anchor_line as u32,
+                    anchor_ch: anchor_ch as u32,
+                    head_line: head_line as u32,
+                    head_ch: head_ch as u32,
+                }
+            })
+            .collect::<Vec<_>>();
 
-    let primary = clipped[0].clone();
-    state.anchor_row = primary.anchor_line as u16;
-    state.anchor_col = primary.anchor_ch as u16;
-    state.cursor_row = primary.head_line as u16;
-    state.cursor_col = primary.head_ch as u16;
-    state.selections = clipped;
+        let primary = clipped[0].clone();
+        state.anchor_row = primary.anchor_line as u16;
+        state.anchor_col = primary.anchor_ch as u16;
+        state.cursor_row = primary.head_line as u16;
+        state.cursor_col = primary.head_ch as u16;
+        state.selections = clipped;
+    }
+
+    render_frame_internal()?;
     Ok(())
+}
+
+#[napi]
+pub fn set_visual_mode(mode: String) -> Result<()> {
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .unwrap();
+
+        state.visual_mode = match mode.as_str() {
+            "char" => VisualMode::Char,
+            "line" => VisualMode::Line,
+            "block" => VisualMode::Block,
+            _ => VisualMode::None,
+        };
+    }
+
+    render_frame_internal()
 }
 
 #[napi]
