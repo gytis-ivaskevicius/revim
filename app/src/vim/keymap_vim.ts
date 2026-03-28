@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  */
-import TerminalAdapter, {
+import EditorAdapter, {
   BindingFunction,
   Change,
   CmSelection,
@@ -78,45 +78,45 @@ import {
 } from "./types";
 import { PACKAGE_INFO } from "./version";
 
-function enterVimMode(adapter: TerminalAdapter) {
+function enterVimMode(adapter: EditorAdapter) {
   adapter.setOption("disableInput", true);
   adapter.setOption("showCursorWhenSelecting", false);
   adapter.dispatch("vim-mode-change", { mode: "normal" });
   adapter.on("cursorActivity", onCursorActivity);
   maybeInitVimState(adapter);
-  // TerminalAdapter.on(adapter.getInputField(), 'paste', getOnPasteFn(adapter));
+  // EditorAdapter.on(adapter.getInputField(), 'paste', getOnPasteFn(adapter));
   adapter.enterVimMode();
 }
 
-function leaveVimMode(adapter: TerminalAdapter) {
+function leaveVimMode(adapter: EditorAdapter) {
   adapter.setOption("disableInput", false);
   adapter.off("cursorActivity", onCursorActivity);
-  // TerminalAdapter.off(adapter.getInputField(), 'paste', getOnPasteFn(adapter));
+  // EditorAdapter.off(adapter.getInputField(), 'paste', getOnPasteFn(adapter));
   adapter.state.vim = null;
   if (highlightTimeout) clearTimeout(highlightTimeout);
   adapter.leaveVimMode();
 }
 
-function detachVimMap(adapter: TerminalAdapter, next?: KeyMapEntry) {
+function detachVimMap(adapter: EditorAdapter, next?: KeyMapEntry) {
   adapter.attached = false;
 
   if (!next || next.attach != attachVimMap) leaveVimMode(adapter);
 }
 function attachVimMap(
   this: {
-    attach: (adapter: TerminalAdapter, prev?: KeyMapEntry) => void;
-    detach: (adapter: TerminalAdapter, next?: KeyMapEntry | undefined) => void;
+    attach: (adapter: EditorAdapter, prev?: KeyMapEntry) => void;
+    detach: (adapter: EditorAdapter, next?: KeyMapEntry | undefined) => void;
     call: (
       key: string,
-      adapter: TerminalAdapter
+      adapter: EditorAdapter
     ) => false | (() => boolean) | undefined;
     fallthrough?: string[];
     keys?: { Backspace: string };
   },
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   prev?: KeyMapEntry
 ) {
-  if ((this as KeyMapEntry) === TerminalAdapter.keyMap.vim) {
+  if ((this as KeyMapEntry) === EditorAdapter.keyMap.vim) {
     adapter.attached = true;
     if (adapter.curOp) {
       adapter.curOp.selectionChanged = true;
@@ -126,7 +126,7 @@ function attachVimMap(
   if (!prev || prev.attach != attachVimMap) enterVimMode(adapter);
 }
 
-function cmKey(key: string, adapter: TerminalAdapter) {
+function cmKey(key: string, adapter: EditorAdapter) {
   if (!adapter) {
     return undefined;
   }
@@ -258,7 +258,7 @@ defineOption("filetype", undefined, "string", ["ft"], function (name, adapter) {
   if (adapter === undefined) {
     return;
   }
-  // The 'filetype' option proxies to the TerminalAdapter 'mode' option.
+  // The 'filetype' option proxies to the EditorAdapter 'mode' option.
   if (name === undefined) {
     const mode = adapter.getOption("mode");
     return mode == "null" ? "" : mode;
@@ -290,9 +290,9 @@ export const createInsertModeChanges = (c?: InsertModeChanges) =>
         expectCursorActivityForChange: false,
       };
 
-export function maybeInitVimState(adapter: TerminalAdapter): VimState {
+export function maybeInitVimState(adapter: EditorAdapter): VimState {
   if (!adapter.state.vim) {
-    // Store instance state in the TerminalAdapter object.
+    // Store instance state in the EditorAdapter object.
     const vimState: VimState = {
       inputState: new InputState(),
       // Vim's input state that triggered the last edit, used to repeat
@@ -332,7 +332,7 @@ export function maybeInitVimState(adapter: TerminalAdapter): VimState {
   return adapter.state.vim as VimState;
 }
 
-export function clearInputState(adapter: TerminalAdapter, reason?: string) {
+export function clearInputState(adapter: EditorAdapter, reason?: string) {
   (adapter.state.vim as VimState).inputState = new InputState();
   adapter.dispatch("vim-command-done", reason);
 }
@@ -345,7 +345,7 @@ export function clearInputState(adapter: TerminalAdapter, reason?: string) {
  * Clips cursor to ensure that line is within the buffer's range
  * If includeLineBreak is true, then allow cur.ch == lineLength.
  */
-export function clipCursorToContent(adapter: TerminalAdapter, cur: Pos) {
+export function clipCursorToContent(adapter: EditorAdapter, cur: Pos) {
   const vim = adapter.state.vim as VimState;
   const includeLineBreak = vim.insertMode || vim.visualMode;
   const line = Math.min(
@@ -446,7 +446,7 @@ export function lastChar(keys: string): string {
   return selectedCharacter;
 }
 
-export function lineLength(adapter: TerminalAdapter, lineNum: number) {
+export function lineLength(adapter: EditorAdapter, lineNum: number) {
   return adapter.getLine(lineNum).length;
 }
 
@@ -457,7 +457,7 @@ export function escapeRegex(s: string) {
 }
 
 export function selectForInsert(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   head: Pos,
   height: number
 ) {
@@ -471,7 +471,7 @@ export function selectForInsert(
 
 // Updates the previous selection with the current selection's values. This
 // should only be called in visual mode.
-export function updateLastSelection(adapter: TerminalAdapter, vim: VimState) {
+export function updateLastSelection(adapter: EditorAdapter, vim: VimState) {
   const anchor = vim.sel.anchor;
   let head = vim.sel.head;
   // To accommodate the effect of lastPastedText in the last selection
@@ -493,7 +493,7 @@ export function updateLastSelection(adapter: TerminalAdapter, vim: VimState) {
 }
 
 export function updateMark(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   vim: VimState,
   markName: string,
   pos: Pos
@@ -508,11 +508,11 @@ export function updateMark(
 }
 
 /**
- * Updates the TerminalAdapter selection to match the provided vim selection.
+ * Updates the EditorAdapter selection to match the provided vim selection.
  * If no arguments are given, it uses the current vim selection state.
  */
 export function updateCmSelection(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   sel?: CmSelection,
   mode?: "line" | "block" | "char"
 ) {
@@ -524,7 +524,7 @@ export function updateCmSelection(
 }
 
 export function makeCmSelection(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   sel: CmSelection,
   mode: "line" | "block" | "char",
   exclusive?: boolean
@@ -587,7 +587,7 @@ export function makeCmSelection(
   }
 }
 
-function getHead(adapter: TerminalAdapter) {
+function getHead(adapter: EditorAdapter) {
   const cur = adapter.getCursor("head");
   if (adapter.getSelection().length == 1) {
     // Small corner case when only 1 character is selected. The "real"
@@ -598,11 +598,11 @@ function getHead(adapter: TerminalAdapter) {
 }
 
 /**
- * If moveHead is set to false, the TerminalAdapter selection will not be
+ * If moveHead is set to false, the EditorAdapter selection will not be
  * touched. The caller assumes the responsibility of putting the cursor
  * in the right place.
  */
-export function exitVisualMode(adapter: TerminalAdapter, moveHead?: boolean) {
+export function exitVisualMode(adapter: EditorAdapter, moveHead?: boolean) {
   const vim = adapter.state.vim as VimState;
   if (moveHead !== false) {
     adapter.setCursor(clipCursorToContent(adapter, vim.sel.head));
@@ -618,7 +618,7 @@ export function exitVisualMode(adapter: TerminalAdapter, moveHead?: boolean) {
 // example, with the caret at the start of the last word on the line,
 // 'dw' should word, but not the newline, while 'w' should advance the
 // caret to the first character of the next line.
-export function clipToLine(adapter: TerminalAdapter, curStart: Pos, curEnd: Pos) {
+export function clipToLine(adapter: EditorAdapter, curStart: Pos, curEnd: Pos) {
   const selection = adapter.getRange(curStart, curEnd);
   // Only clip if the selection ends with trailing newline + whitespace
   if (/\n\s*$/.test(selection)) {
@@ -652,7 +652,7 @@ export function clipToLine(adapter: TerminalAdapter, curStart: Pos, curEnd: Pos)
 
 // Expand the selection to line ends.
 export function expandSelectionToLine(
-  _cm: TerminalAdapter,
+  _cm: EditorAdapter,
   curStart: Pos,
   curEnd: Pos
 ) {
@@ -662,7 +662,7 @@ export function expandSelectionToLine(
 }
 
 export function expandWordUnderCursor(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   inclusive: boolean,
   _forward: boolean,
   bigWord: boolean,
@@ -724,7 +724,7 @@ export function expandWordUnderCursor(
 }
 
 export function recordJumpPosition(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   oldCur: Pos,
   newCur: Pos
 ) {
@@ -935,7 +935,7 @@ function parseQuery(
   return new RegExp(regexPart, ignoreCase || forceIgnoreCase ? "im" : "m");
 }
 
-export function showConfirm(adapter: TerminalAdapter, template: string) {
+export function showConfirm(adapter: EditorAdapter, template: string) {
   adapter.openNotification(template);
 }
 
@@ -945,7 +945,7 @@ interface PromptOptions extends StatusBarInputOptions {
   onClose: (value: string) => void;
 }
 
-export function showPrompt(adapter: TerminalAdapter, options: PromptOptions) {
+export function showPrompt(adapter: EditorAdapter, options: PromptOptions) {
   adapter.openPrompt(options.prefix, options.desc || "", {
     onKeyDown: options.onKeyDown,
     onKeyUp: options.onKeyUp,
@@ -968,7 +968,7 @@ function regexEqual(r1: RegExp | string, r2: RegExp | string) {
 }
 // Returns true if the query is valid.
 export function updateSearchQuery(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   rawQuery: string,
   ignoreCase?: boolean,
   smartCase?: boolean
@@ -991,7 +991,7 @@ export function updateSearchQuery(
 
 let highlightTimeout: ReturnType<typeof setTimeout>;
 
-export function highlightSearchMatches(adapter: TerminalAdapter, query: RegExp) {
+export function highlightSearchMatches(adapter: EditorAdapter, query: RegExp) {
   clearTimeout(highlightTimeout);
   highlightTimeout = setTimeout(() => {
     if (!adapter.state.vim) return;
@@ -1009,7 +1009,7 @@ export function highlightSearchMatches(adapter: TerminalAdapter, query: RegExp) 
 }
 
 export function findNext(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   prev: boolean,
   query: RegExp,
   repeat?: number
@@ -1047,7 +1047,7 @@ export function findNext(
   return cursor.from();
 }
 
-export function clearSearchHighlight(adapter: TerminalAdapter) {
+export function clearSearchHighlight(adapter: EditorAdapter) {
   const state = getSearchState(adapter);
   adapter.removeOverlay();
   state.setOverlay(undefined);
@@ -1084,7 +1084,7 @@ function isInRange(pos: Pos | number, start: number | number[], end?: number) {
 }
 
 export function getMarkPos(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   vim: VimState,
   markName: string
 ) {
@@ -1114,7 +1114,7 @@ interface ExCommandParams extends ExCommandOptionalParameters {
 }
 
 export type ExCommandFunc = (
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   params: ExCommandParams,
   ctx?: Context
 ) => void;
@@ -1597,12 +1597,12 @@ export const exCommands: Record<string, ExCommandFunc> = {
       params.callback
     );
   },
-  redo: TerminalAdapter.commands.redo,
-  undo: TerminalAdapter.commands.undo,
+  redo: EditorAdapter.commands.redo,
+  undo: EditorAdapter.commands.undo,
   edit: function (adapter, params) {
-    if (TerminalAdapter.commands.open) {
+    if (EditorAdapter.commands.open) {
       // If an open command is defined, call it.
-      TerminalAdapter.commands.open(adapter, params);
+      EditorAdapter.commands.open(adapter, params);
     }
   },
   save: function (adapter, params) {
@@ -1612,9 +1612,9 @@ export const exCommands: Record<string, ExCommandFunc> = {
     } else {
       params.argString = params.args[0];
     }
-    if (TerminalAdapter.commands.save) {
+    if (EditorAdapter.commands.save) {
       // If a save command is defined, call it.
-      TerminalAdapter.commands.save(adapter, params);
+      EditorAdapter.commands.save(adapter, params);
     }
   },
   version: function (adapter) {
@@ -1625,9 +1625,9 @@ export const exCommands: Record<string, ExCommandFunc> = {
     showConfirm(adapter, versionInfo.join("\n"));
   },
   write: function (adapter, params) {
-    if (TerminalAdapter.commands.save) {
+    if (EditorAdapter.commands.save) {
       // If a save command is defined, call it.
-      TerminalAdapter.commands.save(adapter, params);
+      EditorAdapter.commands.save(adapter, params);
     }
   },
   nohlsearch: function (adapter) {
@@ -1722,7 +1722,7 @@ export const exCommands: Record<string, ExCommandFunc> = {
 export const exCommandDispatcher = new ExCommandDispatcher();
 
 /**
- * @param {TerminalAdapter} adapter TerminalAdapter instance we are in.
+ * @param {EditorAdapter} adapter EditorAdapter instance we are in.
  * @param {boolean} confirm Whether to confirm each replace.
  * @param {Cursor} lineStart Line to start replacing from.
  * @param {Cursor} lineEnd Line to stop replacing at.
@@ -1732,13 +1732,13 @@ export const exCommandDispatcher = new ExCommandDispatcher();
  * @param {function()} callback A callback for when the replace is done.
  */
 function doReplace(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   confirm: boolean,
   global: boolean,
   lineStart: number,
   lineEnd: number,
   searchCursor: ReturnType<
-    InstanceType<typeof TerminalAdapter>["getSearchCursor"]
+    InstanceType<typeof EditorAdapter>["getSearchCursor"]
   >,
   query: RegExp,
   replaceWith: string,
@@ -1891,7 +1891,7 @@ function doReplace(
   });
 }
 
-export function exitInsertMode(adapter: TerminalAdapter) {
+export function exitInsertMode(adapter: EditorAdapter) {
   const vim = adapter.state.vim as VimState;
   const macroModeState = vimGlobalState.macroModeState;
   const insertModeChangeRegister =
@@ -2014,7 +2014,7 @@ export function logSearchQuery(macroModeState: MacroModeState, query: string) {
  * Listens for changes made in insert mode.
  * Should only be active in insert mode.
  */
-export function onChange(adapter: TerminalAdapter, change: Change): void {
+export function onChange(adapter: EditorAdapter, change: Change): void {
   let changeObj: Change | undefined = change;
   const macroModeState = vimGlobalState.macroModeState;
   const lastChange = macroModeState.lastInsertModeChanges;
@@ -2050,9 +2050,9 @@ export function onChange(adapter: TerminalAdapter, change: Change): void {
 }
 
 /**
- * Listens for any kind of cursor activity on TerminalAdapter.
+ * Listens for any kind of cursor activity on EditorAdapter.
  */
-function onCursorActivity(adapter: TerminalAdapter) {
+function onCursorActivity(adapter: EditorAdapter) {
   const vim = adapter.state.vim as VimState;
   if (vim.insertMode) {
     // Tracking cursor activity in insert mode (for macro support).
@@ -2071,7 +2071,7 @@ function onCursorActivity(adapter: TerminalAdapter) {
     handleExternalSelection(adapter, vim);
   }
 }
-function handleExternalSelection(adapter: TerminalAdapter, vim: VimState) {
+function handleExternalSelection(adapter: EditorAdapter, vim: VimState) {
   let anchor = adapter.getCursor("anchor");
   let head = adapter.getCursor("head");
   // Enter or exit visual mode to match mouse selection.
@@ -2087,7 +2087,7 @@ function handleExternalSelection(adapter: TerminalAdapter, vim: VimState) {
     adapter.dispatch("vim-mode-change", { mode: "visual" });
   }
   if (vim.visualMode) {
-    // Bind TerminalAdapter selection model to vim selection model.
+    // Bind EditorAdapter selection model to vim selection model.
     // Mouse selections are considered visual characterwise.
     const headOffset = !cursorIsBefore(head, anchor) ? -1 : 0;
     const anchorOffset = cursorIsBefore(head, anchor) ? -1 : 0;
@@ -2120,7 +2120,7 @@ export class InsertModeKey {
  * corresponding enterInsertMode call was made with a count.
  */
 export function repeatLastEdit(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   vim: VimState,
   repeat: number,
   repeatForInsert: boolean
@@ -2172,7 +2172,7 @@ export function repeatLastEdit(
 }
 
 export function repeatInsertModeChanges(
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   changes: (string | InsertModeKey)[],
   repeat: number
 ) {
@@ -2180,7 +2180,7 @@ export function repeatInsertModeChanges(
     binding: string | string[] | BindingFunction
   ): boolean => {
     if (typeof binding == "string") {
-      TerminalAdapter.commands[binding](adapter, {});
+      EditorAdapter.commands[binding](adapter, {});
     } else if (Array.isArray(binding)) {
     } else {
       binding(adapter);
@@ -2203,7 +2203,7 @@ export function repeatInsertModeChanges(
     for (let j = 0; j < changes.length; j++) {
       const change = changes[j];
       if (change instanceof InsertModeKey) {
-        TerminalAdapter.lookupKey(change.keyName, "vim-insert", keyHandler);
+        EditorAdapter.lookupKey(change.keyName, "vim-insert", keyHandler);
       } else if (typeof change == "string") {
         adapter.replaceSelections([change]);
       }
@@ -2215,13 +2215,13 @@ export function repeatInsertModeChanges(
 }
 
 export const initVimAdapter = () => {
-  TerminalAdapter.keyMap.vim = {
+  EditorAdapter.keyMap.vim = {
     attach: attachVimMap,
     detach: detachVimMap,
     call: cmKey,
   };
 
-  TerminalAdapter.keyMap["vim-insert"] = {
+  EditorAdapter.keyMap["vim-insert"] = {
     // TODO: override navigation keys so that Esc will cancel automatic
     // indentation from o, O, i_<CR>
     fallthrough: ["default"],
@@ -2230,7 +2230,7 @@ export const initVimAdapter = () => {
     call: cmKey,
   };
 
-  TerminalAdapter.keyMap["vim-replace"] = {
+  EditorAdapter.keyMap["vim-replace"] = {
     keys: { Backspace: "goCharLeft" },
     fallthrough: ["vim-insert"],
     attach: attachVimMap,
@@ -2312,7 +2312,7 @@ defineOption(
   "dark",
   "string",
   ["bg"],
-  (value?: string | number | boolean, adapter?: TerminalAdapter) => {
+  (value?: string | number | boolean, adapter?: EditorAdapter) => {
     if (typeof value !== "string") {
       if (adapter) {
         const theme = adapter.getOption("theme").toString().toLowerCase();
