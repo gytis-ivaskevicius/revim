@@ -1,4 +1,4 @@
-import EditorAdapter from "./terminal-adapter";
+import EditorAdapter from "./adapter";
 import { vimGlobalState } from "./global";
 import { InsertModeChanges, createInsertModeChanges } from "./keymap_vim";
 

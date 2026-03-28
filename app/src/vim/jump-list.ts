@@ -1,4 +1,4 @@
-import EditorAdapter, { Marker } from "./terminal-adapter";
+import EditorAdapter, { Marker } from "./adapter";
 import { cursorEqual, Pos } from "./common";
 
 export class CircularJumpList {

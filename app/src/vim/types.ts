@@ -1,4 +1,4 @@
-import { Marker, CmSelection } from "./terminal-adapter";
+import { Marker, CmSelection } from "./adapter";
 import { Pos } from "./common";
 import { InputState } from "./input-state";
 import { MotionFunc } from "./motions";

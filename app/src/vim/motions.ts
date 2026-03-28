@@ -3,7 +3,7 @@
  *     position of the cursor.
  */
 
-import EditorAdapter from "./terminal-adapter";
+import EditorAdapter from "./adapter";
 import {
   Pos,
   copyCursor,
