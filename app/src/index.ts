@@ -19,7 +19,13 @@ function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: stri
   const isLiteralPrintable =
     isPrintable && !event.modifiers.includes("Ctrl") && !event.modifiers.includes("Alt");
 
-  if (key === " " && !insertMode && !event.modifiers.includes("Ctrl") && !event.modifiers.includes("Alt")) {
+  if (
+    key === " " &&
+    !insertMode &&
+    !event.modifiers.includes("Ctrl") &&
+    !event.modifiers.includes("Alt") &&
+    !event.modifiers.includes("Shift")
+  ) {
     key = "Space";
   } else if (isLiteralPrintable) {
     key = `'${key}'`;
