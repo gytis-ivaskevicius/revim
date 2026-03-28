@@ -163,11 +163,11 @@ fn render_frame_internal() -> Result<()> {
         .terminal
         .draw(|f| {
             let size = f.area();
+            let block = Block::default().borders(Borders::ALL).title("ReVim");
             let paragraph = Paragraph::new(lines)
-                .block(Block::default().borders(Borders::ALL).title("ReVim"))
+                .block(block.clone())
                 .alignment(ratatui::layout::Alignment::Left);
             f.render_widget(paragraph, size);
-            let block = Block::default().borders(Borders::ALL).title("ReVim");
             let inner_area = block.inner(size);
             f.set_cursor_position((inner_area.x + cursor_col, inner_area.y + cursor_row));
         })
