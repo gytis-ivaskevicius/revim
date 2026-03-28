@@ -16,7 +16,7 @@ test-rust:
 
 # Run E2E tests
 test-e2e:
-	python -c "import shutil; shutil.rmtree('/home/gytis/ai/revim/.tui-test/cache', ignore_errors=True); shutil.rmtree('/home/gytis/ai/revim/lib/target', ignore_errors=True)"
+	python -c "import shutil; shutil.rmtree('.tui-test/cache', ignore_errors=True)"
 	bunx @microsoft/tui-test app/tests/e2e/*.test.ts
 
 # Run all tests

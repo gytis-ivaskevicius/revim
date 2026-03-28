@@ -39,6 +39,15 @@ test("charwise visual selection renders reversed cells", async ({ terminal }) =>
   await expect(terminal).toMatchSnapshot({ includeColors: true });
 });
 
+test("charwise visual motion extends the selection", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+  await pressKeys(terminal, ["v", "l"]);
+
+  expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+
+  await expect(terminal).toMatchSnapshot({ includeColors: true });
+});
+
 test("charwise visual delete removes selected text", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
   await pressKeys(terminal, ["v", "e", "d"]);

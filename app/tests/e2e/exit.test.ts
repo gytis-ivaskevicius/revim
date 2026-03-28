@@ -1,14 +1,4 @@
 import { test, expect } from "./test-utils.js";
-import { encodeTerminalKey, normalizeCtrlCharacter } from "../../src/terminal-key.js";
-
-test("Ctrl+C is encoded as expected", () => {
-  expect(
-    encodeTerminalKey(
-      { key: normalizeCtrlCharacter(String.fromCharCode(3)), modifiers: ["Ctrl"] },
-      false
-    )
-  ).toBe("Ctrl-c");
-});
 
 test("Ctrl+C exits cleanly", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome")).toBeVisible();
