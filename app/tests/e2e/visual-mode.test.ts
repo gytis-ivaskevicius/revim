@@ -11,12 +11,14 @@ const cellShift = (
   y: number
 ) => terminal.serialize().shifts.get(`${x},${y}`);
 
+type KeyPress = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean };
+
 async function pressKeys(
   terminal: {
     keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void;
     keyEscape: () => void;
   },
-  keys: Array<string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }>
+  keys: KeyPress[]
 ) {
   for (const key of keys) {
     if (key === "<Esc>") {
@@ -30,104 +32,130 @@ async function pressKeys(
   }
 }
 
-test("charwise visual selection renders reversed cells", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-  await pressKeys(terminal, ["v"]);
+const snapshotCases: Array<{
+  name: string;
+  readyText?: string;
+  keys: KeyPress[];
+  assertions?: (terminal: {
+    serialize: () => { shifts: Map<string, { inverse?: number }> };
+  }) => void;
+}> = [
+  {
+    name: "charwise visual selection renders reversed cells",
+    readyText: "Welcome to ReVim!",
+    keys: ["v"],
+    assertions: (terminal) => {
+      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+    },
+  },
+  {
+    name: "charwise visual motion extends the selection",
+    readyText: "Welcome to ReVim!",
+    keys: ["v", "l"],
+    assertions: (terminal) => {
+      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+    },
+  },
+  {
+    name: "linewise visual selection highlights the full line",
+    readyText: "Welcome to ReVim!",
+    keys: [{ key: "V", shift: true }],
+  },
+  {
+    name: "linewise visual selection highlights empty lines",
+    readyText: "Welcome to ReVim!",
+    keys: [{ key: "V", shift: true }, "j"],
+    assertions: (terminal) => {
+      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+      expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864);
+    },
+  },
+  {
+    name: "escape clears visual selection",
+    readyText: "Welcome to ReVim!",
+    keys: ["v", "l", "<Esc>"],
+  },
+  {
+    name: "blockwise visual selection highlights the same column across rows",
+    readyText: "Welcome to ReVim!",
+    keys: [{ key: "v", ctrl: true }, "j"],
+    assertions: (terminal) => {
+      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+      expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864);
+    },
+  },
+  {
+    name: "blockwise visual selection stays aligned past empty lines",
+    readyText: "Welcome to ReVim!",
+    keys: ["l", "l", "l", "l", "l", { key: "v", ctrl: true }, "j"],
+    assertions: (terminal) => {
+      expect(cellShift(terminal, 6, 1)?.inverse).toBe(67108864);
+      expect(cellShift(terminal, 6, 2)?.inverse).toBe(67108864);
+    },
+  },
+  {
+    name: "blockwise visual selection can expand horizontally",
+    readyText: "Welcome to ReVim!",
+    keys: ["l", "l", "l", "l", "l", "l", "l", "l", { key: "v", ctrl: true }, "l"],
+    assertions: (terminal) => {
+      expect(cellShift(terminal, 9, 1)?.inverse).toBe(67108864);
+      expect(cellShift(terminal, 11, 1)?.inverse).toBe(0);
+    },
+  },
+];
 
-  expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+for (const { name, readyText = "Welcome to ReVim!", keys, assertions } of snapshotCases) {
+  test(name, async ({ terminal }) => {
+    await expect(terminal.getByText(readyText)).toBeVisible();
+    await pressKeys(terminal, keys);
+    assertions?.(terminal);
+    await expect(terminal).toMatchSnapshot({ includeColors: true });
+  });
+}
 
-  await expect(terminal).toMatchSnapshot({ includeColors: true });
-});
+const deleteCases: Array<{
+  name: string;
+  readyText: string;
+  keys: KeyPress[];
+  absentText?: string;
+  presentText: string[];
+}> = [
+  {
+    name: "charwise visual delete removes selected text",
+    readyText: "Welcome to ReVim!",
+    keys: ["v", "e", "d"],
+    absentText: "Welcome to ReVim!",
+    presentText: [" to ReVim!"],
+  },
+  {
+    name: "charwise visual delete removes the full word on later lines",
+    readyText: "Press Ctrl+C to exit.",
+    keys: ["j", "j", "j", "j", "v", "e", "d"],
+    absentText: "Press Ctrl+C to exit.",
+    presentText: [" Ctrl+C to exit."],
+  },
+];
 
-test("charwise visual motion extends the selection", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-  await pressKeys(terminal, ["v", "l"]);
+for (const { name, readyText, keys, absentText, presentText } of deleteCases) {
+  test(name, async ({ terminal }) => {
+    await expect(terminal.getByText(readyText)).toBeVisible();
+    await pressKeys(terminal, keys);
 
-  expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+    const bufferText = visibleBuffer(terminal);
+    if (absentText && bufferText.includes(absentText)) {
+      throw new Error(`Expected selected text to be deleted:\n${bufferText}`);
+    }
 
-  await expect(terminal).toMatchSnapshot({ includeColors: true });
-});
-
-test("charwise visual delete removes selected text", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-  await pressKeys(terminal, ["v", "e", "d"]);
-
-  const bufferText = visibleBuffer(terminal);
-  if (bufferText.includes("Welcome to ReVim!")) {
-    throw new Error(`Expected selected word to be deleted:\n${bufferText}`);
-  }
-  await expect(terminal.getByText(" to ReVim!")).toBeVisible();
-});
-
-test("charwise visual delete removes the full word on later lines", async ({ terminal }) => {
-  await expect(terminal.getByText("Press Ctrl+C to exit.")).toBeVisible();
-  await pressKeys(terminal, ["j", "j", "j", "j", "v", "e", "d"]);
-
-  const bufferText = visibleBuffer(terminal);
-  if (bufferText.includes("Press Ctrl+C to exit.")) {
-    throw new Error(`Expected full word to be deleted:\n${bufferText}`);
-  }
-  await expect(terminal.getByText(" Ctrl+C to exit.")).toBeVisible();
-});
-
-test("linewise visual selection highlights the full line", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-  await pressKeys(terminal, [{ key: "V", shift: true }]);
-  await expect(terminal).toMatchSnapshot({ includeColors: true });
-});
-
-test("linewise visual selection highlights empty lines", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-  await pressKeys(terminal, [{ key: "V", shift: true }, "j"]);
-
-  expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
-  expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864);
-
-  await expect(terminal).toMatchSnapshot({ includeColors: true });
-});
-
-test("escape clears visual selection", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-  await pressKeys(terminal, ["v", "l", "<Esc>"]);
-  await expect(terminal).toMatchSnapshot({ includeColors: true });
-});
-
-test("blockwise visual selection highlights the same column across rows", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-  await pressKeys(terminal, [{ key: "v", ctrl: true }, "j"]);
-
-  expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
-  expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864);
-
-  await expect(terminal).toMatchSnapshot({ includeColors: true });
-});
-
-test("blockwise visual selection stays aligned past empty lines", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-  await pressKeys(terminal, ["l", "l", "l", "l", "l", { key: "v", ctrl: true }, "j"]);
-
-  expect(cellShift(terminal, 6, 1)?.inverse).toBe(67108864);
-  expect(cellShift(terminal, 6, 2)?.inverse).toBe(67108864);
-
-  await expect(terminal).toMatchSnapshot({ includeColors: true });
-});
-
-test("blockwise visual selection can expand horizontally", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-  await pressKeys(terminal, ["l", "l", "l", "l", "l", "l", "l", "l", { key: "v", ctrl: true }, "l"]);
-
-  expect(cellShift(terminal, 9, 1)?.inverse).toBe(67108864);
-  expect(cellShift(terminal, 11, 1)?.inverse).toBe(0);
-
-  await expect(terminal).toMatchSnapshot({ includeColors: true });
-});
+    for (const text of presentText) {
+      await expect(terminal.getByText(text)).toBeVisible();
+    }
+  });
+}
 
 test("blockwise x deletes columns without joining lines", async ({ terminal }) => {
   await expect(terminal.getByText("This is a demo text for the TUI.")).toBeVisible();
   await pressKeys(terminal, ["j", "j", { key: "v", ctrl: true }, "j"]);
-  for (let i = 0; i < 13; i++) {
-    await pressKeys(terminal, ["l"]);
-  }
+  await pressKeys(terminal, Array.from({ length: 13 }, () => "l"));
   await pressKeys(terminal, ["x"]);
 
   const bufferText = visibleBuffer(terminal);
