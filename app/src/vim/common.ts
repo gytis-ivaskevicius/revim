@@ -67,75 +67,46 @@ export const cursorMax = (...cursors: Pos[]): Pos =>
   cursors.reduce((m, cur) => (cursorIsBefore(m, cur) ? cur : m));
 
 export const cursorIsBetween = (low: Pos, test: Pos, high: Pos): boolean =>
-  // returns true if cur2 is between cur1 and cur3.
   cursorIsBefore(low, test) && cursorIsBefore(test, high);
 
-export const stopEvent = (evt: Event | IKeyboardEvent) => {
-  evt.stopPropagation();
-  evt.preventDefault();
+export interface TerminalKeyEvent {
+  key: string;
+  keyCode?: number;
+  ctrlKey?: boolean;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  metaKey?: boolean;
+  stopPropagation?: () => void;
+  preventDefault?: () => void;
+  browserEvent?: {
+    key?: string;
+    preventDefault?: () => void;
+  };
+}
 
-  if (Reflect.has(evt, "browserEvent")) {
-    (evt as IKeyboardEvent).browserEvent.preventDefault();
+const hasBrowserEvent = (
+  event: TerminalKeyEvent | KeyboardEvent
+): event is TerminalKeyEvent & { browserEvent: NonNullable<TerminalKeyEvent["browserEvent"]> } =>
+  typeof event === "object" && event !== null && "browserEvent" in event && !!event.browserEvent;
+
+export const stopEvent = (evt: TerminalKeyEvent | KeyboardEvent) => {
+  evt.stopPropagation?.();
+  evt.preventDefault?.();
+  if (hasBrowserEvent(evt)) {
+    evt.browserEvent.preventDefault?.();
   }
 
   return false;
 };
 
-export const getEventKeyName = (
-  e: IKeyboardEvent | KeyboardEvent,
-  skip = false
-) => {
-  const KeyCode = window.monaco.KeyCode;
-  let addQuotes = true;
-  let keyName = KeyCode[e.keyCode];
+export const getEventKeyName = (e: TerminalKeyEvent | KeyboardEvent, skip = false) => {
+  let key = e.key || (hasBrowserEvent(e) ? e.browserEvent.key || "" : "");
 
-  if ((e as any).key) {
-    keyName = (e as any).key as string;
-    addQuotes = false;
+  if (key === "Escape") {
+    key = "Esc";
   }
 
-  let key = keyName;
-  let skipOnlyShiftCheck = skip;
-
-  switch (e.keyCode) {
-    case KeyCode.Shift:
-    case KeyCode.Meta:
-    case KeyCode.Alt:
-    case KeyCode.Ctrl:
-      return key;
-    case KeyCode.Escape:
-      skipOnlyShiftCheck = true;
-      key = "Esc";
-      break;
-    case KeyCode.Space:
-      skipOnlyShiftCheck = true;
-      break;
-  }
-
-  // `Key` check for monaco >= 0.30.0
-  if (keyName.startsWith("Key") || keyName.startsWith("KEY_")) {
-    key = keyName[keyName.length - 1].toLowerCase();
-  } else if (keyName.startsWith("Digit")) {
-    key = keyName.slice(5, 6);
-  } else if (keyName.startsWith("Numpad")) {
-    key = keyName.slice(6, 7);
-  } else if (keyName.endsWith("Arrow")) {
-    skipOnlyShiftCheck = true;
-    key = keyName.substring(0, keyName.length - 5);
-  } else if (
-    keyName.startsWith("US_") ||
-    // `Bracket` check for monaco >= 0.30.0
-    keyName.startsWith("Bracket") ||
-    !key
-  ) {
-    if (Reflect.has(e, "browserEvent")) {
-      key = (e as IKeyboardEvent).browserEvent.key;
-    }
-  }
-
-  if (!skipOnlyShiftCheck && !e.altKey && !e.ctrlKey && !e.metaKey) {
-    key = (e as KeyboardEvent).key || (e as IKeyboardEvent).browserEvent.key;
-  } else {
+  if (!skip) {
     if (e.altKey) {
       key = `Alt-${key}`;
     }

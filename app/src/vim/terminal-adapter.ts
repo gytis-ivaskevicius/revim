@@ -351,6 +351,13 @@ export class TerminalAdapter {
     const endLine = end ? end.line : start.line;
     const endCh = end ? end.ch : start.ch;
     replaceRange(text, start.line, start.ch, endLine, endCh);
+    const head = this.readHead();
+    this.syncSelection(head, head);
+    this.dispatch("change", this, {
+      text: text.split("\n"),
+      origin: "+input",
+    });
+    this.dispatch("cursorActivity", this);
     this.pushUndoStop();
   }
 
@@ -410,6 +417,11 @@ export class TerminalAdapter {
     replaceSelections(texts);
     const head = this.getCursor("head");
     this.syncSelection(head, head);
+    this.dispatch("change", this, {
+      text: texts,
+      origin: "+input",
+    });
+    this.dispatch("cursorActivity", this);
   }
 
   toggleOverwrite(toggle: boolean) {

@@ -1,6 +1,5 @@
 import { initTui, moveCursor, shutdownTui, startKeyboardListener } from "@revim/lib";
 import { VimMode } from "./vim";
-import { TerminalAdapter } from "./vim/terminal-adapter";
 
 function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: string[] }) {
   const hasModifiers = event.modifiers.length > 0;
@@ -32,24 +31,27 @@ function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: stri
   };
 
   let key = keyMap[event.key] || event.key;
+  const isPrintable = key.length === 1;
+  const isLiteralPrintable =
+    isPrintable && !event.modifiers.includes("Ctrl") && !event.modifiers.includes("Alt");
+
+  if (isLiteralPrintable) {
+    key = `'${key}'`;
+  } else if (key === "Escape") {
+    key = "Esc";
+  }
   
   if (event.modifiers.includes("Ctrl")) {
     key = `Ctrl-${key}`;
   }
-  if (event.modifiers.includes("Shift")) {
+  if (event.modifiers.includes("Shift") && !isLiteralPrintable) {
     key = `Shift-${key}`;
   }
   if (event.modifiers.includes("Alt")) {
     key = `Alt-${key}`;
   }
 
-  const keyMapState = vimMode.adapter.state.keyMap as string;
-  const keymap = TerminalAdapter.keyMap[keyMapState];
-  const command = keymap?.call?.(key, vimMode.adapter);
-
-  if (typeof command === "function") {
-    command();
-  }
+  vimMode.handleKey(key);
 }
 
 async function main() {
