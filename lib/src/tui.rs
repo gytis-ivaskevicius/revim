@@ -287,11 +287,11 @@ fn extract_modifiers(modifiers: KeyModifiers) -> Vec<String> {
 
 fn build_highlighted_line<'a>(
     line: &'a str,
-    cursor_col: u16,
+    cursor_col: Option<u16>,
     highlights: &[(u16, u16)],
 ) -> Line<'a> {
     let chars: Vec<char> = line.chars().collect();
-    let col = cursor_col as usize;
+    let col = cursor_col.map(|cursor_col| cursor_col as usize);
     let max_highlight_end = highlights
         .iter()
         .map(|(_, end)| *end as usize)
@@ -300,11 +300,11 @@ fn build_highlighted_line<'a>(
     let width = chars
         .len()
         .max(max_highlight_end)
-        .max(col.saturating_add(1));
+        .max(col.map(|col| col.saturating_add(1)).unwrap_or(0));
     let spans: Vec<Span> = (0..width)
         .map(|i| {
             let ch = chars.get(i).copied().unwrap_or(' ');
-            let is_cursor = i == col;
+            let is_cursor = col == Some(i);
             let is_highlighted = highlights
                 .iter()
                 .any(|(start, end)| i >= *start as usize && i < *end as usize);
@@ -443,9 +443,9 @@ fn render_frame_internal() -> Result<()> {
             }
 
             if row == cursor_row as usize {
-                build_highlighted_line(line, cursor_col, &row_highlights)
+                build_highlighted_line(line, Some(cursor_col), &row_highlights)
             } else if !row_highlights.is_empty() {
-                build_highlighted_line(line, u16::MAX, &row_highlights)
+                build_highlighted_line(line, None, &row_highlights)
             } else {
                 Line::from(line.as_str())
             }
