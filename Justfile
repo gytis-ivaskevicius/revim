@@ -5,6 +5,7 @@ default:
 # Build the Rust library and generate .node binary
 build:
 	cd lib && npm run build
+	rm -rf "lib/target"
 
 # Run the demo application
 dev: build
@@ -16,7 +17,6 @@ test-rust:
 
 # Run E2E tests
 test-e2e: build
-	rm -rf ".tui-test/cache" "lib/target"
 	bunx @microsoft/tui-test app/tests/e2e/*.test.ts
 
 # Run all tests
