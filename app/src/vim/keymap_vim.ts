@@ -81,7 +81,7 @@ import { PACKAGE_INFO } from "./version";
 function enterVimMode(adapter: EditorAdapter) {
   adapter.setOption("disableInput", true);
   adapter.setOption("showCursorWhenSelecting", false);
-  adapter.dispatch("vim-mode-change", { mode: "normal" });
+  adapter.emitVimModeChange( { mode: "normal" });
   adapter.on("cursorActivity", onCursorActivity);
   maybeInitVimState(adapter);
   // EditorAdapter.on(adapter.getInputField(), 'paste', getOnPasteFn(adapter));
@@ -611,7 +611,7 @@ export function exitVisualMode(adapter: EditorAdapter, moveHead?: boolean) {
   vim.visualMode = false;
   vim.visualLine = false;
   vim.visualBlock = false;
-  if (!vim.insertMode) adapter.dispatch("vim-mode-change", { mode: "normal" });
+  if (!vim.insertMode) adapter.emitVimModeChange( { mode: "normal" });
 }
 
 // Remove any trailing newlines from the selection. For
@@ -1920,7 +1920,7 @@ export function exitInsertMode(adapter: EditorAdapter) {
   adapter.toggleOverwrite(false); // exit replace mode if we were in it.
   // update the ". register before exiting insert mode
   insertModeChangeRegister.setText(lastChange.changes.join(""));
-  adapter.dispatch("vim-mode-change", { mode: "normal" });
+  adapter.emitVimModeChange( { mode: "normal" });
   if (macroModeState.isRecording) {
     logInsertModeChange(macroModeState);
   }
@@ -2084,7 +2084,7 @@ function handleExternalSelection(adapter: EditorAdapter, vim: VimState) {
   ) {
     vim.visualMode = true;
     vim.visualLine = false;
-    adapter.dispatch("vim-mode-change", { mode: "visual" });
+    adapter.emitVimModeChange( { mode: "visual" });
   }
   if (vim.visualMode) {
     // Bind EditorAdapter selection model to vim selection model.

@@ -1,5 +1,63 @@
 // TUI Test Snapshot v1
 
+exports[`blockwise visual selection can expand horizontally | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  },
+  "9,1": {
+    "inverse": 67108864
+  },
+  "11,1": {
+    "inverse": 0
+  }
+}
+`;
+
 exports[`blockwise visual selection highlights the same column across rows | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
@@ -59,6 +117,70 @@ exports[`blockwise visual selection highlights the same column across rows | 1`]
     "inverse": 67108864
   },
   "2,2": {
+    "inverse": 0
+  }
+}
+`;
+
+exports[`blockwise visual selection stays aligned past empty lines | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  },
+  "6,1": {
+    "inverse": 67108864
+  },
+  "7,1": {
+    "inverse": 0
+  },
+  "6,2": {
+    "inverse": 67108864
+  },
+  "7,2": {
     "inverse": 0
   }
 }

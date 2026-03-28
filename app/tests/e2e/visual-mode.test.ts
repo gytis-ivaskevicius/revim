@@ -59,6 +59,17 @@ test("charwise visual delete removes selected text", async ({ terminal }) => {
   await expect(terminal.getByText(" to ReVim!")).toBeVisible();
 });
 
+test("charwise visual delete removes the full word on later lines", async ({ terminal }) => {
+  await expect(terminal.getByText("Press Ctrl+C to exit.")).toBeVisible();
+  await pressKeys(terminal, ["j", "j", "j", "j", "v", "e", "d"]);
+
+  const bufferText = visibleBuffer(terminal);
+  if (bufferText.includes("Press Ctrl+C to exit.")) {
+    throw new Error(`Expected full word to be deleted:\n${bufferText}`);
+  }
+  await expect(terminal.getByText(" Ctrl+C to exit.")).toBeVisible();
+});
+
 test("linewise visual selection highlights the full line", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
   await pressKeys(terminal, [{ key: "V", shift: true }]);
@@ -87,6 +98,26 @@ test("blockwise visual selection highlights the same column across rows", async 
 
   expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
   expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864);
+
+  await expect(terminal).toMatchSnapshot({ includeColors: true });
+});
+
+test("blockwise visual selection stays aligned past empty lines", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+  await pressKeys(terminal, ["l", "l", "l", "l", "l", { key: "v", ctrl: true }, "j"]);
+
+  expect(cellShift(terminal, 6, 1)?.inverse).toBe(67108864);
+  expect(cellShift(terminal, 6, 2)?.inverse).toBe(67108864);
+
+  await expect(terminal).toMatchSnapshot({ includeColors: true });
+});
+
+test("blockwise visual selection can expand horizontally", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+  await pressKeys(terminal, ["l", "l", "l", "l", "l", "l", "l", "l", { key: "v", ctrl: true }, "l"]);
+
+  expect(cellShift(terminal, 9, 1)?.inverse).toBe(67108864);
+  expect(cellShift(terminal, 11, 1)?.inverse).toBe(0);
 
   await expect(terminal).toMatchSnapshot({ includeColors: true });
 });
