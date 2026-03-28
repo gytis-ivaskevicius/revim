@@ -195,6 +195,7 @@ export class TerminalAdapter {
   replaceStack: string[] = [];
   selectionAnchor: Pos = makePos(0, 0);
   selectionHead: Pos = makePos(0, 0);
+  selections: CmSelection[] = [new CmSelection(makePos(0, 0), makePos(0, 0))];
 
   constructor() {
     const pos = this.readHead();
@@ -210,7 +211,24 @@ export class TerminalAdapter {
   private syncSelection(anchor: Pos, head: Pos) {
     this.selectionAnchor = makePos(anchor.line, anchor.ch);
     this.selectionHead = makePos(head.line, head.ch);
+    this.selections = [new CmSelection(this.selectionAnchor, this.selectionHead)];
     setSelection(anchor.line, anchor.ch, head.line, head.ch);
+  }
+
+  private syncSelections(selections: CmSelection[]) {
+    if (!selections.length) {
+      return;
+    }
+    this.selections = selections.map(
+      (selection) =>
+        new CmSelection(
+          makePos(selection.anchor.line, selection.anchor.ch),
+          makePos(selection.head.line, selection.head.ch)
+        )
+    );
+    const primary = this.selections[0];
+    this.selectionAnchor = makePos(primary.anchor.line, primary.anchor.ch);
+    this.selectionHead = makePos(primary.head.line, primary.head.ch);
   }
 
   dispatch(
@@ -378,7 +396,13 @@ export class TerminalAdapter {
   }
 
   listSelections(): CmSelection[] {
-    return [new CmSelection(this.getCursor("anchor"), this.getCursor("head"))];
+    return this.selections.map(
+      (selection) =>
+        new CmSelection(
+          makePos(selection.anchor.line, selection.anchor.ch),
+          makePos(selection.head.line, selection.head.ch)
+        )
+    );
   }
 
   focus() {
@@ -399,7 +423,7 @@ export class TerminalAdapter {
     });
     setSelections(sels);
     if (ordered[0]) {
-      this.syncSelection(ordered[0].anchor, ordered[0].head);
+      this.syncSelections(ordered);
       setCursorPos(ordered[0].head.line, ordered[0].head.ch);
     }
   }
@@ -410,7 +434,9 @@ export class TerminalAdapter {
   }
 
   getSelections() {
-    return [this.getSelection()];
+    return this.listSelections().map((selection) =>
+      this.getRange(cursorMin(selection.anchor, selection.head), cursorMax(selection.anchor, selection.head))
+    );
   }
 
   replaceSelections(texts: string[]) {

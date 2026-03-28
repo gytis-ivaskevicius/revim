@@ -185,6 +185,30 @@ impl TuiState {
         (line, ch)
     }
 
+    fn index_from_pos(&self, line: u16, ch: u16) -> u32 {
+        let mut offset = 0u32;
+        for i in 0..line {
+            if let Some(text) = self.demo_text.get(i as usize) {
+                offset += text.len() as u32 + 1;
+            }
+        }
+        offset + ch as u32
+    }
+
+    fn pos_from_index(&self, offset: u32) -> (u16, u16) {
+        let mut current_offset = 0u32;
+        for (i, line) in self.demo_text.iter().enumerate() {
+            let line_len = line.len() as u32 + 1;
+            if current_offset + line_len > offset {
+                return (i as u16, (offset - current_offset) as u16);
+            }
+            current_offset += line_len;
+        }
+
+        let last_line = self.max_rows().saturating_sub(1);
+        (last_line, self.get_line(last_line).len() as u16)
+    }
+
     fn sync_primary_selection(&mut self) {
         self.selections = vec![Selection {
             anchor_line: self.anchor_row as u32,
@@ -674,24 +698,56 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
             .lock()
             .unwrap();
 
-        let text = texts.join("\n");
-        let (start_line, start_ch) = (state.anchor_row, state.anchor_col);
-        let (end_line, end_ch) = (state.cursor_row, state.cursor_col);
-
-        state.replace_range(&text, start_line, start_ch, end_line, end_ch);
-        let inserted_lines: Vec<&str> = text.split('\n').collect();
-        let final_line = start_line + inserted_lines.len().saturating_sub(1) as u16;
-        let final_ch = if inserted_lines.len() == 1 {
-            start_ch + inserted_lines[0].len() as u16
+        let replacements = if texts.len() == state.selections.len() {
+            texts
+        } else if texts.len() == 1 {
+            vec![texts[0].clone(); state.selections.len()]
         } else {
-            inserted_lines.last().unwrap_or(&"").len() as u16
+            return Err(to_napi_error(
+                "replaceSelections requires 1 or N replacement texts",
+            ));
         };
-        let (final_line, final_ch) = state.clip_pos(final_line, final_ch);
-        state.anchor_row = final_line;
-        state.anchor_col = final_ch;
-        state.cursor_row = final_line;
-        state.cursor_col = final_ch;
-        state.sync_primary_selection();
+
+        let mut next_selections = Vec::with_capacity(state.selections.len());
+        let mut offset_adjustment: i32 = 0;
+
+        for (selection, text) in state
+            .selections
+            .clone()
+            .into_iter()
+            .zip(replacements.into_iter())
+        {
+            let start_line = selection.anchor_line as u16;
+            let start_ch = selection.anchor_ch as u16;
+            let end_line = selection.head_line as u16;
+            let end_ch = selection.head_ch as u16;
+            let start_index = state.index_from_pos(start_line, start_ch) as i32 + offset_adjustment;
+            let end_index = state.index_from_pos(end_line, end_ch) as i32 + offset_adjustment;
+            let start_pos = state.pos_from_index(start_index.max(0) as u32);
+            let end_pos = state.pos_from_index(end_index.max(0) as u32);
+
+            state.replace_range(&text, start_pos.0, start_pos.1, end_pos.0, end_pos.1);
+
+            let inserted_len = text.len() as i32;
+            let removed_len = (end_index - start_index).max(0);
+            let final_index = start_index + inserted_len;
+            offset_adjustment += inserted_len - removed_len;
+            let (final_line, final_ch) = state.pos_from_index(final_index.max(0) as u32);
+            next_selections.push(Selection {
+                anchor_line: final_line as u32,
+                anchor_ch: final_ch as u32,
+                head_line: final_line as u32,
+                head_ch: final_ch as u32,
+            });
+        }
+
+        state.selections = next_selections.clone();
+        if let Some(primary) = next_selections.first() {
+            state.anchor_row = primary.anchor_line as u16;
+            state.anchor_col = primary.anchor_ch as u16;
+            state.cursor_row = primary.head_line as u16;
+            state.cursor_col = primary.head_ch as u16;
+        }
     }
     render_frame_internal()?;
     Ok(())
@@ -839,10 +895,22 @@ pub fn push_undo_stop() -> Result<()> {
 #[napi]
 pub fn trigger_action(action: String) -> Result<()> {
     match action.as_str() {
-        "redo" | "undo" | "editor.action.insertLineAfter" | "formatSelection" => {}
-        _ => {}
+        "redo" | "undo" | "formatSelection" => Ok(()),
+        "editor.action.insertLineAfter" => {
+            let cursor = get_cursor_pos()?;
+            let line = get_line(cursor.line)?;
+            replace_range(
+                format!("\n{}", line),
+                cursor.line,
+                line.len() as u32,
+                cursor.line,
+                line.len() as u32,
+            )
+        }
+        _ => Err(to_napi_error(format!(
+            "Unsupported editor action: {action}"
+        ))),
     }
-    Ok(())
 }
 
 #[napi]
