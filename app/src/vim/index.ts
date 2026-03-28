@@ -166,10 +166,11 @@ export class VimMode implements EventTarget {
     const typeListeners = this.listeners_.get(event.type);
     if (typeListeners) {
       for (const listener of typeListeners) {
-        const callback = Reflect.has(listener, "handleEvent")
-          ? (listener as EventListenerObject).handleEvent
-          : (listener as EventListener);
-        callback(event);
+        if (Reflect.has(listener, "handleEvent")) {
+          (listener as EventListenerObject).handleEvent(event);
+        } else {
+          (listener as EventListener)(event);
+        }
         if (event.cancelable && event.defaultPrevented) {
           break;
         }
