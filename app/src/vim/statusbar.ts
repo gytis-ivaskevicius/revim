@@ -6,14 +6,27 @@ export interface ModeChangeEvent {
   subMode?: SubMode;
 }
 
+export interface StatusBarKeyEvent {
+  key: string;
+  selectionStart?: number;
+  selectionEnd?: number;
+  value?: string;
+  ctrlKey?: boolean;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  metaKey?: boolean;
+  stopPropagation?: () => void;
+  preventDefault?: () => void;
+}
+
 export interface StatusBarInputOptions {
   onKeyDown?: (
-    evt: any,
+    evt: StatusBarKeyEvent,
     text: string,
     close: (value?: string) => void
   ) => boolean;
   onKeyUp?: (
-    evt: any,
+    evt: StatusBarKeyEvent,
     text: string,
     close: (value?: string) => void
   ) => void;

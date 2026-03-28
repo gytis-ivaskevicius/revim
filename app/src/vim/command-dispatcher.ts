@@ -220,7 +220,7 @@ export class CommandDispatcher {
       }
     };
     const onPromptKeyUp = (
-      e: KeyboardEvent,
+      e: import("./statusbar").StatusBarKeyEvent,
       query: string,
       close: (input?: string) => void
     ) => {
@@ -228,17 +228,11 @@ export class CommandDispatcher {
       let up: boolean;
       let offset: number;
       if (keyName == "Up" || keyName == "Down") {
-        const target = e.target as any;
         up = keyName == "Up" ? true : false;
-        offset = e.target ? target.selectionEnd! : 0;
+        offset = e.selectionEnd || 0;
         query =
           vimGlobalState.searchHistoryController.nextMatch(query, up) || "";
         close(query);
-        if (offset && e.target)
-          target.selectionEnd = target.selectionStart = Math.min(
-            offset,
-            target.value.length
-          );
       } else {
         if (
           keyName != "Left" &&
@@ -269,7 +263,7 @@ export class CommandDispatcher {
       }
     };
     const onPromptKeyDown = (
-      e: KeyboardEvent,
+      e: import("./statusbar").StatusBarKeyEvent,
       query: string,
       close: (text?: string) => void
     ): boolean => {
@@ -365,7 +359,7 @@ export class CommandDispatcher {
       exCommandDispatcher.processCommand(adapter, input);
     };
     const onPromptKeyDown = (
-      e: KeyboardEvent,
+      e: import("./statusbar").StatusBarKeyEvent,
       input: string,
       close: (value?: string) => void
     ): boolean => {
@@ -385,19 +379,13 @@ export class CommandDispatcher {
         close();
         adapter.focus();
       }
-      const target = e.target as any;
       if (keyName == "Up" || keyName == "Down") {
         stopEvent(e);
         up = keyName == "Up" ? true : false;
-        offset = target ? target.selectionEnd : 0;
+        offset = e.selectionEnd || 0;
         input =
           vimGlobalState.exCommandHistoryController.nextMatch(input, up) || "";
         close(input);
-        if (offset && target)
-          target.selectionEnd = target.selectionStart = Math.min(
-            offset,
-            target.value.length
-          );
       } else if (keyName == "Ctrl-U") {
         // Ctrl-U clears input.
         stopEvent(e);
