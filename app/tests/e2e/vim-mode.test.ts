@@ -1,112 +1,91 @@
 import { test, expect, KEY_PRESS_DELAY_MS } from "./test-utils.js";
 
-test("insert mode writes text into the buffer", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+const delay = () => new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
 
-  terminal.keyPress("i");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("a");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("b");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("c");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyEscape();
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
+const visibleBuffer = (terminal: { getViewableBuffer: () => string[][] }) =>
+  terminal.getViewableBuffer().map((row) => row.join("")).join("\n");
 
-  const bufferText = terminal.getViewableBuffer().map((row) => row.join("")).join("\n");
-  if (!bufferText.includes("abcWelcome to ReVim!")) {
-    throw new Error(`Unexpected buffer after insert:\n${bufferText}`);
+async function pressKeys(
+  terminal: {
+    keyPress: (key: string) => void;
+    keyEscape: () => void;
+    keyBackspace: () => void;
+    keyDelete: () => void;
+    keyLeft: () => void;
+  },
+  keys: string[]
+) {
+  for (const key of keys) {
+    switch (key) {
+      case "<Esc>":
+        terminal.keyEscape();
+        break;
+      case "<BS>":
+        terminal.keyBackspace();
+        break;
+      case "<Del>":
+        terminal.keyDelete();
+        break;
+      case "<Left>":
+        terminal.keyLeft();
+        break;
+      default:
+        terminal.keyPress(key);
+        break;
+    }
+    await delay();
   }
+}
 
-  terminal.keyPress("x");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  const afterDelete = terminal.getViewableBuffer().map((row) => row.join("")).join("\n");
-  if (!afterDelete.includes("abWelcome to ReVim!")) {
-    throw new Error(`Unexpected buffer after escape+x:\n${afterDelete}`);
-  }
-});
+const bufferCases = [
+  {
+    name: "insert mode writes text into the buffer",
+    keys: ["i", "a", "b", "c", "<Esc>", "x"],
+    expected: "abWelcome to ReVim!",
+  },
+  {
+    name: "insert mode supports backspace",
+    keys: ["i", "a", "b", "c", "<BS>", "<Esc>"],
+    expected: "abWelcome to ReVim!",
+  },
+  {
+    name: "insert mode delete removes the character under the cursor",
+    keys: ["i", "a", "b", "<Esc>", "<Left>", "i", "<Del>", "<Esc>"],
+    expected: "bWelcome to ReVim!",
+  },
+  {
+    name: "W and ciW operate on big words",
+    keys: [
+      "i",
+      "a",
+      "b",
+      ".",
+      "c",
+      "d",
+      " ",
+      "e",
+      "f",
+      "<Esc>",
+      "0",
+      "W",
+      "c",
+      "i",
+      "W",
+      "X",
+      "<Esc>",
+    ],
+    expected: "ab.cd X to ReVim!",
+  },
+];
 
-test("insert mode supports backspace and delete", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+for (const { name, keys, expected } of bufferCases) {
+  test(name, async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+    await pressKeys(terminal, keys);
 
-  terminal.keyPress("i");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("a");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("b");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("c");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyBackspace();
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  let bufferText = terminal.getViewableBuffer().map((row) => row.join("")).join("\n");
-  if (!bufferText.includes("abWelcome to ReVim!")) {
-    throw new Error(`Unexpected buffer after backspace:\n${bufferText}`);
-  }
-
-  terminal.keyEscape();
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-});
-
-test("insert mode delete removes the character under the cursor", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-
-  terminal.keyPress("i");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("a");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("b");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyEscape();
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyLeft();
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("i");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyDelete();
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyEscape();
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-
-  const bufferTextAfterDelete = terminal
-    .getViewableBuffer()
-    .map((row) => row.join(""))
-    .join("\n");
-  if (!bufferTextAfterDelete.includes("bWelcome to ReVim!")) {
-    throw new Error(`Unexpected buffer after delete:\n${bufferTextAfterDelete}`);
-  }
-});
-
-test("W and ciW operate on big words", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
-
-  terminal.keyPress("i");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  for (const key of ["a", "b", ".", "c", "d", " ", "e", "f"]) {
-    terminal.keyPress(key);
-    await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  }
-  terminal.keyEscape();
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-
-  terminal.keyPress("0");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("W");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("c");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("i");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("W");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyPress("X");
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-  terminal.keyEscape();
-  await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
-
-  const bufferText = terminal.getViewableBuffer().map((row) => row.join("")).join("\n");
-  if (!bufferText.includes("ab.cd X to ReVim!")) {
-    throw new Error(`Unexpected buffer after W/ciW:\n${bufferText}`);
-  }
-});
+    const bufferText = visibleBuffer(terminal);
+    if (!bufferText.includes(expected)) {
+      throw new Error(`Unexpected buffer for ${name}:\n${bufferText}`);
+    }
+  });
+}
