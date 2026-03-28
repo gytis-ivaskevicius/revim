@@ -67,7 +67,7 @@ export const actions: Record<string, ActionFunc> = {
         cursorCoords = adapter.charCoords(cursor, "local");
         adapter.scrollTo(undefined, cursorCoords.top);
       } else {
-        // Cursor stays within bounds.  Just reposition the scroll window.
+        // Cursor stays within bounds. Just reposition the scroll view.
         adapter.scrollTo(undefined, newPos);
       }
     } else {
@@ -83,7 +83,7 @@ export const actions: Record<string, ActionFunc> = {
       //    cursorCoords.bottom - adapter.getScrollInfo().clientHeight
       //  );
       //} else {
-      //  // Cursor stays within bounds.  Just reposition the scroll window.
+      //  // Cursor stays within bounds. Just reposition the scroll view.
       //  adapter.scrollTo(null, newPos);
       //}
       adapter.scrollTo(undefined, newPos);
@@ -334,7 +334,7 @@ export const actions: Record<string, ActionFunc> = {
     vim.insertMode = true;
     const insertAt = copyCursor(adapter.getCursor());
     if (insertAt.line === adapter.firstLine() && !actionArgs.after) {
-      // Special case for inserting newline before start of document.
+      // Special case for inserting newline before start of buffer.
       adapter.replaceRange("\n", makePos(adapter.firstLine(), 0));
       adapter.setCursor(adapter.firstLine(), 0);
     } else {

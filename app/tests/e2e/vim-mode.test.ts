@@ -22,7 +22,7 @@ test("insert mode writes text into the buffer", async ({ terminal }) => {
   terminal.keyPress("x");
   await new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
   const afterDelete = terminal.getViewableBuffer().map((row) => row.join("")).join("\n");
-  if (!afterDelete.includes("abWelcome to ReVim!") && !afterDelete.includes("bcWelcome to ReVim!")) {
+  if (!afterDelete.includes("abWelcome to ReVim!")) {
     throw new Error(`Unexpected buffer after escape+x:\n${afterDelete}`);
   }
 });
