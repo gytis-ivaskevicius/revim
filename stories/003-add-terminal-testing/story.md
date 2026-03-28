@@ -17,64 +17,84 @@ This validates the full stack: TypeScript event handling → NAPI-RS bridge → 
 - TypeScript unit tests (future story when more logic moves to TS)
 - Performance benchmarks
 - CI/CD integration (separate story)
-- Windows/macOS testing (Linux-only initially)
 
 ## Implementation approach
 
 ### Architecture
 
-E2E Tests using PTY-based approach:
-- Use `node-pty` to spawn the app in a pseudo-terminal
-- Use `ansi-styles` to parse ANSI escape codes (detect cursor position via reversed colors)
-- Use `ansi-escapes` to generate keypress sequences
-- Capture raw PTY output as snapshots
-- Use Bun's built-in snapshot testing (`expect(snapshot).toMatchSnapshot()`)
+E2E Tests using Microsoft's TUI Test framework:
+- Use `@microsoft/tui-test` to spawn the app in a pseudo-terminal
+- Built-in key handling methods (keyUp, keyDown, keyLeft, keyRight, keyCtrlC, etc.)
+- Built-in terminal rendering with xterm.js for accurate output capture
+- Built-in snapshot testing with `expect(terminal).toMatchSnapshot()`
+- Rich assertions: `toBeVisible()`, `toHaveBgColor()`, `toHaveFgColor()`
+- Multi-platform support (macOS, Linux, Windows)
 
 ### Key Technical Decisions
 
-1. **node-pty 1.1.0** — Spawn app in pseudo-terminal for E2E tests.
-2. **ansi-escapes 7.3.0** — Generate keyboard input sequences.
-3. **ansi-styles 6.2.3** — Parse ANSI codes to detect cursor (reversed colors).
+1. **@microsoft/tui-test 0.0.3** — Microsoft's terminal testing framework. Provides PTY spawning, key handling, and snapshot testing out of the box. Uses xterm.js for accurate terminal rendering.
+
+### App Rendering Details
+
+The app renders inside a bordered block with title "ReVim":
+```
+╭────────────────────────────────────────────────────────────────────────────────╮
+│ReVim                                                                           │
+│Welcome to ReVim!                                                               │
+│This is a demo text for the TUI.                                                │
+│...                                                                             │
+╰────────────────────────────────────────────────────────────────────────────────╯
+```
+
+The cursor is rendered using reversed style (ANSI reverse video) on the character under the cursor. Terminal cursor position from `getCursor()` reflects the actual terminal position, which includes the border offset.
+
+### Snapshot vs Cursor Assertions
+
+Use snapshots for visual regression (full screen content):
+```typescript
+await expect(terminal).toMatchSnapshot({ includeColors: true });
+```
+
+Use `getCursor()` for precise cursor position assertions:
+```typescript
+const cursor = terminal.getCursor();
+expect(cursor.x).toBe(1);  // Column (accounting for border)
+expect(cursor.y).toBe(2);  // Row (accounting for border)
+```
 
 ### E2E Test Flow
 
-```
-1. Create PTY with node-pty (80x30 terminal)
-2. Spawn app: bun run src/index.ts
-3. Wait for initial render (poll for expected content)
-4. Capture raw PTY output as string
-5. Use ansi-styles to detect cursor position (reversed colors)
-6. Assert snapshot matches (includes cursor position via ANSI codes)
-7. Write keypresses to PTY: pty.write(arrowUp) using ansi-escapes
-8. Capture new output, compare snapshot
-```
-
-### Key Encoding
-
-Use `ansi-escapes` library to generate key sequences:
 ```typescript
-import { arrowUp, arrowDown, arrowLeft, arrowRight } from 'ansi-escapes';
-pty.write(arrowUp);
-pty.write(arrowDown);
+import { test, expect } from "@microsoft/tui-test";
+
+test.use({ 
+  program: { file: "bun", args: ["run", "app/src/index.ts"] },
+  rows: 30,
+  columns: 80 
+});
+
+test("initial render shows demo text", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+  await expect(terminal).toMatchSnapshot({ includeColors: true });
+});
 ```
 
-### Snapshot Format
+### Key Handling
 
-E2E snapshots store the raw PTY output including ANSI escape sequences. The cursor appears as reversed text (the character under cursor has inverted colors).
-
+Use built-in terminal methods for key presses:
+```typescript
+terminal.keyUp();       // Arrow up
+terminal.keyDown();     // Arrow down
+terminal.keyLeft();     // Arrow left
+terminal.keyRight();    // Arrow right
+terminal.keyCtrlC();    // Ctrl+C
+terminal.keyPress('a'); // Character key
 ```
-ESC[7mWESC[0melcome to ReVim!
-ESC[0m
-ESC[0mThis is a demo text for the TUI.
-...
-```
-
-For easier debugging, use `strip-ansi` to see plain text version, but actual snapshots retain full ANSI for cursor verification.
 
 ### Test Coverage Goals
 
 E2E tests must cover:
-1. Initial render — screen shows demo text with cursor at (0,0)
+1. Initial render — screen shows demo text with cursor visible
 2. Cursor movement — all four directions
 3. Edge wrapping — cursor wraps at boundaries
 4. Exit handling — Ctrl+C exits cleanly
@@ -85,31 +105,29 @@ E2E tests must cover:
 
 #### Acceptance Criteria
 
-- `app/package.json` includes `node-pty` dependency at version 1.1.0
-- `app/package.json` includes `ansi-styles` dependency at version 6.2.3 (for cursor detection)
-- `app/package.json` includes `ansi-escapes` dependency at version 7.3.0 (for key generation)
-- `bun install` succeeds with new dependencies
+- `app/package.json` includes `@microsoft/tui-test` dependency at version 0.0.3 (devDependency)
+- `bun install` succeeds with new dependency
+- `tui-test.config.ts` exists in project root with configuration:
+  - `testMatch: "app/tests/**/*.test.ts"` to find tests in app/tests/
+  - `retries: 2` for flakiness tolerance
 - `app/tests/e2e/` directory exists
-- `app/tests/e2e/test-helpers.ts` exports `spawnApp()` function that returns PTY instance
-- `app/tests/e2e/test-helpers.ts` exports `captureScreen()` function that returns raw PTY output string
-- `app/tests/e2e/test-helpers.ts` exports `getCursorPosition(screenOutput)` function that parses ANSI to find cursor (row, col)
-- `app/tests/e2e/test-helpers.ts` exports `waitForRender(expectedContent, timeout)` function
+- `just build` has been run (Rust library must be compiled before tests can run)
 
 #### Non-Automatable
 
-- Manual verification: test helpers compile without errors
+- Manual verification: `bunx @microsoft/tui-test` runs without errors from project root
 
 ### Task 2 - Add Initial Render E2E Test
 
 #### Acceptance Criteria
 
 - `app/tests/e2e/initial-render.test.ts` exists
-- Test spawns app in PTY with 80x30 terminal size
-- Test captures initial screen content
-- Snapshot matches expected output showing demo text
-- Snapshot shows cursor at position (0,0) — first character of first line reversed
-- Test cleans up PTY after completion
-- `bun test app/tests/e2e/initial-render.test.ts` passes
+- Test file imports: `import { test, expect } from "@microsoft/tui-test"`
+- Test uses `test.use({ program: { file: "bun", args: ["run", "app/src/index.ts"] } })` to configure app path (run from project root)
+- Test uses `test.use({ rows: 30, columns: 80 })` for terminal size
+- Test uses `await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()` to verify content
+- Test uses `await expect(terminal).toMatchSnapshot({ includeColors: true })` for visual regression (includes cursor style)
+- `bunx @microsoft/tui-test` passes
 
 #### Non-Automatable
 
@@ -117,26 +135,32 @@ E2E tests must cover:
 
 ### Task 3 - Add Cursor Movement E2E Tests
 
+Use parametrized tests to avoid repetition. Test cursor movement in all four directions with wrapping behavior.
+
 #### Acceptance Criteria
 
 - `app/tests/e2e/cursor-movement.test.ts` exists
-- Test case: ArrowDown moves cursor down one row
-  - → cursor row increments by 1
-  - → snapshot shows cursor on second line
+- Uses parametrized test pattern with array of test cases:
+  ```typescript
+  const movements = [
+    { name: "ArrowDown", key: "down", axis: "y", direction: 1 },
+    { name: "ArrowUp", key: "up", axis: "y", direction: -1 },
+    { name: "ArrowRight", key: "right", axis: "x", direction: 1 },
+    { name: "ArrowLeft", key: "left", axis: "x", direction: -1 },
+  ];
+  
+  for (const { name, key, axis, direction } of movements) {
+    test(`${name} moves cursor`, async ({ terminal }) => { ... });
+  }
+  ```
+- Test case: ArrowDown moves cursor down one row (y increments)
 - Test case: ArrowUp from row 0 wraps to last row
-  - → cursor row becomes max_rows - 1
-  - → snapshot shows cursor on last line
-- Test case: ArrowRight moves cursor right one column
-  - → cursor col increments by 1
-  - → snapshot shows cursor moved right
+- Test case: ArrowRight moves cursor right one column (x increments)
 - Test case: ArrowLeft from col 0 wraps to end of line
-  - → cursor col becomes line_length - 1
-  - → snapshot shows cursor at end of line
 - Test case: ArrowDown at last row wraps to row 0
-  - → cursor row becomes 0
-  - → snapshot shows cursor on first line
-- All tests use snapshot comparisons
-- `bun test app/tests/e2e/cursor-movement.test.ts` passes
+- All tests use `terminal.getCursor()` for assertions
+- Tests account for border offset (cursor position includes border)
+- `bunx @microsoft/tui-test` passes
 
 #### Non-Automatable
 
@@ -147,10 +171,10 @@ E2E tests must cover:
 #### Acceptance Criteria
 
 - `app/tests/e2e/exit.test.ts` exists
-- Test sends Ctrl+C (`\x03`) to PTY
-- Test verifies app exits cleanly (PTY closes)
-- Test verifies no error output on exit
-- `bun test app/tests/e2e/exit.test.ts` passes
+- Test sends Ctrl+C via `terminal.keyCtrlC()`
+- Test uses `await new Promise<void>(resolve => terminal.onExit(() => resolve()))` to wait for exit
+- Test verifies exit using `terminal.exitResult?.exitCode === 0`
+- `bunx @microsoft/tui-test` passes
 
 #### Non-Automatable
 
@@ -160,9 +184,9 @@ E2E tests must cover:
 
 #### Acceptance Criteria
 
-- `just test` runs both Rust tests and E2E tests
-- `just test-rust` runs only Rust unit tests
-- `just test-e2e` runs only E2E tests
+- `just test` runs both Rust tests and E2E tests (in sequence)
+- `just test-rust` runs only Rust unit tests (existing: `cd lib && cargo test`)
+- `just test-e2e` runs only E2E tests: `bunx @microsoft/tui-test`
 - `just lint` unchanged (cargo clippy)
 - `just check` runs tests and linters
 
@@ -177,14 +201,11 @@ E2E tests must cover:
 # macOS: brew install just
 # Linux: cargo install just
 
-# Install Rust dependencies
-cd lib && cargo build
+# Build Rust library (REQUIRED before running tests)
+just build
 
 # Install TypeScript dependencies (including test deps)
-cd ../app && bun install
-
-# Build Rust library
-just build
+cd app && bun install
 
 # Run all tests
 just test
@@ -193,26 +214,27 @@ just test
 just check
 ```
 
-Note: node-pty requires native build tools (build-essential, python3). Ensure these are installed before `bun install`.
+Note: @microsoft/tui-test uses native PTY bindings. Ensure build tools are installed (build-essential on Linux, Xcode on macOS).
 
 ## Technical Context
 
-- **node-pty**: 1.1.0 — Cross-platform PTY for spawning terminal processes. Required for E2E tests.
-- **ansi-escapes**: 7.3.0 — Generate ANSI escape sequences for keyboard input.
-- **ansi-styles**: 6.2.3 — Parse ANSI escape codes to detect cursor position (reversed text).
-- **Bun**: 1.3.9 — TypeScript runtime with built-in test runner and snapshot support.
+- **@microsoft/tui-test**: 0.0.3 — Microsoft's terminal testing framework. Provides PTY spawning, key handling, snapshot testing, and rich assertions. Uses xterm.js for accurate terminal rendering.
+- **Bun**: 1.3.9 — TypeScript runtime. TUI Test supports Bun 1.3.5+.
 - **ratatui**: 0.30.0 — Terminal UI library (existing).
 - **crossterm**: 0.29.0 — Terminal manipulation (existing).
 
-node-pty 1.1.0, ansi-escapes 7.3.0, and ansi-styles 6.2.3 are the latest stable versions.
+@microsoft/tui-test 0.0.3 is the latest stable version.
 
 ## Notes
 
-- E2E tests require a PTY which may not work in all CI environments. Consider Docker-based CI for isolation.
-- Snapshot files should be committed to git for reproducibility.
-- Use `bun test --update` to update snapshots when UI changes intentionally.
-- PTY output includes ANSI escape sequences. Cursor position is indicated by reversed colors (ANSI reverse video code).
-- Cursor detection: look for `\x1b[7m` (reverse on) and `\x1b[0m` (reset) around the cursor character.
+- TUI Test creates a new terminal context for each test, providing full isolation.
+- TUI Test uses xterm.js (same engine as VS Code's terminal) for accurate rendering.
+- Config file: `tui-test.config.ts` in project root (not in app/).
+- Tests run from project root, so app path is `app/src/index.ts`.
+- Snapshot files are stored in `__snapshots__/` directory (relative to test file) and should be committed to git.
+- Use `bunx @microsoft/tui-test --update` to update snapshots when UI changes intentionally.
+- TUI Test supports tracing via `--trace` flag for debugging test failures.
+- Multi-platform: works on macOS, Linux, and Windows with various shells.
 
 ## Data model
 
@@ -220,33 +242,93 @@ Not applicable — no persistent data.
 
 ## Contracts
 
-### E2E Test Helper API
+### TUI Test API
 
 ```typescript
-// app/tests/e2e/test-helpers.ts
-import { arrowUp, arrowDown, arrowLeft, arrowRight, ctrlC } from 'ansi-escapes';
+import { test, expect } from "@microsoft/tui-test";
 
-interface SpawnOptions {
-  rows?: number;    // default: 30
-  cols?: number;    // default: 80
-  env?: Record<string, string>;
+// Configure test with program to run (from project root)
+test.use({ 
+  program: { file: "bun", args: ["run", "app/src/index.ts"] },
+  rows: 30,
+  columns: 80 
+});
+
+test("example test", async ({ terminal }) => {
+  // Key input
+  terminal.keyUp();
+  terminal.keyDown();
+  terminal.keyLeft();
+  terminal.keyRight();
+  terminal.keyCtrlC();
+  terminal.keyPress('a');
+  
+  // Cursor position (actual terminal position, includes border offset)
+  const cursor = terminal.getCursor();
+  // cursor.x — column (0-based)
+  // cursor.y — row (0-based)
+  // cursor.baseY — scroll position
+  
+  // Text assertions
+  await expect(terminal.getByText("text")).toBeVisible();
+  await expect(terminal.getByText(/regex/)).toBeVisible();
+  
+  // Color assertions
+  await expect(terminal.getByText("text")).toHaveFgColor("#FFFFFF");
+  await expect(terminal.getByText("text")).toHaveBgColor("#000000");
+  
+  // Snapshot (includeColors: true captures cursor style)
+  await expect(terminal).toMatchSnapshot();
+  await expect(terminal).toMatchSnapshot({ includeColors: true });
+  
+  // Exit handling
+  const exitPromise = new Promise<void>(resolve => {
+    terminal.onExit(() => resolve());
+  });
+  terminal.keyCtrlC();
+  await exitPromise;
+  expect(terminal.exitResult?.exitCode).toBe(0);
+});
+```
+
+### Configuration File
+
+```typescript
+// tui-test.config.ts (in project root)
+import { defineConfig } from "@microsoft/tui-test";
+
+export default defineConfig({
+  testMatch: "app/tests/**/*.test.ts",
+  retries: 2,
+  trace: true
+});
+```
+
+### Parametrized Test Pattern
+
+```typescript
+import { test, expect } from "@microsoft/tui-test";
+
+test.use({ 
+  program: { file: "bun", args: ["run", "app/src/index.ts"] },
+  rows: 30,
+  columns: 80 
+});
+
+const movements = [
+  { name: "ArrowDown moves down", key: () => terminal.keyDown(), axis: "y", delta: 1 },
+  { name: "ArrowUp moves up", key: () => terminal.keyUp(), axis: "y", delta: -1 },
+  { name: "ArrowRight moves right", key: () => terminal.keyRight(), axis: "x", delta: 1 },
+  { name: "ArrowLeft moves left", key: () => terminal.keyLeft(), axis: "x", delta: -1 },
+];
+
+for (const { name, key, axis, delta } of movements) {
+  test(name, async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible();
+    const before = terminal.getCursor();
+    key();
+    const after = terminal.getCursor();
+    expect(after[axis]).toBe(before[axis] + delta);
+  });
 }
-
-interface AppHandle {
-  pty: IPty;
-  cleanup(): void;
-  sendKey(key: string): void;
-  captureScreen(): string;
-  waitForRender(expected: string | RegExp, timeout?: number): Promise<void>;
-}
-
-interface CursorPosition {
-  row: number;
-  col: number;
-}
-
-function spawnApp(options?: SpawnOptions): Promise<AppHandle>;
-function captureScreen(): string;
-function getCursorPosition(screenOutput: string): CursorPosition;
-function waitForRender(expected: string | RegExp, timeout?: number): Promise<void>;
 ```
