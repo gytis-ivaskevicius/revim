@@ -566,10 +566,10 @@ export class TerminalAdapter {
   }
 
   scrollTo(x?: number, y?: number) {
-    if (!x && !y) {
+    if (x === undefined && y === undefined) {
       return;
     }
-    if (!x && y !== undefined) {
+    if (x === undefined && y !== undefined) {
       scrollTo(y);
     }
   }
@@ -607,6 +607,9 @@ export class TerminalAdapter {
           endLine: lineIdx,
           endCh: match.index + match[0].length,
         });
+        if (match[0].length === 0) {
+          regex.lastIndex += 1;
+        }
       }
     }
 
