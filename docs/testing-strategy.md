@@ -10,36 +10,75 @@ description: Read when writing or modifying tests. Defines framework, file conve
 
 ## Framework & Tooling
 
-- **E2E**: `bun test` + `node-pty` + `ansi-escapes` + `ansi-styles`
+- **E2E**: `@microsoft/tui-test` — Microsoft's terminal testing framework
 - **Rust**: `cargo test`
 
 ## Running Tests
 
 - `just test` — run all tests
-- `just test-e2e` — E2E tests only
+- `just test-e2e` — E2E tests only (via `bunx @microsoft/tui-test`)
 - `just test-rust` — Rust tests only
 - `just check` — tests + linters
 
 ## File Conventions
 
 - E2E: `app/tests/e2e/*.test.ts`
-- Helpers: `app/tests/e2e/test-helpers.ts`
-- Snapshots: `__snapshots__/*.snap`
+- Config: `tui-test.config.ts` (project root)
+- Snapshots: `__snapshots__/*.snap` (relative to test file)
 - Rust: `#[cfg(test)]` in same file
 
 ## E2E Architecture
 
-1. **node-pty** spawns app in pseudo-terminal
-2. **ansi-escapes** sends keypresses
-3. **ansi-styles** detects cursor position (reversed colors)
-4. **Bun snapshots** compare output
+1. **@microsoft/tui-test** spawns app in pseudo-terminal
+2. **xterm.js** renders terminal output accurately
+3. **Built-in assertions** for visibility, colors, snapshots
+4. **Cursor position** via `terminal.getCursor()` (includes border offset)
 
 ```typescript
-import { arrowUp, ctrlC } from 'ansi-escapes';
-pty.write(arrowUp);
+import { test, expect } from "@microsoft/tui-test";
+
+test.use({ program: { file: "bun", args: ["run", "app/src/index.ts"] } });
+
+test("example", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome")).toBeVisible();
+  terminal.keyDown();
+  const cursor = terminal.getCursor();
+  expect(cursor.y).toBe(1);
+});
 ```
+
+## Parametrized Tests
+
+Use parametrized tests to avoid repetition when testing similar behaviors:
+
+```typescript
+const movements = [
+  { name: "ArrowDown", key: () => terminal.keyDown(), axis: "y", delta: 1 },
+  { name: "ArrowUp", key: () => terminal.keyUp(), axis: "y", delta: -1 },
+];
+
+for (const { name, key, axis, delta } of movements) {
+  test(`${name} moves cursor`, async ({ terminal }) => {
+    const before = terminal.getCursor();
+    key();
+    const after = terminal.getCursor();
+    expect(after[axis]).toBe(before[axis] + delta);
+  });
+}
+```
+
+## Snapshot Testing
+
+Use snapshots for visual regression. Include colors to capture cursor style:
+
+```typescript
+await expect(terminal).toMatchSnapshot({ includeColors: true });
+```
+
+Use `getCursor()` for precise position assertions when testing cursor movement.
 
 ## Updates
 
-- Update snapshots: `bun test --update`
+- Update snapshots: `bunx @microsoft/tui-test --update`
+- Enable tracing: `bunx @microsoft/tui-test --trace`
 - Project minimum coverage: 90%
