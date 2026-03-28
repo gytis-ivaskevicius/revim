@@ -4,6 +4,7 @@ bun.lockb
 
 # Build artifacts
 lib/target/
+*.node
 
 # IDE
 .idea/
