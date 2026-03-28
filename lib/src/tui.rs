@@ -773,7 +773,7 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
 }
 
 #[napi]
-pub fn indent_line(line: u32, _indent_right: bool) -> Result<()> {
+pub fn indent_line(line: u32, indent_right: bool) -> Result<()> {
     {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let state = &mut ctx
@@ -784,7 +784,16 @@ pub fn indent_line(line: u32, _indent_right: bool) -> Result<()> {
             .unwrap();
 
         if let Some(line_str) = state.demo_text.get_mut(line as usize) {
-            line_str.insert(0, '\t');
+            if indent_right {
+                line_str.insert(0, '\t');
+            } else if let Some(first_char) = line_str.chars().next() {
+                if first_char == '\t' {
+                    line_str.remove(0);
+                } else if first_char == ' ' {
+                    let remove_count = line_str.chars().take_while(|ch| *ch == ' ').take(2).count();
+                    line_str.drain(0..remove_count);
+                }
+            }
         }
     }
     render_frame_internal()?;
