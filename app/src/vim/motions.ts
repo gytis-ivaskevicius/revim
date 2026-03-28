@@ -640,7 +640,8 @@ function findNextFromAndToInclusive(
   let found = cursor.find(!prev);
 
   // If we haven't moved, go back one more (similar to if i==0 logic in findNext).
-  if (!vim.visualMode && found && cursorEqual(cursor.from(), pos)) {
+  const initialFrom = cursor.from();
+  if (!vim.visualMode && found && initialFrom && cursorEqual(initialFrom, pos)) {
     cursor.find(!prev);
   }
 
@@ -658,7 +659,12 @@ function findNextFromAndToInclusive(
       }
     }
   }
-  return [cursor.from(), cursor.to()];
+  const from = cursor.from();
+  const to = cursor.to();
+  if (!from || !to) {
+    return;
+  }
+  return [from, to];
 }
 
 /**

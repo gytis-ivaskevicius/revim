@@ -243,6 +243,43 @@ export class VimApi {
       if (handleEsc()) {
         return true;
       }
+      const literalMatch = /^'(.)'$/.exec(key);
+      if (literalMatch) {
+        adapter.listSelections().forEach((sel) => {
+          adapter.replaceRange(literalMatch[1], sel.anchor, sel.head);
+        });
+        clearInputState(adapter);
+        return true;
+      }
+      if (key == "<BS>") {
+        adapter.listSelections().forEach((sel) => {
+          const head = sel.head;
+          const start = offsetCursor(head, 0, -1);
+          if (head.line !== start.line || head.ch !== start.ch) {
+            adapter.replaceRange("", start, head);
+          }
+        });
+        clearInputState(adapter);
+        return true;
+      }
+      if (key == "<Del>") {
+        adapter.listSelections().forEach((sel) => {
+          const head = sel.head;
+          const end = offsetCursor(head, 0, 1);
+          if (head.line !== end.line || head.ch !== end.ch) {
+            adapter.replaceRange("", head, end);
+          }
+        });
+        clearInputState(adapter);
+        return true;
+      }
+      if (key.length === 1) {
+        adapter.listSelections().forEach((sel) => {
+          adapter.replaceRange(key, sel.anchor, sel.head);
+        });
+        clearInputState(adapter);
+        return true;
+      }
       let keys = (vim.inputState.keyBuffer = vim.inputState.keyBuffer + key);
       const keysAreChars = key.length == 1;
       if (vim.insertDigraph) {

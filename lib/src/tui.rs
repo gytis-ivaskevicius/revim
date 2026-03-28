@@ -35,6 +35,7 @@ struct TuiState {
     anchor_row: u16,
     anchor_col: u16,
     demo_text: Vec<String>,
+    selections: Vec<Selection>,
 }
 
 #[derive(Clone)]
@@ -63,6 +64,25 @@ impl TuiState {
             anchor_row: 0,
             anchor_col: 0,
             demo_text,
+            selections: vec![Selection {
+                anchor_line: 0,
+                anchor_ch: 0,
+                head_line: 0,
+                head_ch: 0,
+            }],
+        }
+    }
+
+    fn ordered_range(
+        start_line: u16,
+        start_ch: u16,
+        end_line: u16,
+        end_ch: u16,
+    ) -> (u16, u16, u16, u16) {
+        if start_line < end_line || (start_line == end_line && start_ch <= end_ch) {
+            (start_line, start_ch, end_line, end_ch)
+        } else {
+            (end_line, end_ch, start_line, start_ch)
         }
     }
 
@@ -86,7 +106,10 @@ impl TuiState {
     }
 
     fn get_range(&self, start_line: u16, start_ch: u16, end_line: u16, end_ch: u16) -> String {
-        if start_line as usize >= self.demo_text.len() {
+        let (start_line, start_ch, end_line, end_ch) =
+            Self::ordered_range(start_line, start_ch, end_line, end_ch);
+        if start_line as usize >= self.demo_text.len() || end_line as usize >= self.demo_text.len()
+        {
             return String::new();
         }
         let start_line_str = &self.demo_text[start_line as usize];
@@ -122,20 +145,36 @@ impl TuiState {
             return;
         }
 
-        if start_line == end_line {
-            if let Some(line_str) = self.demo_text.get_mut(start_line as usize) {
-                let end_ch = end_ch.min(line_str.len() as u16);
-                let start_ch = start_ch.min(end_ch);
-                line_str.replace_range(start_ch as usize..end_ch as usize, text);
-            }
-        } else {
-            // Simple replacement: just replace start line portion
-            if let Some(line_str) = self.demo_text.get_mut(start_line as usize) {
-                let end_ch = line_str.len() as u16;
-                let start_ch = start_ch.min(end_ch);
-                line_str.replace_range(start_ch as usize.., text);
-            }
+        let (start_line, start_ch, end_line, end_ch) =
+            Self::ordered_range(start_line, start_ch, end_line, end_ch);
+        if end_line as usize >= self.demo_text.len() {
+            return;
         }
+
+        let start_line_str = self.demo_text[start_line as usize].clone();
+        let end_line_str = self.demo_text[end_line as usize].clone();
+        let start_ch = start_ch.min(start_line_str.len() as u16);
+        let end_ch = end_ch.min(end_line_str.len() as u16);
+        let prefix = start_line_str[..start_ch as usize].to_string();
+        let suffix = end_line_str[end_ch as usize..].to_string();
+        let mut replacement_lines: Vec<String> =
+            text.split('\n').map(|line| line.to_string()).collect();
+
+        if replacement_lines.is_empty() {
+            replacement_lines.push(String::new());
+        }
+
+        let new_lines = if replacement_lines.len() == 1 {
+            vec![format!("{}{}{}", prefix, replacement_lines[0], suffix)]
+        } else {
+            let last_index = replacement_lines.len() - 1;
+            replacement_lines[0] = format!("{}{}", prefix, replacement_lines[0]);
+            replacement_lines[last_index] = format!("{}{}", replacement_lines[last_index], suffix);
+            replacement_lines
+        };
+
+        self.demo_text
+            .splice(start_line as usize..=end_line as usize, new_lines);
     }
 
     fn clip_pos(&self, line: u16, ch: u16) -> (u16, u16) {
@@ -144,6 +183,15 @@ impl TuiState {
         let max_ch = self.get_line(line).len() as u16;
         let ch = ch.min(max_ch);
         (line, ch)
+    }
+
+    fn sync_primary_selection(&mut self) {
+        self.selections = vec![Selection {
+            anchor_line: self.anchor_row as u32,
+            anchor_ch: self.anchor_col as u32,
+            head_line: self.cursor_row as u32,
+            head_ch: self.cursor_col as u32,
+        }];
     }
 }
 
@@ -383,6 +431,7 @@ pub fn move_cursor(direction: String) -> Result<CursorPosition> {
             .unwrap();
         state.cursor_row = row;
         state.cursor_col = col;
+        state.sync_primary_selection();
     }
 
     render_frame_internal()?;
@@ -448,6 +497,7 @@ pub fn set_cursor_pos(line: u32, ch: u32) -> Result<()> {
         let (line, ch) = state.clip_pos(line, ch);
         state.cursor_row = line;
         state.cursor_col = ch;
+        state.sync_primary_selection();
     }
     render_frame_internal()?;
     Ok(())
@@ -494,6 +544,19 @@ pub fn replace_range(
             end_line as u16,
             end_ch as u16,
         );
+        let inserted_lines: Vec<&str> = text.split('\n').collect();
+        let final_line = start_line as u16 + inserted_lines.len().saturating_sub(1) as u16;
+        let final_ch = if inserted_lines.len() == 1 {
+            start_ch as u16 + inserted_lines[0].len() as u16
+        } else {
+            inserted_lines.last().unwrap_or(&"").len() as u16
+        };
+        let (final_line, final_ch) = state.clip_pos(final_line, final_ch);
+        state.anchor_row = final_line;
+        state.anchor_col = final_ch;
+        state.cursor_row = final_line;
+        state.cursor_col = final_ch;
+        state.sync_primary_selection();
     }
     render_frame_internal()?;
     Ok(())
@@ -532,6 +595,7 @@ pub fn set_selection(anchor_line: u32, anchor_ch: u32, head_line: u32, head_ch: 
     state.anchor_col = anchor_ch;
     state.cursor_row = head_line;
     state.cursor_col = head_ch;
+    state.sync_primary_selection();
 
     Ok(())
 }
@@ -546,14 +610,56 @@ pub fn get_selections() -> Result<Vec<String>> {
         .lock()
         .unwrap();
 
-    let (start_line, start_ch) = (state.anchor_row, state.anchor_col);
-    let (end_line, end_ch) = (state.cursor_row, state.cursor_col);
-
-    Ok(vec![state.get_range(start_line, start_ch, end_line, end_ch)])
+    Ok(state
+        .selections
+        .iter()
+        .map(|selection| {
+            state.get_range(
+                selection.anchor_line as u16,
+                selection.anchor_ch as u16,
+                selection.head_line as u16,
+                selection.head_ch as u16,
+            )
+        })
+        .collect())
 }
 
 #[napi]
-pub fn set_selections(_selections: Vec<Selection>) -> Result<()> {
+pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
+    if selections.is_empty() {
+        return Ok(());
+    }
+
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = &mut ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    let clipped = selections
+        .into_iter()
+        .map(|selection| {
+            let (anchor_line, anchor_ch) =
+                state.clip_pos(selection.anchor_line as u16, selection.anchor_ch as u16);
+            let (head_line, head_ch) =
+                state.clip_pos(selection.head_line as u16, selection.head_ch as u16);
+            Selection {
+                anchor_line: anchor_line as u32,
+                anchor_ch: anchor_ch as u32,
+                head_line: head_line as u32,
+                head_ch: head_ch as u32,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let primary = clipped[0].clone();
+    state.anchor_row = primary.anchor_line as u16;
+    state.anchor_col = primary.anchor_ch as u16;
+    state.cursor_row = primary.head_line as u16;
+    state.cursor_col = primary.head_ch as u16;
+    state.selections = clipped;
     Ok(())
 }
 
@@ -573,6 +679,19 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
         let (end_line, end_ch) = (state.cursor_row, state.cursor_col);
 
         state.replace_range(&text, start_line, start_ch, end_line, end_ch);
+        let inserted_lines: Vec<&str> = text.split('\n').collect();
+        let final_line = start_line + inserted_lines.len().saturating_sub(1) as u16;
+        let final_ch = if inserted_lines.len() == 1 {
+            start_ch + inserted_lines[0].len() as u16
+        } else {
+            inserted_lines.last().unwrap_or(&"").len() as u16
+        };
+        let (final_line, final_ch) = state.clip_pos(final_line, final_ch);
+        state.anchor_row = final_line;
+        state.anchor_col = final_ch;
+        state.cursor_row = final_line;
+        state.cursor_col = final_ch;
+        state.sync_primary_selection();
     }
     render_frame_internal()?;
     Ok(())
