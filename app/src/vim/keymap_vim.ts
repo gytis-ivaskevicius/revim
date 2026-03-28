@@ -26,7 +26,7 @@ import TerminalAdapter, {
   Change,
   CmSelection,
   KeyMapEntry,
-} from "./terminal-adapter";
+} from "./adapter";
 import { StringStream } from "./string-stream";
 import { defaultKeymap } from "./default-key-map";
 import { StatusBarInputOptions } from "./statusbar";

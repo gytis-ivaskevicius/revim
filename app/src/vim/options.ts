@@ -1,4 +1,4 @@
-import EditorAdapter from "./terminal-adapter";
+import EditorAdapter from "./adapter";
 import { VimState } from "./types";
 
 export type OptionCallback = (

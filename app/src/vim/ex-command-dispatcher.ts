@@ -1,4 +1,4 @@
-import EditorAdapter from "./terminal-adapter";
+import EditorAdapter from "./adapter";
 import { StringStream } from "./string-stream";
 import { defaultKeymap } from "./default-key-map";
 import {

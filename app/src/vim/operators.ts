@@ -1,5 +1,5 @@
 import { actions } from "./actions";
-import EditorAdapter, { CmSelection } from "./terminal-adapter";
+import EditorAdapter, { CmSelection } from "./adapter";
 import {
   Pos,
   isWhiteSpaceString,

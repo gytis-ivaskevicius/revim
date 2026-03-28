@@ -1,5 +1,5 @@
 import * as StatusBar from "./statusbar";
-import TerminalAdapter from "./terminal-adapter";
+import TerminalAdapter from "./adapter";
 import { initVimAdapter, vimApi } from "./keymap_vim";
 import * as Registers from "./register-controller";
 

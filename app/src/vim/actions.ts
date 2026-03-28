@@ -1,4 +1,4 @@
-import EditorAdapter, { CmSelection } from "./terminal-adapter";
+import EditorAdapter, { CmSelection } from "./adapter";
 import {
   makePos,
   Pos,

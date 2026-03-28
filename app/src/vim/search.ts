@@ -1,4 +1,4 @@
-import EditorAdapter from "./terminal-adapter";
+import EditorAdapter from "./adapter";
 import { vimGlobalState } from "./global";
 import { StringStream } from "./string-stream";
 import { VimState } from "./types";

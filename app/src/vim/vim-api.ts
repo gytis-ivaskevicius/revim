@@ -1,7 +1,7 @@
 import { commandDispatcher } from "./command-dispatcher";
 import { IRegister, defineRegister } from "./register-controller";
 import { ActionFunc, defineAction } from "./actions";
-import TerminalAdapter from "./terminal-adapter";
+import TerminalAdapter from "./adapter";
 import { defaultKeymap, defaultKeymapLength } from "./default-key-map";
 import {
   InsertModeKey,
