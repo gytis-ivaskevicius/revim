@@ -2347,7 +2347,7 @@ defineOption(
         );
         break;
       default:
-        new Error(`Invalid option: background=${value}`);
+        throw new Error(`Invalid option: background=${value}`);
     }
     return value;
   }
