@@ -1,5 +1,5 @@
 import { initTui, shutdownTui, startKeyboardListener } from "@revim/lib";
-import { encodeTerminalKey } from "./terminal-key";
+import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key";
 import { VimMode } from "./vim";
 
 function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: string[] }) {
@@ -13,39 +13,54 @@ async function main() {
   const vimMode = new VimMode();
   vimMode.enable();
   const keepAlive = setInterval(() => {}, 1_000);
-  let shuttingDown = false;
+  let cleanedUp = false;
 
-  const shutdown = (exitCode: number) => {
-    if (shuttingDown) {
+  const cleanup = () => {
+    if (cleanedUp) {
       return;
     }
 
-    shuttingDown = true;
+    cleanedUp = true;
     clearInterval(keepAlive);
     process.removeListener("SIGINT", handleSigint);
     vimMode.disable();
     shutdownTui();
+  };
+
+  const shutdown = (exitCode: number) => {
+    cleanup();
     process.exit(exitCode);
   };
 
   const handleSigint = () => shutdown(0);
   process.on("SIGINT", handleSigint);
 
-  startKeyboardListener((err, event) => {
-    if (err) {
-      console.error("Error:", err);
-      return;
-    }
+  try {
+    startKeyboardListener((err, event) => {
+      try {
+        if (err) {
+          throw err;
+        }
 
-    if (event.key === "c" && event.modifiers.includes("Ctrl")) {
-      shutdown(0);
-      return;
-    }
+        if (
+          event.modifiers.includes("Ctrl") &&
+          normalizeCtrlCharacter(event.key) === "c"
+        ) {
+          shutdown(0);
+          return;
+        }
 
-    processKeyEvent(vimMode, event);
-  });
+        processKeyEvent(vimMode, event);
+      } catch (error) {
+        console.error("Fatal error:", error);
+        shutdown(1);
+      }
+    });
 
-  await new Promise<never>(() => {});
+    await new Promise<never>(() => {});
+  } finally {
+    cleanup();
+  }
 }
 
 main().catch((error) => {
