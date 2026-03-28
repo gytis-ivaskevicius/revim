@@ -9,6 +9,7 @@
     "@revim/lib": "workspace:*"
   },
   "devDependencies": {
+    "@microsoft/tui-test": "0.0.3",
     "@types/node": "^25.5.0"
   }
 }

@@ -15,3 +15,7 @@ lib/target/
 # OS
 .DS_Store
 Thumbs.db
+
+# TUI Test
+.tui-test/
+tui-traces/

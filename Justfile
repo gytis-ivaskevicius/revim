@@ -10,9 +10,16 @@ build:
 dev:
     cd app && bun run dev
 
-# Run tests
-test:
+# Run Rust unit tests
+test-rust:
     cd lib && cargo test
+
+# Run E2E tests
+test-e2e:
+    bunx @microsoft/tui-test
+
+# Run all tests
+test: test-rust test-e2e
 
 # Run linter
 lint:
