@@ -1,24 +1,7 @@
-import { initTui, moveCursor, shutdownTui, startKeyboardListener } from "@revim/lib";
+import { initTui, shutdownTui, startKeyboardListener } from "@revim/lib";
 import { VimMode } from "./vim";
 
 function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: string[] }) {
-  const hasModifiers = event.modifiers.length > 0;
-  if (!hasModifiers) {
-    const directionMap: Record<string, string> = {
-      ArrowUp: "up",
-      ArrowDown: "down",
-      ArrowLeft: "left",
-      ArrowRight: "right",
-    };
-
-    const direction = directionMap[event.key];
-    if (direction) {
-      const pos = moveCursor(direction);
-      vimMode.adapter.setCursor(pos.line, pos.ch);
-      return;
-    }
-  }
-
   const keyMap: Record<string, string> = {
     ArrowUp: "Up",
     ArrowDown: "Down",
