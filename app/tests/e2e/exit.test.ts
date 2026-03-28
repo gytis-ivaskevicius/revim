@@ -1,10 +1,4 @@
-import { test, expect } from "@microsoft/tui-test";
-
-test.use({
-  program: { file: "bun", args: ["run", "app/src/index.ts"] },
-  rows: 30,
-  columns: 80,
-});
+import { test, expect } from "./test-utils.js";
 
 test("Ctrl+C exits cleanly", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome")).toBeVisible();
