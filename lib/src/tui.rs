@@ -584,9 +584,9 @@ pub fn replace_range(
         let inserted_lines: Vec<&str> = text.split('\n').collect();
         let final_line = start_line as u16 + inserted_lines.len().saturating_sub(1) as u16;
         let final_ch = if inserted_lines.len() == 1 {
-            start_ch as u16 + inserted_lines[0].len() as u16
+            start_ch as u16 + inserted_lines[0].chars().count() as u16
         } else {
-            inserted_lines.last().unwrap_or(&"").len() as u16
+            inserted_lines.last().unwrap_or(&"").chars().count() as u16
         };
         let (final_line, final_ch) = state.clip_pos(final_line, final_ch);
         state.anchor_row = final_line;
@@ -741,7 +741,7 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
 
             state.replace_range(&text, start_pos.0, start_pos.1, end_pos.0, end_pos.1);
 
-            let inserted_len = text.len() as i32;
+            let inserted_len = text.chars().count() as i32;
             let removed_len = (end_index - start_index).max(0);
             let final_index = start_index + inserted_len;
             offset_adjustment += inserted_len - removed_len;
@@ -795,15 +795,7 @@ pub fn index_from_pos(line: u32, ch: u32) -> Result<u32> {
         .lock()
         .unwrap();
 
-    let mut offset = 0u32;
-    for i in 0..line {
-        if let Some(l) = state.demo_text.get(i as usize) {
-            offset += l.len() as u32 + 1;
-        }
-    }
-    offset += ch;
-
-    Ok(offset)
+    Ok(state.index_from_pos(line as u16, ch as u16))
 }
 
 #[napi]
@@ -816,21 +808,10 @@ pub fn pos_from_index(offset: u32) -> Result<CursorPosition> {
         .lock()
         .unwrap();
 
-    let mut current_offset = 0u32;
-    for (i, line) in state.demo_text.iter().enumerate() {
-        let line_len = line.len() as u32 + 1;
-        if current_offset + line_len > offset {
-            return Ok(CursorPosition {
-                line: i as u32,
-                ch: offset - current_offset,
-            });
-        }
-        current_offset += line_len;
-    }
-
+    let (line, ch) = state.pos_from_index(offset);
     Ok(CursorPosition {
-        line: state.max_rows() as u32 - 1,
-        ch: state.get_line(state.max_rows() - 1).len() as u32,
+        line: line as u32,
+        ch: ch as u32,
     })
 }
 
@@ -845,13 +826,13 @@ pub fn get_line_first_non_whitespace(line: u32) -> Result<u32> {
         .unwrap();
 
     let line_str = state.get_line(line as u16);
-    for (i, ch) in line_str.char_indices() {
+    for (i, ch) in line_str.chars().enumerate() {
         if !ch.is_whitespace() {
             return Ok(i as u32);
         }
     }
 
-    Ok(line_str.len() as u32)
+    Ok(line_str.chars().count() as u32)
 }
 
 #[napi(object)]

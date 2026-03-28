@@ -1831,8 +1831,8 @@ function doReplace(
     }
   };
   const onPromptKeyDown = (
-    e: KeyboardEvent,
-    _value: any,
+    e: import("./statusbar").StatusBarKeyEvent,
+    _value: string,
     close: () => void
   ) => {
     // Swallow all keys.
