@@ -120,11 +120,11 @@ export const actions: Record<string, ActionFunc> = {
     if (!adapter.state.overwrite) {
       adapter.toggleOverwrite(true);
       adapter.setOption("keyMap", "vim-replace");
-      adapter.dispatch("vim-mode-change", { mode: "replace" });
+      adapter.emitVimModeChange( { mode: "replace" });
     } else {
       adapter.toggleOverwrite(false);
       adapter.setOption("keyMap", "vim-insert");
-      adapter.dispatch("vim-mode-change", { mode: "insert" });
+      adapter.emitVimModeChange( { mode: "insert" });
     }
   },
   enterInsertMode: function (adapter, actionArgs, vim) {
@@ -195,11 +195,11 @@ export const actions: Record<string, ActionFunc> = {
       // Handle Replace-mode as a special case of insert mode.
       adapter.toggleOverwrite(true);
       adapter.setOption("keyMap", "vim-replace");
-      adapter.dispatch("vim-mode-change", { mode: "replace" });
+      adapter.emitVimModeChange( { mode: "replace" });
     } else {
       adapter.toggleOverwrite(false);
       adapter.setOption("keyMap", "vim-insert");
-      adapter.dispatch("vim-mode-change", { mode: "insert" });
+      adapter.emitVimModeChange( { mode: "insert" });
     }
     if (!vimGlobalState.macroModeState.isPlaying) {
       // Only record if not replaying.
@@ -227,7 +227,7 @@ export const actions: Record<string, ActionFunc> = {
         makePos(anchor.line, anchor.ch + repeat - 1)
       );
       vim.sel = new CmSelection(anchor, head);
-      adapter.dispatch("vim-mode-change", {
+      adapter.emitVimModeChange( {
         mode: "visual",
         subMode: vim.visualLine
           ? "linewise"
@@ -245,7 +245,7 @@ export const actions: Record<string, ActionFunc> = {
       // Toggling between modes
       vim.visualLine = !!actionArgs.linewise;
       vim.visualBlock = !!actionArgs.blockwise;
-      adapter.dispatch("vim-mode-change", {
+      adapter.emitVimModeChange( {
         mode: "visual",
         subMode: vim.visualLine
           ? "linewise"
@@ -277,7 +277,7 @@ export const actions: Record<string, ActionFunc> = {
       updateCmSelection(adapter);
       updateMark(adapter, vim, "<", cursorMin(anchor, head));
       updateMark(adapter, vim, ">", cursorMax(anchor, head));
-      adapter.dispatch("vim-mode-change", {
+      adapter.emitVimModeChange( {
         mode: "visual",
         subMode: vim.visualLine
           ? "linewise"

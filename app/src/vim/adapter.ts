@@ -6,6 +6,7 @@ import {
   getRange,
   replaceRange,
   setSelection,
+  setSelection as setNativeSelection,
   setSelections,
   replaceSelections,
   indentLine,
@@ -251,27 +252,28 @@ export class EditorAdapter {
   dispatch(signal: "vim-mode-change", mode: ModeChangeEvent): void;
   dispatch(signal: "vim-keypress", key: string): void;
   dispatch(signal: string, ...args: any[]): void {
-    if (signal === "vim-mode-change") {
-      const [mode] = args as [ModeChangeEvent];
-      if (mode?.mode === "visual") {
-        setVisualMode(
-          mode.subMode === "linewise"
-            ? "line"
-            : mode.subMode === "blockwise"
-            ? "block"
-            : "char"
-        );
-      } else {
-        setVisualMode("");
-      }
-    }
-
     const listeners = this.listeners[signal];
     if (!listeners) {
       return;
     }
 
     listeners.forEach((handler) => handler(...args));
+  }
+
+  emitVimModeChange(mode: ModeChangeEvent) {
+    if (mode.mode === "visual") {
+      if (mode.subMode === "blockwise") {
+        const cursor = this.getCursor();
+        setNativeSelection(cursor.line, cursor.ch, cursor.line, cursor.ch);
+      }
+      setVisualMode(
+        mode.subMode === "linewise" ? "line" : mode.subMode === "blockwise" ? "block" : "char"
+      );
+    } else {
+      setVisualMode("");
+    }
+
+    this.dispatch("vim-mode-change", mode);
   }
 
   on(

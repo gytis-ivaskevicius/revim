@@ -145,7 +145,7 @@ export const motions: Record<string, MotionFunc> = {
       if (vim.visualLine || vim.visualBlock) {
         vim.visualLine = false;
         vim.visualBlock = false;
-        adapter.dispatch("vim-mode-change", {
+        adapter.emitVimModeChange( {
           mode: "visual",
           subMode: "",
         });
@@ -174,7 +174,7 @@ export const motions: Record<string, MotionFunc> = {
       vim.visualMode = true;
       vim.visualLine = false;
       vim.visualBlock = false;
-      adapter.dispatch("vim-mode-change", {
+      adapter.emitVimModeChange( {
         mode: "visual",
         subMode: "",
       });

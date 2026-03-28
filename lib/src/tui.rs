@@ -790,6 +790,32 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
         return Ok(());
     }
 
+    let non_empty_block_selections: Vec<&Selection> = selections
+        .iter()
+        .filter(|selection| selection.anchor_ch != selection.head_ch)
+        .collect();
+    let block_bound_source = if non_empty_block_selections.is_empty() {
+        selections.iter().collect::<Vec<_>>()
+    } else {
+        non_empty_block_selections
+    };
+    let block_bounds = if block_bound_source.is_empty() {
+        None
+    } else {
+        Some((
+            block_bound_source
+                .iter()
+                .map(|selection| selection.anchor_line.min(selection.head_line))
+                .min()
+                .unwrap_or(0),
+            block_bound_source
+                .iter()
+                .map(|selection| selection.anchor_line.max(selection.head_line))
+                .max()
+                .unwrap_or(0),
+        ))
+    };
+
     {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let state = &mut ctx
@@ -817,32 +843,17 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
 
         let primary = clipped[0].clone();
         if state.visual_mode == VisualMode::Block {
-            let min_line = clipped
-                .iter()
-                .map(|selection| selection.anchor_line.min(selection.head_line))
-                .min()
-                .unwrap_or(primary.anchor_line);
-            let max_line = clipped
-                .iter()
-                .map(|selection| selection.anchor_line.max(selection.head_line))
-                .max()
-                .unwrap_or(primary.head_line);
-            let min_col = clipped
-                .iter()
-                .map(|selection| selection.anchor_ch.min(selection.head_ch))
-                .min()
-                .unwrap_or(primary.anchor_ch);
+            let (min_line, max_line) =
+                block_bounds.unwrap_or((primary.anchor_line, primary.head_line));
             let max_col = clipped
                 .iter()
                 .map(|selection| selection.anchor_ch.max(selection.head_ch))
                 .max()
-                .unwrap_or(primary.head_ch)
-                .saturating_sub(1);
+                .unwrap_or(primary.head_ch);
 
             state.anchor_row = min_line as u16;
-            state.anchor_col = min_col as u16;
             state.cursor_row = max_line as u16;
-            state.cursor_col = max_col as u16;
+            state.cursor_col = max_col.saturating_sub(1) as u16;
         } else {
             state.anchor_row = primary.anchor_line as u16;
             state.anchor_col = primary.anchor_ch as u16;
