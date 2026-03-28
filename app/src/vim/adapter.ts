@@ -55,13 +55,13 @@ export class CmSelection {
 }
 
 export class Marker implements Pos {
-  adapter: TerminalAdapter;
+  adapter: EditorAdapter;
   id: number;
   insertRight: boolean = false;
   line: number;
   ch: number;
 
-  constructor(adapter: TerminalAdapter, id: number, line: number, ch: number) {
+  constructor(adapter: EditorAdapter, id: number, line: number, ch: number) {
     this.line = line;
     this.ch = ch;
     this.adapter = adapter;
@@ -79,10 +79,10 @@ export class Marker implements Pos {
 }
 
 export type BindingFunction = (
-  adapter: TerminalAdapter,
+  adapter: EditorAdapter,
   next?: KeyMapEntry
 ) => void;
-type CallFunction = (key: any, adapter: TerminalAdapter) => any;
+type CallFunction = (key: any, adapter: EditorAdapter) => any;
 type Binding = string | BindingFunction | string[];
 
 export interface KeyMapEntry {
@@ -129,21 +129,21 @@ export interface ExCommandOptionalParameters {
   argString?: string;
 }
 
-export class TerminalAdapter {
+export class EditorAdapter {
   static keyMap: Record<string, KeyMapEntry> = {
     default: { find: () => true },
   };
   static commands: Record<
     string,
-    (adapter: TerminalAdapter, params: ExCommandOptionalParameters) => void
+    (adapter: EditorAdapter, params: ExCommandOptionalParameters) => void
   > = {
-    redo: function (adapter: TerminalAdapter) {
+    redo: function (adapter: EditorAdapter) {
       adapter.triggerEditorAction("redo");
     },
-    undo: function (adapter: TerminalAdapter) {
+    undo: function (adapter: EditorAdapter) {
       adapter.triggerEditorAction("undo");
     },
-    newlineAndIndent: function (adapter: TerminalAdapter) {
+    newlineAndIndent: function (adapter: EditorAdapter) {
       adapter.triggerEditorAction("editor.action.insertLineAfter");
     },
   };
@@ -154,7 +154,7 @@ export class TerminalAdapter {
     handle?: (binding: Binding) => boolean
   ): "nothing" | "multi" | "handled" | undefined {
     if (typeof map === "string") {
-      map = TerminalAdapter.keyMap[map];
+      map = EditorAdapter.keyMap[map];
     }
 
     const found = map.find
@@ -175,9 +175,9 @@ export class TerminalAdapter {
 
     if (map.fallthrough) {
       if (!Array.isArray(map.fallthrough))
-        return TerminalAdapter.lookupKey(key, map.fallthrough, handle);
+        return EditorAdapter.lookupKey(key, map.fallthrough, handle);
       for (let i = 0; i < map.fallthrough.length; i++) {
-        const result = TerminalAdapter.lookupKey(key, map.fallthrough[i], handle);
+        const result = EditorAdapter.lookupKey(key, map.fallthrough[i], handle);
         if (result) return result;
       }
     }
@@ -242,8 +242,8 @@ export class TerminalAdapter {
   dispatch(signal: "status-display", message: string, id: string): void;
   dispatch(signal: "status-close-display", id: string): void;
   dispatch(signal: "status-notify", message: string): void;
-  dispatch(signal: "change", adapter: TerminalAdapter, change: Change): void;
-  dispatch(signal: "cursorActivity", adapter: TerminalAdapter): void;
+  dispatch(signal: "change", adapter: EditorAdapter, change: Change): void;
+  dispatch(signal: "cursorActivity", adapter: EditorAdapter): void;
   dispatch(signal: "dispose"): void;
   dispatch(signal: "vim-command-done", reason?: string): void;
   dispatch(signal: "vim-set-clipboard-register"): void;
@@ -277,10 +277,10 @@ export class TerminalAdapter {
     event: "status-display" | "status-notify",
     handler: (message: string) => void
   ): void;
-  on(event: "cursorActivity", handler: (adapter: TerminalAdapter) => void): void;
+  on(event: "cursorActivity", handler: (adapter: EditorAdapter) => void): void;
   on(
     event: "change",
-    handler: (adapter: TerminalAdapter, change: Change) => void
+    handler: (adapter: EditorAdapter, change: Change) => void
   ): void;
   on(event: "dispose", handler: () => void): void;
   on(event: "vim-command-done", handler: (reason?: string) => void): void;
@@ -502,14 +502,14 @@ export class TerminalAdapter {
   }
 
   attach() {
-    const vim = TerminalAdapter.keyMap["vim"];
+    const vim = EditorAdapter.keyMap["vim"];
     if (vim && vim.attach) {
       vim.attach(this);
     }
   }
 
   detach() {
-    const vim = TerminalAdapter.keyMap["vim"];
+    const vim = EditorAdapter.keyMap["vim"];
     if (vim && vim.detach) {
       vim.detach(this);
     }
@@ -883,4 +883,4 @@ export class TerminalAdapter {
   }
 }
 
-export default TerminalAdapter;
+export default EditorAdapter;

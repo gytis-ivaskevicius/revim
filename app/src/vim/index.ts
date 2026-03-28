@@ -1,5 +1,5 @@
 import * as StatusBar from "./statusbar";
-import TerminalAdapter from "./adapter";
+import EditorAdapter from "./adapter";
 import { initVimAdapter, vimApi } from "./keymap_vim";
 import * as Registers from "./register-controller";
 
@@ -35,17 +35,17 @@ type EventHandler<T> = Listener<T> | ListenerObject<T>;
 
 export class VimMode implements EventTarget {
   private statusBar_?: IStatusBar;
-  private adapter_: TerminalAdapter;
+  private adapter_: EditorAdapter;
   private keyBuffer_ = "";
   private attached_ = false;
   private listeners_: Map<string, (EventHandler<Event> | EventHandler<FileEvent>)[]> = new Map();
   private closers_ = new Map<string, () => void>();
 
-  constructor(statusBar?: IStatusBar, adapter?: TerminalAdapter) {
+  constructor(statusBar?: IStatusBar, adapter?: EditorAdapter) {
     this.statusBar_ = statusBar;
 
     initVimAdapter();
-    this.adapter_ = adapter ?? new TerminalAdapter();
+    this.adapter_ = adapter ?? new EditorAdapter();
 
     this.initListeners();
   }
@@ -56,7 +56,7 @@ export class VimMode implements EventTarget {
 
   handleKey(key: string) {
     const keyMapState = this.adapter_.state.keyMap as string;
-    const keymap = TerminalAdapter.keyMap[keyMapState];
+    const keymap = EditorAdapter.keyMap[keyMapState];
     const command = keymap?.call?.(key, this.adapter_);
 
     if (typeof command === "function") {
@@ -127,9 +127,9 @@ export class VimMode implements EventTarget {
       });
     }
 
-    TerminalAdapter.commands.open = (_adapter, params) =>
+    EditorAdapter.commands.open = (_adapter, params) =>
       this.dispatchEvent(new FileEvent("open-file", params.argString || ""));
-    TerminalAdapter.commands.save = (_adapter, params) =>
+    EditorAdapter.commands.save = (_adapter, params) =>
       this.dispatchEvent(new FileEvent("save-file", params.argString || ""));
   }
 
@@ -241,4 +241,4 @@ export class VimMode implements EventTarget {
   }
 }
 
-export { TerminalAdapter };
+export { EditorAdapter };
