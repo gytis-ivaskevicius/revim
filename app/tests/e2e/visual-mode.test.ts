@@ -65,6 +65,16 @@ test("linewise visual selection highlights the full line", async ({ terminal }) 
   await expect(terminal).toMatchSnapshot({ includeColors: true });
 });
 
+test("linewise visual selection highlights empty lines", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+  await pressKeys(terminal, [{ key: "V", shift: true }, "j"]);
+
+  expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+  expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864);
+
+  await expect(terminal).toMatchSnapshot({ includeColors: true });
+});
+
 test("escape clears visual selection", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
   await pressKeys(terminal, ["v", "l", "<Esc>"]);
