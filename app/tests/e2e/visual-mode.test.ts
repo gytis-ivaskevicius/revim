@@ -121,3 +121,30 @@ test("blockwise visual selection can expand horizontally", async ({ terminal }) 
 
   await expect(terminal).toMatchSnapshot({ includeColors: true });
 });
+
+test("blockwise visual selection can expand left after moving down", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible();
+  await pressKeys(terminal, ["l", "l", "l", "l", "l", "l", "l", "l", { key: "v", ctrl: true }, "j", "h"]);
+
+  expect(cellShift(terminal, 8, 1)?.inverse).toBe(67108864);
+  expect(cellShift(terminal, 10, 1)?.inverse).toBe(0);
+  expect(cellShift(terminal, 8, 2)?.inverse).toBe(67108864);
+
+  await expect(terminal).toMatchSnapshot({ includeColors: true });
+});
+
+test("blockwise x deletes columns without joining lines", async ({ terminal }) => {
+  await expect(terminal.getByText("This is a demo text for the TUI.")).toBeVisible();
+  await pressKeys(terminal, ["j", "j", "j", { key: "v", ctrl: true }, "j"]);
+  for (let i = 0; i < 14; i++) {
+    await pressKeys(terminal, ["l"]);
+  }
+  await pressKeys(terminal, ["x"]);
+
+  const bufferText = visibleBuffer(terminal);
+  if (bufferText.includes("demo texUse arrow")) {
+    throw new Error(`Expected block delete to preserve line breaks:\n${bufferText}`);
+  }
+  await expect(terminal.getByText("This is a demo tex")).toBeVisible();
+  await expect(terminal.getByText("Use arrow keys to exit.")).toBeVisible();
+});

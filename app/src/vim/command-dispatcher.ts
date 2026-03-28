@@ -508,10 +508,19 @@ export class CommandDispatcher {
         newHead = copyCursor(origHead);
       }
       if (vim.visualMode) {
-        if (!(vim.visualBlock && newHead.ch === Infinity)) {
+        if (vim.visualBlock && newHead.ch === Infinity) {
+          newHead = makePos(newHead.line, vim.lastHPos);
+        }
+        if (vim.visualBlock && newAnchor && newAnchor.ch === Infinity) {
+          newAnchor = makePos(newAnchor.line, vim.lastHPos);
+        }
+        if (vim.visualBlock && newHead.line !== oldHead.line && newHead.ch < oldHead.ch) {
+          newHead = makePos(newHead.line, oldHead.ch);
+        }
+        if (!vim.visualBlock && newHead.ch !== Infinity) {
           newHead = clipCursorToContent(adapter, newHead);
         }
-        if (newAnchor) {
+        if (newAnchor && !vim.visualBlock) {
           newAnchor = clipCursorToContent(adapter, newAnchor);
         }
         newAnchor = newAnchor || oldAnchor;

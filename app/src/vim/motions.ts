@@ -293,7 +293,10 @@ export const motions: Record<string, MotionFunc> = {
       : posV.line < line;
     if (hasMarkedText) {
       line = posV.line;
-      endCh = posV.ch;
+      endCh = vim.visualBlock ? vim.lastHPos : posV.ch;
+    }
+    if (vim.visualBlock && !Number.isFinite(posV.ch)) {
+      endCh = vim.lastHPos;
     }
     // Vim go to line begin or line end when cursor at first/last line and
     // move to previous/next line is triggered.
@@ -311,6 +314,8 @@ export const motions: Record<string, MotionFunc> = {
     if (motionArgs.toFirstChar) {
       endCh = findFirstNonWhiteSpaceCharacter(adapter.getLine(line));
       vim.lastHPos = endCh;
+    } else if (vim.visualBlock) {
+      endCh = vim.lastHPos;
     }
     vim.lastHSPos = adapter.charCoords(makePos(line, endCh), "div").left;
     return makePos(line, endCh);
