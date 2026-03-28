@@ -590,7 +590,7 @@ export class TerminalAdapter {
 
     const query = typeof pattern === "string" ? pattern : pattern.source;
     const context = this;
-    let lastSearch: { line: number; ch: number } | null = null;
+    let currentIndex = -1;
 
     const allMatches: { line: number; ch: number; endLine: number; endCh: number }[] = [];
     let lineCount = this.lineCount();
@@ -624,50 +624,66 @@ export class TerminalAdapter {
         if (!allMatches || !allMatches.length) {
           return false;
         }
-        const match = allMatches[index];
-        lastSearch = { line: match.line, ch: match.ch };
-        return lastSearch;
+        currentIndex = Math.max(0, Math.min(index, allMatches.length - 1));
+        const match = allMatches[currentIndex];
+        return { line: match.line, ch: match.ch };
       },
       find(back: boolean) {
         if (!allMatches || !allMatches.length) {
           return false;
         }
 
-        let match;
-        if (back) {
-          for (let i = allMatches.length - 1; i >= 0; i--) {
-            const m = allMatches[i];
-            if (m.line < startPos.line || (m.line === startPos.line && m.ch < startPos.ch)) {
-              match = m;
-              break;
+        if (currentIndex === -1) {
+          if (back) {
+            for (let i = allMatches.length - 1; i >= 0; i--) {
+              const match = allMatches[i];
+              if (
+                match.line < startPos.line ||
+                (match.line === startPos.line && match.ch < startPos.ch)
+              ) {
+                currentIndex = i;
+                break;
+              }
+            }
+            if (currentIndex === -1) {
+              currentIndex = allMatches.length - 1;
+            }
+          } else {
+            for (let i = 0; i < allMatches.length; i++) {
+              const match = allMatches[i];
+              if (
+                match.line > startPos.line ||
+                (match.line === startPos.line && match.ch >= startPos.ch)
+              ) {
+                currentIndex = i;
+                break;
+              }
+            }
+            if (currentIndex === -1) {
+              currentIndex = 0;
             }
           }
         } else {
-          for (let i = 0; i < allMatches.length; i++) {
-            const m = allMatches[i];
-            if (m.line > startPos.line || (m.line === startPos.line && m.ch >= startPos.ch)) {
-              match = m;
-              break;
-            }
-          }
+          currentIndex = back
+            ? (currentIndex - 1 + allMatches.length) % allMatches.length
+            : (currentIndex + 1) % allMatches.length;
         }
 
-        if (match) {
-          lastSearch = { line: match.line, ch: match.ch };
-        }
-        return !!match;
+        return currentIndex >= 0;
       },
       from() {
-        return lastSearch ? makePos(lastSearch.line, lastSearch.ch) : undefined;
+        if (currentIndex < 0) {
+          return undefined;
+        }
+        const match = allMatches[currentIndex];
+        return makePos(match.line, match.ch);
       },
       to() {
-        if (!lastSearch) return undefined;
-        for (const m of allMatches) {
-          if (m.line === lastSearch!.line && m.ch === lastSearch!.ch) {
-            return makePos(m.endLine, m.endCh);
-          }
+        if (currentIndex < 0) {
+          return undefined;
         }
-        return undefined;
+        const match = allMatches[currentIndex];
+        return makePos(match.endLine, match.endCh);
       },
       replace(text: string) {
         const from = this.from();
