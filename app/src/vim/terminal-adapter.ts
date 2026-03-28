@@ -203,7 +203,7 @@ export class TerminalAdapter {
 
   private readHead(): Pos {
     const pos = getCursorPos();
-    return makePos(pos.row, pos.col);
+    return makePos(pos.line, pos.ch);
   }
 
   private syncSelection(anchor: Pos, head: Pos) {
@@ -306,8 +306,8 @@ export class TerminalAdapter {
       return "";
     }
     const maxLines = this.lineCount();
-    if (line + 1 > maxLines) {
-      line = maxLines - 1;
+    if (line >= maxLines) {
+      return "";
     }
     return getLine(line);
   }
@@ -337,6 +337,13 @@ export class TerminalAdapter {
     const from = cursorMin(this.getCursor("anchor"), this.getCursor("head"));
     const to = cursorMax(this.getCursor("anchor"), this.getCursor("head"));
     return getRange(from.line, from.ch, to.line, to.ch);
+  }
+
+  getSelectionRange() {
+    return {
+      anchor: this.getCursor("anchor"),
+      head: this.getCursor("head"),
+    };
   }
 
   replaceRange(text: string, start: Pos, end?: Pos) {
@@ -430,7 +437,7 @@ export class TerminalAdapter {
 
   clipPos(p: Pos): Pos {
     const result = clipPos(p.line, p.ch);
-    return makePos(result.row, result.col);
+    return makePos(result.line, result.ch);
   }
 
   setBookmark(cursor: Pos, options?: { insertLeft?: boolean }) {
@@ -701,7 +708,7 @@ export class TerminalAdapter {
 
   posFromIndex(offset: number): Pos {
     const result = posFromIndex(offset);
-    return makePos(result.row, result.col);
+    return makePos(result.line, result.ch);
   }
 
   indentLine(line: number, indentRight: boolean = true) {

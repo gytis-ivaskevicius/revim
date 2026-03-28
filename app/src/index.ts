@@ -1,8 +1,25 @@
-import { initTui, shutdownTui, startKeyboardListener } from "@revim/lib";
+import { initTui, moveCursor, shutdownTui, startKeyboardListener } from "@revim/lib";
 import { VimMode } from "./vim";
-import { vimApi } from "./vim/keymap_vim";
+import { TerminalAdapter } from "./vim/terminal-adapter";
 
 function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: string[] }) {
+  const hasModifiers = event.modifiers.length > 0;
+  if (!hasModifiers) {
+    const directionMap: Record<string, string> = {
+      ArrowUp: "up",
+      ArrowDown: "down",
+      ArrowLeft: "left",
+      ArrowRight: "right",
+    };
+
+    const direction = directionMap[event.key];
+    if (direction) {
+      const pos = moveCursor(direction);
+      vimMode.adapter.setCursor(pos.line, pos.ch);
+      return;
+    }
+  }
+
   const keyMap: Record<string, string> = {
     ArrowUp: "Up",
     ArrowDown: "Down",
@@ -26,7 +43,13 @@ function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: stri
     key = `Alt-${key}`;
   }
 
-  vimApi.handleKey(vimMode.adapter, key);
+  const keyMapState = vimMode.adapter.state.keyMap as string;
+  const keymap = TerminalAdapter.keyMap[keyMapState];
+  const command = keymap?.call?.(key, vimMode.adapter);
+
+  if (typeof command === "function") {
+    command();
+  }
 }
 
 async function main() {

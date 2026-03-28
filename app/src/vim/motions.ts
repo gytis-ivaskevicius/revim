@@ -956,7 +956,7 @@ function findSentence(
 
     /*
           Set the position to the last non whitespace character on the last
-          valid line in the case that we reach the end of the document.
+          valid line when we reach the end of the buffer.
         */
     line = adapter.getLine(last_valid.ln!);
     last_valid.pos = 0;
@@ -1022,7 +1022,7 @@ function findSentence(
 
     /*
           Set the position to the first non whitespace character on the last
-          valid line in the case that we reach the beginning of the document.
+          valid line when we reach the beginning of the buffer.
         */
     line = adapter.getLine(last_valid.ln!);
     last_valid.pos = 0;

@@ -3,8 +3,8 @@
 export declare function clipPos(line: number, ch: number): CursorPosition
 
 export interface CursorPosition {
-  row: number
-  col: number
+  line: number
+  ch: number
 }
 
 export declare function focusEditor(): void

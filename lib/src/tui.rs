@@ -303,8 +303,8 @@ pub struct KeyboardEvent {
 
 #[napi(object)]
 pub struct CursorPosition {
-    pub row: u32,
-    pub col: u32,
+    pub line: u32,
+    pub ch: u32,
 }
 
 #[napi]
@@ -388,8 +388,8 @@ pub fn move_cursor(direction: String) -> Result<CursorPosition> {
     render_frame_internal()?;
 
     Ok(CursorPosition {
-        row: row as u32,
-        col: col as u32,
+        line: row as u32,
+        ch: col as u32,
     })
 }
 
@@ -427,8 +427,8 @@ pub fn get_cursor_pos() -> Result<CursorPosition> {
         .lock()
         .unwrap();
     Ok(CursorPosition {
-        row: state.cursor_row as u32,
-        col: state.cursor_col as u32,
+        line: state.cursor_row as u32,
+        ch: state.cursor_col as u32,
     })
 }
 
@@ -633,16 +633,16 @@ pub fn pos_from_index(offset: u32) -> Result<CursorPosition> {
         let line_len = line.len() as u32 + 1;
         if current_offset + line_len > offset {
             return Ok(CursorPosition {
-                row: i as u32,
-                col: offset - current_offset,
+                line: i as u32,
+                ch: offset - current_offset,
             });
         }
         current_offset += line_len;
     }
 
     Ok(CursorPosition {
-        row: state.max_rows() as u32 - 1,
-        col: state.get_line(state.max_rows() - 1).len() as u32,
+        line: state.max_rows() as u32 - 1,
+        ch: state.get_line(state.max_rows() - 1).len() as u32,
     })
 }
 
@@ -707,8 +707,8 @@ pub fn clip_pos(line: u32, ch: u32) -> Result<CursorPosition> {
 
     let (line, ch) = state.clip_pos(line as u16, ch as u16);
     Ok(CursorPosition {
-        row: line as u32,
-        col: ch as u32,
+        line: line as u32,
+        ch: ch as u32,
     })
 }
 
