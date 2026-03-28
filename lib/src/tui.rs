@@ -361,7 +361,7 @@ fn render_frame_internal() -> Result<()> {
         visual_mode,
         demo_text,
         highlights,
-        _selections,
+        selections,
     ) = {
         let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
@@ -409,22 +409,25 @@ fn render_frame_internal() -> Result<()> {
                 let highlight_width = line_len.max(1);
                 let selection_range = match visual_mode {
                     VisualMode::None => None,
-                    VisualMode::Char => {
-                        if sel_start_row == sel_end_row {
-                            (row_index == sel_start_row).then_some((
-                                sel_start_col.min(line_len),
-                                (sel_end_col + 1).min(line_len),
-                            ))
-                        } else if row_index == sel_start_row {
-                            Some((sel_start_col.min(line_len), line_len))
-                        } else if row_index == sel_end_row {
-                            Some((0, (sel_end_col + 1).min(highlight_width)))
-                        } else if row_index > sel_start_row && row_index < sel_end_row {
+                    VisualMode::Char => selections.first().and_then(|selection| {
+                        let start_line = selection.anchor_line.min(selection.head_line) as u16;
+                        let end_line = selection.anchor_line.max(selection.head_line) as u16;
+                        let start_col = selection.anchor_ch.min(selection.head_ch) as u16;
+                        let end_col = selection.anchor_ch.max(selection.head_ch) as u16;
+
+                        if start_line == end_line {
+                            (row_index == start_line)
+                                .then_some((start_col.min(line_len), end_col.min(highlight_width)))
+                        } else if row_index == start_line {
+                            Some((start_col.min(line_len), line_len))
+                        } else if row_index == end_line {
+                            Some((0, end_col.min(highlight_width)))
+                        } else if row_index > start_line && row_index < end_line {
                             Some((0, highlight_width))
                         } else {
                             None
                         }
-                    }
+                    }),
                     VisualMode::Line => (row_index >= sel_start_row && row_index <= sel_end_row)
                         .then_some((0, highlight_width)),
                     VisualMode::Block => {
@@ -444,7 +447,15 @@ fn render_frame_internal() -> Result<()> {
             }
 
             if row == cursor_row as usize {
-                build_highlighted_line(line, Some(cursor_col), &row_highlights)
+                build_highlighted_line(
+                    line,
+                    if selection_active {
+                        None
+                    } else {
+                        Some(cursor_col)
+                    },
+                    &row_highlights,
+                )
             } else if !row_highlights.is_empty() {
                 build_highlighted_line(line, None, &row_highlights)
             } else {
@@ -845,7 +856,21 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
         if state.visual_mode == VisualMode::Block {
             let (min_line, max_line) =
                 block_bounds.unwrap_or((primary.anchor_line, primary.head_line));
-            let max_col = clipped
+            let block_col_source: Vec<&Selection> = clipped
+                .iter()
+                .filter(|selection| selection.anchor_ch != selection.head_ch)
+                .collect();
+            let block_col_source = if block_col_source.is_empty() {
+                clipped.iter().collect::<Vec<_>>()
+            } else {
+                block_col_source
+            };
+            let min_col = block_col_source
+                .iter()
+                .map(|selection| selection.anchor_ch.min(selection.head_ch))
+                .min()
+                .unwrap_or(primary.anchor_ch);
+            let max_col = block_col_source
                 .iter()
                 .map(|selection| selection.anchor_ch.max(selection.head_ch))
                 .max()
@@ -853,7 +878,11 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
 
             state.anchor_row = min_line as u16;
             state.cursor_row = max_line as u16;
-            state.cursor_col = max_col.saturating_sub(1) as u16;
+            state.cursor_col = if min_col < state.anchor_col as u32 {
+                min_col as u16
+            } else {
+                max_col.saturating_sub(1) as u16
+            };
         } else {
             state.anchor_row = primary.anchor_line as u16;
             state.anchor_col = primary.anchor_ch as u16;
@@ -910,32 +939,40 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
             ));
         };
 
-        let mut next_selections = Vec::with_capacity(state.selections.len());
-        let mut offset_adjustment: i32 = 0;
-
-        for (selection, text) in state
+        let mut operations = state
             .selections
             .clone()
             .into_iter()
             .zip(replacements.into_iter())
-        {
+            .enumerate()
+            .map(|(index, (selection, text))| {
+                let start_line = selection.anchor_line as u16;
+                let start_ch = selection.anchor_ch as u16;
+                let end_line = selection.head_line as u16;
+                let end_ch = selection.head_ch as u16;
+                let start_index = state.index_from_pos(start_line, start_ch);
+                let end_index = state.index_from_pos(end_line, end_ch);
+
+                (index, selection, text, start_index, end_index)
+            })
+            .collect::<Vec<_>>();
+        operations.sort_by(|a, b| b.3.cmp(&a.3).then_with(|| b.4.cmp(&a.4)));
+
+        let mut next_selections = vec![None; operations.len()];
+
+        for (index, selection, text, start_index, end_index) in operations {
             let start_line = selection.anchor_line as u16;
             let start_ch = selection.anchor_ch as u16;
             let end_line = selection.head_line as u16;
             let end_ch = selection.head_ch as u16;
-            let start_index = state.index_from_pos(start_line, start_ch) as i32 + offset_adjustment;
-            let end_index = state.index_from_pos(end_line, end_ch) as i32 + offset_adjustment;
-            let start_pos = state.pos_from_index(start_index.max(0) as u32);
-            let end_pos = state.pos_from_index(end_index.max(0) as u32);
+            let start_pos = state.pos_from_index(start_index);
+            let end_pos = state.pos_from_index(end_index);
 
             state.replace_range(&text, start_pos.0, start_pos.1, end_pos.0, end_pos.1);
 
-            let inserted_len = text.chars().count() as i32;
-            let removed_len = (end_index - start_index).max(0);
-            let final_index = start_index + inserted_len;
-            offset_adjustment += inserted_len - removed_len;
-            let (final_line, final_ch) = state.pos_from_index(final_index.max(0) as u32);
-            next_selections.push(Selection {
+            let final_index = start_index + text.chars().count() as u32;
+            let (final_line, final_ch) = state.pos_from_index(final_index);
+            next_selections[index] = Some(Selection {
                 anchor_line: final_line as u32,
                 anchor_ch: final_ch as u32,
                 head_line: final_line as u32,
@@ -943,6 +980,7 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
             });
         }
 
+        let next_selections = next_selections.into_iter().flatten().collect::<Vec<_>>();
         state.selections = next_selections.clone();
         if let Some(primary) = next_selections.first() {
             state.anchor_row = primary.anchor_line as u16;
