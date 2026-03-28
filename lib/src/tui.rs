@@ -36,6 +36,7 @@ struct TuiState {
     anchor_col: u16,
     demo_text: Vec<String>,
     selections: Vec<Selection>,
+    highlights: Vec<HighlightRange>,
 }
 
 #[derive(Clone)]
@@ -70,6 +71,7 @@ impl TuiState {
                 head_line: 0,
                 head_ch: 0,
             }],
+            highlights: Vec::new(),
         }
     }
 
@@ -273,18 +275,30 @@ fn extract_modifiers(modifiers: KeyModifiers) -> Vec<String> {
     mods
 }
 
-fn build_highlighted_line(line: &str, cursor_col: u16) -> Line<'_> {
+fn build_highlighted_line<'a>(
+    line: &'a str,
+    cursor_col: u16,
+    highlights: &[(u16, u16)],
+) -> Line<'a> {
     let chars: Vec<char> = line.chars().collect();
     let col = cursor_col as usize;
     let spans: Vec<Span> = chars
         .iter()
         .enumerate()
         .map(|(i, ch)| {
-            if i == col {
-                Span::styled(
-                    ch.to_string(),
-                    Style::default().add_modifier(Modifier::REVERSED),
-                )
+            let is_cursor = i == col;
+            let is_highlighted = highlights
+                .iter()
+                .any(|(start, end)| i >= *start as usize && i < *end as usize);
+            let mut style = Style::default();
+            if is_highlighted {
+                style = style.add_modifier(Modifier::UNDERLINED);
+            }
+            if is_cursor {
+                style = style.add_modifier(Modifier::REVERSED);
+            }
+            if is_cursor || is_highlighted {
+                Span::styled(ch.to_string(), style)
             } else {
                 Span::raw(ch.to_string())
             }
@@ -321,7 +335,7 @@ pub fn init_tui() -> Result<()> {
 }
 
 fn render_frame_internal() -> Result<()> {
-    let (cursor_row, cursor_col, demo_text) = {
+    let (cursor_row, cursor_col, demo_text, highlights) = {
         let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
             .as_ref()
@@ -331,15 +345,23 @@ fn render_frame_internal() -> Result<()> {
         let cursor_row = state.cursor_row;
         let cursor_col = state.cursor_col;
         let demo_text: Vec<String> = state.demo_text.clone();
-        (cursor_row, cursor_col, demo_text)
+        let highlights = state.highlights.clone();
+        (cursor_row, cursor_col, demo_text, highlights)
     };
 
     let lines: Vec<Line> = demo_text
         .iter()
         .enumerate()
         .map(|(row, line)| {
+            let row_highlights: Vec<(u16, u16)> = highlights
+                .iter()
+                .filter(|range| range.start_line == row as u32 && range.end_line == row as u32)
+                .map(|range| (range.start_ch as u16, range.end_ch as u16))
+                .collect();
             if row == cursor_row as usize {
-                build_highlighted_line(line, cursor_col)
+                build_highlighted_line(line, cursor_col, &row_highlights)
+            } else if !row_highlights.is_empty() {
+                build_highlighted_line(line, u16::MAX, &row_highlights)
             } else {
                 Line::from(line.as_str())
             }
@@ -952,6 +974,15 @@ pub fn set_replace_mode(_active: bool) -> Result<()> {
 
 #[napi]
 pub fn set_highlights(_ranges: Vec<HighlightRange>) -> Result<()> {
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = &mut ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    state.highlights = _ranges;
     render_frame_internal()
 }
 

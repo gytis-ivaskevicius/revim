@@ -424,7 +424,6 @@ export class TerminalAdapter {
     setSelections(sels);
     if (ordered[0]) {
       this.syncSelections(ordered);
-      setCursorPos(ordered[0].head.line, ordered[0].head.ch);
     }
   }
 
@@ -710,7 +709,29 @@ export class TerminalAdapter {
   }
 
   addOverlay(query: string | RegExp) {
-    // Stub for now
+    const pattern = typeof query === "string" ? new RegExp(this.escapeRegex(query), "g") : query;
+    const ranges: Array<{ startLine: number; startCh: number; endLine: number; endCh: number }> = [];
+
+    for (let lineIdx = 0; lineIdx < this.lineCount(); lineIdx++) {
+      const line = this.getLine(lineIdx);
+      const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+      const regex = new RegExp(pattern.source, flags);
+      let match: RegExpExecArray | null;
+
+      while ((match = regex.exec(line)) !== null) {
+        ranges.push({
+          startLine: lineIdx,
+          startCh: match.index,
+          endLine: lineIdx,
+          endCh: match.index + match[0].length,
+        });
+        if (match[0].length === 0) {
+          regex.lastIndex += 1;
+        }
+      }
+    }
+
+    setHighlights(ranges);
   }
 
   removeOverlay() {
