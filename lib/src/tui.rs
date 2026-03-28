@@ -396,7 +396,7 @@ pub struct CursorPosition {
 pub fn start_keyboard_listener(callback: ThreadsafeFunction<KeyboardEvent>) {
     thread::spawn(move || {
         while TUI_RUNNING.load(Ordering::SeqCst) {
-            if event::poll(Duration::from_millis(100)).is_ok() {
+            if matches!(event::poll(Duration::from_millis(100)), Ok(true)) {
                 if let Ok(Event::Key(key_event)) = event::read() {
                     let key = match key_event.code {
                         KeyCode::Up => "ArrowUp".to_string(),
@@ -875,7 +875,21 @@ pub fn get_scroll_info() -> Result<ScrollInfo> {
 }
 
 #[napi]
-pub fn scroll_to(_y: u32) -> Result<()> {
+pub fn scroll_to(y: u32) -> Result<()> {
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = &mut ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    state.cursor_row = (y as u16).min(state.max_rows().saturating_sub(1));
+    state.cursor_col = state
+        .cursor_col
+        .min(state.current_line_len().saturating_sub(1));
+    state.sync_primary_selection();
+
     render_frame_internal()
 }
 
@@ -904,7 +918,11 @@ pub fn push_undo_stop() -> Result<()> {
 #[napi]
 pub fn trigger_action(action: String) -> Result<()> {
     match action.as_str() {
-        "redo" | "undo" | "formatSelection" => Ok(()),
+        "redo" | "undo" => Ok(()),
+        "formatSelection" => {
+            let cursor = get_cursor_pos()?;
+            indent_line(cursor.line, true)
+        }
         "editor.action.insertLineAfter" => {
             let cursor = get_cursor_pos()?;
             let line = get_line(cursor.line)?;
@@ -938,8 +956,8 @@ pub fn set_highlights(_ranges: Vec<HighlightRange>) -> Result<()> {
 }
 
 #[napi]
-pub fn scroll_to_line(_line: u32, _position: String) -> Result<()> {
-    render_frame_internal()
+pub fn scroll_to_line(line: u32, _position: String) -> Result<()> {
+    scroll_to(line)
 }
 
 #[napi(object)]

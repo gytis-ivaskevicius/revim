@@ -569,7 +569,7 @@ export class TerminalAdapter {
     if (x === undefined && y === undefined) {
       return;
     }
-    if (x === undefined && y !== undefined) {
+    if (y !== undefined) {
       scrollTo(y);
     }
   }
