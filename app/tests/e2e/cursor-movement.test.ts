@@ -1,22 +1,21 @@
 import { test, expect, RENDER_DELAY_MS, KEY_PRESS_DELAY_MS } from "./test-utils.js";
 
-test("ArrowDown moves cursor down", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome")).toBeVisible();
-  const before = terminal.getCursor();
-  terminal.keyDown();
-  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS));
-  const after = terminal.getCursor();
-  expect(after.y).toBe(before.y + 1);
-});
+const movements = [
+  { name: "ArrowDown moves cursor down", key: "down", axis: "y" as const, delta: 1 },
+  { name: "ArrowRight moves cursor right", key: "right", axis: "x" as const, delta: 1 },
+];
 
-test("ArrowRight moves cursor right", async ({ terminal }) => {
-  await expect(terminal.getByText("Welcome")).toBeVisible();
-  const before = terminal.getCursor();
-  terminal.keyRight();
-  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS));
-  const after = terminal.getCursor();
-  expect(after.x).toBe(before.x + 1);
-});
+for (const { name, key, axis, delta } of movements) {
+  test(name, async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible();
+    const before = terminal.getCursor();
+    if (key === "down") terminal.keyDown();
+    else if (key === "right") terminal.keyRight();
+    await new Promise((r) => setTimeout(r, RENDER_DELAY_MS));
+    const after = terminal.getCursor();
+    expect(after[axis]).toBe(before[axis] + delta);
+  });
+}
 
 test("ArrowUp from row 0 wraps to last row", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome")).toBeVisible();
