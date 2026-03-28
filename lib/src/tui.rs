@@ -390,7 +390,7 @@ fn render_frame_internal() -> Result<()> {
     };
 
     let selection_active = visual_mode != VisualMode::None;
-    let (sel_start_row, sel_start_col, sel_end_row, sel_end_col) =
+    let (sel_start_row, _, sel_end_row, _) =
         TuiState::ordered_range(anchor_row, anchor_col, cursor_row, cursor_col);
 
     let lines: Vec<Line> = demo_text
@@ -943,7 +943,7 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
             .selections
             .clone()
             .into_iter()
-            .zip(replacements.into_iter())
+            .zip(replacements)
             .enumerate()
             .map(|(index, (selection, text))| {
                 let start_line = selection.anchor_line as u16;
@@ -960,11 +960,7 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
 
         let mut next_selections = vec![None; operations.len()];
 
-        for (index, selection, text, start_index, end_index) in operations {
-            let start_line = selection.anchor_line as u16;
-            let start_ch = selection.anchor_ch as u16;
-            let end_line = selection.head_line as u16;
-            let end_ch = selection.head_ch as u16;
+        for (index, _selection, text, start_index, end_index) in operations {
             let start_pos = state.pos_from_index(start_index);
             let end_pos = state.pos_from_index(end_index);
 
