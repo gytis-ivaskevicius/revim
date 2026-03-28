@@ -20,27 +20,49 @@ use std::time::Duration;
 
 static TUI_RUNNING: AtomicBool = AtomicBool::new(false);
 
+#[derive(Clone)]
+#[napi(object)]
+pub struct Selection {
+    pub anchor_line: u32,
+    pub anchor_ch: u32,
+    pub head_line: u32,
+    pub head_ch: u32,
+}
+
 struct TuiState {
     cursor_row: u16,
     cursor_col: u16,
-    demo_text: &'static [&'static str],
+    anchor_row: u16,
+    anchor_col: u16,
+    demo_text: Vec<String>,
+}
+
+#[derive(Clone)]
+#[napi(object)]
+pub struct HighlightRange {
+    pub start_line: u32,
+    pub start_ch: u32,
+    pub end_line: u32,
+    pub end_ch: u32,
 }
 
 impl TuiState {
     fn new() -> Self {
-        const DEMO_TEXT: &[&str] = &[
-            "Welcome to ReVim!",
-            "",
-            "This is a demo text for the TUI.",
-            "Use arrow keys to move the cursor.",
-            "Press Ctrl+C to exit.",
-            "",
-            "The cursor wraps around edges.",
+        let demo_text = vec![
+            "Welcome to ReVim!".to_string(),
+            "".to_string(),
+            "This is a demo text for the TUI.".to_string(),
+            "Use arrow keys to move the cursor.".to_string(),
+            "Press Ctrl+C to exit.".to_string(),
+            "".to_string(),
+            "The cursor wraps around edges.".to_string(),
         ];
         Self {
             cursor_row: 0,
             cursor_col: 0,
-            demo_text: DEMO_TEXT,
+            anchor_row: 0,
+            anchor_col: 0,
+            demo_text,
         }
     }
 
@@ -55,10 +77,78 @@ impl TuiState {
             .unwrap_or(0)
             .max(1)
     }
+
+    fn get_line(&self, line: u16) -> String {
+        self.demo_text
+            .get(line as usize)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    fn get_range(&self, start_line: u16, start_ch: u16, end_line: u16, end_ch: u16) -> String {
+        if start_line as usize >= self.demo_text.len() {
+            return String::new();
+        }
+        let start_line_str = &self.demo_text[start_line as usize];
+        if start_line == end_line {
+            let end_ch = end_ch.min(start_line_str.len() as u16);
+            let start_ch = start_ch.min(end_ch);
+            return start_line_str[start_ch as usize..end_ch as usize].to_string();
+        }
+        let mut result = start_line_str[start_ch as usize..].to_string();
+        for i in (start_line + 1)..end_line {
+            if let Some(line) = self.demo_text.get(i as usize) {
+                result.push('\n');
+                result.push_str(line);
+            }
+        }
+        if let Some(end_line_str) = self.demo_text.get(end_line as usize) {
+            result.push('\n');
+            let end_ch = end_ch.min(end_line_str.len() as u16);
+            result.push_str(&end_line_str[..end_ch as usize]);
+        }
+        result
+    }
+
+    fn replace_range(
+        &mut self,
+        text: &str,
+        start_line: u16,
+        start_ch: u16,
+        end_line: u16,
+        end_ch: u16,
+    ) {
+        if start_line as usize >= self.demo_text.len() {
+            return;
+        }
+
+        if start_line == end_line {
+            if let Some(line_str) = self.demo_text.get_mut(start_line as usize) {
+                let end_ch = end_ch.min(line_str.len() as u16);
+                let start_ch = start_ch.min(end_ch);
+                line_str.replace_range(start_ch as usize..end_ch as usize, text);
+            }
+        } else {
+            // Simple replacement: just replace start line portion
+            if let Some(line_str) = self.demo_text.get_mut(start_line as usize) {
+                let end_ch = line_str.len() as u16;
+                let start_ch = start_ch.min(end_ch);
+                line_str.replace_range(start_ch as usize.., text);
+            }
+        }
+    }
+
+    fn clip_pos(&self, line: u16, ch: u16) -> (u16, u16) {
+        let max_line = self.max_rows().saturating_sub(1);
+        let line = line.min(max_line);
+        let max_ch = self.get_line(line).len() as u16;
+        let ch = ch.min(max_ch);
+        (line, ch)
+    }
 }
 
 struct TuiContext {
-    state: TuiState,
+    state: Mutex<TuiState>,
     terminal: Terminal<CrosstermBackend<std::io::Stdout>>,
 }
 
@@ -68,12 +158,20 @@ fn to_napi_error<E: std::fmt::Display>(e: E) -> Error {
     Error::from_reason(e.to_string())
 }
 
-fn wrap_decrement(val: u16, max: u16) -> u16 {
-    (val + max - 1) % max
+fn wrap_decrement_u16(val: u16, max: u16) -> u16 {
+    if max == 0 {
+        0
+    } else {
+        (val + max - 1) % max
+    }
 }
 
-fn wrap_increment(val: u16, max: u16) -> u16 {
-    (val + 1) % max
+fn wrap_increment_u16(val: u16, max: u16) -> u16 {
+    if max == 0 {
+        0
+    } else {
+        (val + 1) % max
+    }
 }
 
 fn extract_modifiers(modifiers: KeyModifiers) -> Vec<String> {
@@ -127,7 +225,7 @@ pub fn init_tui() -> Result<()> {
     })?;
 
     *TUI_CONTEXT.lock().map_err(to_napi_error)? = Some(TuiContext {
-        state: TuiState::new(),
+        state: Mutex::new(TuiState::new()),
         terminal,
     });
 
@@ -138,14 +236,18 @@ pub fn init_tui() -> Result<()> {
 }
 
 fn render_frame_internal() -> Result<()> {
-    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let context = ctx
-        .as_mut()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+    let (cursor_row, cursor_col, demo_text) = {
+        let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let context = ctx
+            .as_ref()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
 
-    let cursor_row = context.state.cursor_row;
-    let cursor_col = context.state.cursor_col;
-    let demo_text = context.state.demo_text;
+        let state = context.state.lock().unwrap();
+        let cursor_row = state.cursor_row;
+        let cursor_col = state.cursor_col;
+        let demo_text: Vec<String> = state.demo_text.clone();
+        (cursor_row, cursor_col, demo_text)
+    };
 
     let lines: Vec<Line> = demo_text
         .iter()
@@ -154,10 +256,15 @@ fn render_frame_internal() -> Result<()> {
             if row == cursor_row as usize {
                 build_highlighted_line(line, cursor_col)
             } else {
-                Line::from(*line)
+                Line::from(line.as_str())
             }
         })
         .collect();
+
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let context = ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
 
     context
         .terminal
@@ -196,8 +303,8 @@ pub struct KeyboardEvent {
 
 #[napi(object)]
 pub struct CursorPosition {
-    pub row: u16,
-    pub col: u16,
+    pub row: u32,
+    pub col: u32,
 }
 
 #[napi]
@@ -212,6 +319,10 @@ pub fn start_keyboard_listener(callback: ThreadsafeFunction<KeyboardEvent>) {
                         KeyCode::Left => "ArrowLeft".to_string(),
                         KeyCode::Right => "ArrowRight".to_string(),
                         KeyCode::Char(c) => c.to_string(),
+                        KeyCode::Enter => "Enter".to_string(),
+                        KeyCode::Backspace => "Backspace".to_string(),
+                        KeyCode::Tab => "Tab".to_string(),
+                        KeyCode::Esc => "Escape".to_string(),
                         _ => continue,
                     };
 
@@ -229,34 +340,424 @@ pub fn start_keyboard_listener(callback: ThreadsafeFunction<KeyboardEvent>) {
 #[napi]
 pub fn move_cursor(direction: String) -> Result<CursorPosition> {
     let (row, col) = {
+        let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = ctx
+            .as_ref()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .unwrap();
+
+        match direction.as_str() {
+            "up" => (
+                wrap_decrement_u16(state.cursor_row, state.max_rows()),
+                state
+                    .cursor_col
+                    .min(state.current_line_len().saturating_sub(1)),
+            ),
+            "down" => (
+                wrap_increment_u16(state.cursor_row, state.max_rows()),
+                state
+                    .cursor_col
+                    .min(state.current_line_len().saturating_sub(1)),
+            ),
+            "left" => (
+                state.cursor_row,
+                wrap_decrement_u16(state.cursor_col, state.current_line_len()),
+            ),
+            "right" => (
+                state.cursor_row,
+                wrap_increment_u16(state.cursor_col, state.current_line_len()),
+            ),
+            _ => return Err(to_napi_error(format!("Invalid direction: {}", direction))),
+        }
+    };
+
+    {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let state = &mut ctx
             .as_mut()
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
-            .state;
-
-        match direction.as_str() {
-            "up" => {
-                state.cursor_row = wrap_decrement(state.cursor_row, state.max_rows());
-                state.cursor_col = state.cursor_col.min(state.current_line_len() - 1);
-            }
-            "down" => {
-                state.cursor_row = wrap_increment(state.cursor_row, state.max_rows());
-                state.cursor_col = state.cursor_col.min(state.current_line_len() - 1);
-            }
-            "left" => {
-                state.cursor_col = wrap_decrement(state.cursor_col, state.current_line_len());
-            }
-            "right" => {
-                state.cursor_col = wrap_increment(state.cursor_col, state.current_line_len());
-            }
-            _ => return Err(to_napi_error(format!("Invalid direction: {}", direction))),
-        }
-
-        (state.cursor_row, state.cursor_col)
-    };
+            .state
+            .lock()
+            .unwrap();
+        state.cursor_row = row;
+        state.cursor_col = col;
+    }
 
     render_frame_internal()?;
 
-    Ok(CursorPosition { row, col })
+    Ok(CursorPosition {
+        row: row as u32,
+        col: col as u32,
+    })
+}
+
+#[napi]
+pub fn get_line(line: u32) -> Result<String> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+    Ok(state.get_line(line as u16))
+}
+
+#[napi]
+pub fn get_line_count() -> Result<u32> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+    Ok(state.max_rows() as u32)
+}
+
+#[napi]
+pub fn get_cursor_pos() -> Result<CursorPosition> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+    Ok(CursorPosition {
+        row: state.cursor_row as u32,
+        col: state.cursor_col as u32,
+    })
+}
+
+#[napi]
+pub fn set_cursor_pos(line: u32, ch: u32) -> Result<()> {
+    {
+        let line = line as u16;
+        let ch = ch as u16;
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .unwrap();
+
+        let (line, ch) = state.clip_pos(line, ch);
+        state.cursor_row = line;
+        state.cursor_col = ch;
+    }
+    render_frame_internal()?;
+    Ok(())
+}
+
+#[napi]
+pub fn get_range(start_line: u32, start_ch: u32, end_line: u32, end_ch: u32) -> Result<String> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+    Ok(state.get_range(
+        start_line as u16,
+        start_ch as u16,
+        end_line as u16,
+        end_ch as u16,
+    ))
+}
+
+#[napi]
+pub fn replace_range(
+    text: String,
+    start_line: u32,
+    start_ch: u32,
+    end_line: u32,
+    end_ch: u32,
+) -> Result<()> {
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .unwrap();
+
+        state.replace_range(
+            &text,
+            start_line as u16,
+            start_ch as u16,
+            end_line as u16,
+            end_ch as u16,
+        );
+    }
+    render_frame_internal()?;
+    Ok(())
+}
+
+#[napi]
+pub fn get_selection() -> Result<String> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    let (start_line, start_ch) = (state.anchor_row, state.anchor_col);
+    let (end_line, end_ch) = (state.cursor_row, state.cursor_col);
+
+    Ok(state.get_range(start_line, start_ch, end_line, end_ch))
+}
+
+#[napi]
+pub fn set_selection(anchor_line: u32, anchor_ch: u32, head_line: u32, head_ch: u32) -> Result<()> {
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = &mut ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    let (anchor_line, anchor_ch) = state.clip_pos(anchor_line as u16, anchor_ch as u16);
+    let (head_line, head_ch) = state.clip_pos(head_line as u16, head_ch as u16);
+
+    state.anchor_row = anchor_line;
+    state.anchor_col = anchor_ch;
+    state.cursor_row = head_line;
+    state.cursor_col = head_ch;
+
+    Ok(())
+}
+
+#[napi]
+pub fn get_selections() -> Result<Vec<String>> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    let (start_line, start_ch) = (state.anchor_row, state.anchor_col);
+    let (end_line, end_ch) = (state.cursor_row, state.cursor_col);
+
+    Ok(vec![state.get_range(start_line, start_ch, end_line, end_ch)])
+}
+
+#[napi]
+pub fn set_selections(_selections: Vec<Selection>) -> Result<()> {
+    Ok(())
+}
+
+#[napi]
+pub fn replace_selections(texts: Vec<String>) -> Result<()> {
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .unwrap();
+
+        let text = texts.join("\n");
+        let (start_line, start_ch) = (state.anchor_row, state.anchor_col);
+        let (end_line, end_ch) = (state.cursor_row, state.cursor_col);
+
+        state.replace_range(&text, start_line, start_ch, end_line, end_ch);
+    }
+    render_frame_internal()?;
+    Ok(())
+}
+
+#[napi]
+pub fn indent_line(line: u32, _indent_right: bool) -> Result<()> {
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .unwrap();
+
+        if let Some(line_str) = state.demo_text.get_mut(line as usize) {
+            line_str.insert(0, '\t');
+        }
+    }
+    render_frame_internal()?;
+    Ok(())
+}
+
+#[napi]
+pub fn index_from_pos(line: u32, ch: u32) -> Result<u32> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    let mut offset = 0u32;
+    for i in 0..line {
+        if let Some(l) = state.demo_text.get(i as usize) {
+            offset += l.len() as u32 + 1;
+        }
+    }
+    offset += ch;
+
+    Ok(offset)
+}
+
+#[napi]
+pub fn pos_from_index(offset: u32) -> Result<CursorPosition> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    let mut current_offset = 0u32;
+    for (i, line) in state.demo_text.iter().enumerate() {
+        let line_len = line.len() as u32 + 1;
+        if current_offset + line_len > offset {
+            return Ok(CursorPosition {
+                row: i as u32,
+                col: offset - current_offset,
+            });
+        }
+        current_offset += line_len;
+    }
+
+    Ok(CursorPosition {
+        row: state.max_rows() as u32 - 1,
+        col: state.get_line(state.max_rows() - 1).len() as u32,
+    })
+}
+
+#[napi]
+pub fn get_line_first_non_whitespace(line: u32) -> Result<u32> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    let line_str = state.get_line(line as u16);
+    for (i, ch) in line_str.char_indices() {
+        if !ch.is_whitespace() {
+            return Ok(i as u32);
+        }
+    }
+
+    Ok(line_str.len() as u32)
+}
+
+#[napi(object)]
+pub struct ScrollInfo {
+    pub top: u32,
+    pub height: u32,
+    pub client_height: u32,
+}
+
+#[napi]
+pub fn get_scroll_info() -> Result<ScrollInfo> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    Ok(ScrollInfo {
+        top: 0,
+        height: state.max_rows() as u32,
+        client_height: 20,
+    })
+}
+
+#[napi]
+pub fn scroll_to(_y: u32) -> Result<()> {
+    Ok(())
+}
+
+#[napi]
+pub fn clip_pos(line: u32, ch: u32) -> Result<CursorPosition> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+
+    let (line, ch) = state.clip_pos(line as u16, ch as u16);
+    Ok(CursorPosition {
+        row: line as u32,
+        col: ch as u32,
+    })
+}
+
+#[napi]
+pub fn push_undo_stop() -> Result<()> {
+    Ok(())
+}
+
+#[napi]
+pub fn trigger_action(action: String) -> Result<()> {
+    match action.as_str() {
+        "redo" | "undo" | "editor.action.insertLineAfter" | "formatSelection" => {}
+        _ => {}
+    }
+    Ok(())
+}
+
+#[napi]
+pub fn set_vim_mode(_active: bool) -> Result<()> {
+    Ok(())
+}
+
+#[napi]
+pub fn set_replace_mode(_active: bool) -> Result<()> {
+    Ok(())
+}
+
+#[napi]
+pub fn set_highlights(_ranges: Vec<HighlightRange>) -> Result<()> {
+    Ok(())
+}
+
+#[napi]
+pub fn scroll_to_line(_line: u32, _position: String) -> Result<()> {
+    Ok(())
+}
+
+#[napi(object)]
+pub struct VisibleLines {
+    pub top: u32,
+    pub bottom: u32,
+}
+
+#[napi]
+pub fn get_visible_lines() -> Result<VisibleLines> {
+    Ok(VisibleLines { top: 0, bottom: 20 })
+}
+
+#[napi]
+pub fn focus_editor() -> Result<()> {
+    Ok(())
 }
