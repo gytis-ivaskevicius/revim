@@ -54,6 +54,16 @@ export class VimMode implements EventTarget {
     return this.adapter_;
   }
 
+  handleKey(key: string) {
+    const keyMapState = this.adapter_.state.keyMap as string;
+    const keymap = TerminalAdapter.keyMap[keyMapState];
+    const command = keymap?.call?.(key, this.adapter_);
+
+    if (typeof command === "function") {
+      return command();
+    }
+  }
+
   private initListeners() {
     this.adapter_.on("vim-set-clipboard-register", () => {
       this.dispatchEvent(new Event("clipboard"));
@@ -144,6 +154,8 @@ export class VimMode implements EventTarget {
   ): void {
     const typeListeners = this.listeners_.get(type);
     if (!typeListeners) {
+      if (type === "clipboard") {
+      }
       this.listeners_.set(type, [callback]);
     } else {
       typeListeners.push(callback);

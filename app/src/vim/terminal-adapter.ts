@@ -109,19 +109,20 @@ interface Operation {
 
 interface MatchingBracket {
   symbol: string;
+  pair: string;
   mode: "open" | "close";
   regex: RegExp;
 }
 
 const kMatchingBrackets: Record<string, MatchingBracket> = {
-  "(": { symbol: ")", mode: "close", regex: /[()]/ },
-  ")": { symbol: "(", mode: "open", regex: /[()]/ },
-  "[": { symbol: "]", mode: "close", regex: /[[\]]/ },
-  "]": { symbol: "[", mode: "open", regex: /[[\]]/ },
-  "{": { symbol: "}", mode: "close", regex: /[{}]/ },
-  "}": { symbol: "{", mode: "open", regex: /[{}]/ },
-  "<": { symbol: ">", mode: "close", regex: /[<>]/ },
-  ">": { symbol: "<", mode: "open", regex: /[<>]/ },
+  "(": { symbol: "(", pair: ")", mode: "close", regex: /[()]/ },
+  ")": { symbol: ")", pair: "(", mode: "open", regex: /[()]/ },
+  "[": { symbol: "[", pair: "]", mode: "close", regex: /[[\]]/ },
+  "]": { symbol: "]", pair: "[", mode: "open", regex: /[[\]]/ },
+  "{": { symbol: "{", pair: "}", mode: "close", regex: /[{}]/ },
+  "}": { symbol: "}", pair: "{", mode: "open", regex: /[{}]/ },
+  "<": { symbol: "<", pair: ">", mode: "close", regex: /[<>]/ },
+  ">": { symbol: ">", pair: "<", mode: "open", regex: /[<>]/ },
 };
 
 export interface ExCommandOptionalParameters {
@@ -509,11 +510,14 @@ export class TerminalAdapter {
       const curCh = line.charAt(ch);
       const matchable = kMatchingBrackets[curCh];
       if (matchable) {
-        const offset = matchable.mode === "close" ? 1 : 0;
+        const direction = matchable.mode === "close" ? 1 : -1;
+        const offset = direction > 0 ? 1 : -1;
         return this.scanForBracket(
           makePos(cur.line, ch + offset),
-          offset,
-          matchable.regex
+          direction,
+          matchable.regex,
+          matchable.symbol,
+          matchable.pair
         );
       }
     }
@@ -628,8 +632,10 @@ export class TerminalAdapter {
         return undefined;
       },
       replace(text: string) {
-        if (lastSearch) {
-          context.replaceRange(text, makePos(lastSearch.line, lastSearch.ch));
+        const from = this.from();
+        const to = this.to();
+        if (from && to) {
+          context.replaceRange(text, from, to);
         }
       },
     };
@@ -671,35 +677,46 @@ export class TerminalAdapter {
   scanForBracket(
     pos: Pos,
     dir: number,
-    bracketRegex: RegExp
+    bracketRegex: RegExp,
+    openChar?: string,
+    closeChar?: string
   ): { pos: Pos } | undefined {
+    if (dir === 0) {
+      return undefined;
+    }
     let searchLine = pos.line;
     let searchCh = pos.ch;
-    let iterations = 0;
-    const maxIterations = 100;
+    let depth = 0;
 
-    while (iterations < maxIterations) {
+    while (true) {
       if (searchLine < 0 || searchLine >= this.lineCount()) {
         return undefined;
       }
 
       const line = this.getLine(searchLine);
-      const bracketChar = bracketRegex.source;
-
       for (let i = searchCh; i >= 0 && i < line.length; i += dir) {
         const curCh = line[i];
-        const matchingBracket = kMatchingBrackets[curCh];
-        if (matchingBracket && matchingBracket.symbol === bracketChar) {
-          return { pos: makePos(searchLine, i) };
+        if (!bracketRegex.test(curCh)) {
+          continue;
+        }
+        if (openChar && curCh === openChar) {
+          depth += 1;
+          continue;
+        }
+        if (closeChar && curCh === closeChar) {
+          if (depth === 0) {
+            return { pos: makePos(searchLine, i) };
+          }
+          depth -= 1;
         }
       }
 
       searchLine += dir;
-      searchCh = dir > 0 ? 0 : (this.getLine(searchLine).length - 1);
-      iterations++;
+      if (searchLine < 0 || searchLine >= this.lineCount()) {
+        return undefined;
+      }
+      searchCh = dir > 0 ? 0 : this.getLine(searchLine).length - 1;
     }
-
-    return undefined;
   }
 
   indexFromPos(pos: Pos): number {

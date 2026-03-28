@@ -67,7 +67,7 @@ export const actions: Record<string, ActionFunc> = {
         cursorCoords = adapter.charCoords(cursor, "local");
         adapter.scrollTo(undefined, cursorCoords.top);
       } else {
-        // Cursor stays within bounds. Just reposition the scroll view.
+        // Cursor stays within bounds.  Just reposition the scroll window.
         adapter.scrollTo(undefined, newPos);
       }
     } else {
@@ -83,7 +83,7 @@ export const actions: Record<string, ActionFunc> = {
       //    cursorCoords.bottom - adapter.getScrollInfo().clientHeight
       //  );
       //} else {
-      //  // Cursor stays within bounds. Just reposition the scroll view.
+      //  // Cursor stays within bounds.  Just reposition the scroll window.
       //  adapter.scrollTo(null, newPos);
       //}
       adapter.scrollTo(undefined, newPos);
@@ -334,14 +334,16 @@ export const actions: Record<string, ActionFunc> = {
     vim.insertMode = true;
     const insertAt = copyCursor(adapter.getCursor());
     if (insertAt.line === adapter.firstLine() && !actionArgs.after) {
-      // Special case for inserting newline before start of buffer.
+      // Special case for inserting newline before start of document.
       adapter.replaceRange("\n", makePos(adapter.firstLine(), 0));
       adapter.setCursor(adapter.firstLine(), 0);
     } else {
       insertAt.line = actionArgs.after ? insertAt.line : insertAt.line - 1;
       insertAt.ch = lineLength(adapter, insertAt.line);
       adapter.setCursor(insertAt);
-      const newlineFn = EditorAdapter.commands.newlineAndIndent;
+      const newlineFn =
+        EditorAdapter.commands.newlineAndIndentContinueComment ||
+        EditorAdapter.commands.newlineAndIndent;
       newlineFn(adapter, {});
     }
     this.enterInsertMode(adapter, { repeat: actionArgs.repeat }, vim);
@@ -553,7 +555,10 @@ export const actions: Record<string, ActionFunc> = {
     if (replaceWith == "\n") {
       if (!vim.visualMode) adapter.replaceRange("", curStart, curEnd);
       // special case, where vim help says to replace by just one line-break
-      EditorAdapter.commands.newlineAndIndent(adapter, {});
+      (
+        EditorAdapter.commands.newlineAndIndentContinueComment ||
+        EditorAdapter.commands.newlineAndIndent
+      )(adapter, {});
     } else {
       if (vim.visualBlock) {
         // Tabs are split in visua block before replacing
