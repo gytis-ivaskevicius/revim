@@ -1,0 +1,234 @@
+// TUI Test Snapshot v1
+
+exports[`blockwise visual selection highlights the same column across rows | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  },
+  "1,1": {
+    "inverse": 67108864
+  },
+  "2,1": {
+    "inverse": 0
+  }
+}
+`;
+
+exports[`charwise visual selection renders reversed cells | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  },
+  "1,1": {
+    "inverse": 67108864
+  },
+  "4,1": {
+    "inverse": 0
+  }
+}
+`;
+
+exports[`escape clears visual selection | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  },
+  "2,1": {
+    "inverse": 67108864
+  },
+  "3,1": {
+    "inverse": 0
+  }
+}
+`;
+
+exports[`linewise visual selection highlights the full line | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  },
+  "1,1": {
+    "inverse": 67108864
+  },
+  "18,1": {
+    "inverse": 0
+  }
+}
+`;
+

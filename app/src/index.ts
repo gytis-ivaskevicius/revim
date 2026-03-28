@@ -12,29 +12,40 @@ async function main() {
 
   const vimMode = new VimMode();
   vimMode.enable();
+  const keepAlive = setInterval(() => {}, 1_000);
+  let shuttingDown = false;
 
-  try {
-    await new Promise<void>((resolve) => {
-      startKeyboardListener((err, event) => {
-        if (err) {
-          console.error("Error:", err);
-          return;
-        }
+  const shutdown = (exitCode: number) => {
+    if (shuttingDown) {
+      return;
+    }
 
-        if (event.key === "c" && event.modifiers.includes("Ctrl")) {
-          resolve();
-          return;
-        }
-
-        processKeyEvent(vimMode, event);
-      });
-    });
-  } finally {
-    vimMode.adapter.dispose();
+    shuttingDown = true;
+    clearInterval(keepAlive);
+    process.removeListener("SIGINT", handleSigint);
+    vimMode.disable();
     shutdownTui();
-  }
+    process.exit(exitCode);
+  };
 
-  process.exit(0);
+  const handleSigint = () => shutdown(0);
+  process.on("SIGINT", handleSigint);
+
+  startKeyboardListener((err, event) => {
+    if (err) {
+      console.error("Error:", err);
+      return;
+    }
+
+    if (event.key === "c" && event.modifiers.includes("Ctrl")) {
+      shutdown(0);
+      return;
+    }
+
+    processKeyEvent(vimMode, event);
+  });
+
+  await new Promise<never>(() => {});
 }
 
 main().catch((error) => {

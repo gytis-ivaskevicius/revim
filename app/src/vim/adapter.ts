@@ -17,6 +17,7 @@ import {
   clipPos,
   pushUndoStop,
   triggerAction,
+  setVisualMode,
   setVimMode,
   setReplaceMode,
   setHighlights,
@@ -250,6 +251,21 @@ export class EditorAdapter {
   dispatch(signal: "vim-mode-change", mode: ModeChangeEvent): void;
   dispatch(signal: "vim-keypress", key: string): void;
   dispatch(signal: string, ...args: any[]): void {
+    if (signal === "vim-mode-change") {
+      const [mode] = args as [ModeChangeEvent];
+      if (mode?.mode === "visual") {
+        setVisualMode(
+          mode.subMode === "linewise"
+            ? "line"
+            : mode.subMode === "blockwise"
+            ? "block"
+            : "char"
+        );
+      } else {
+        setVisualMode("");
+      }
+    }
+
     const listeners = this.listeners[signal];
     if (!listeners) {
       return;

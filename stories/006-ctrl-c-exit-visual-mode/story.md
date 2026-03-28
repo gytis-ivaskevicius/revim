@@ -96,6 +96,9 @@ The existing `build_highlighted_line` helper takes `(line, cursor_col, highlight
 
 ### Task 1 - Fix Ctrl+C exit
 
+- [x] Write/expand E2E coverage for Ctrl+C exit and non-exit behavior
+- [x] Unref keyboard listener and exit synchronously from the callback
+
 Write the E2E test first (it already exists in `exit.test.ts` and is failing), then make it pass.
 
 **Changes:**
@@ -117,6 +120,9 @@ Write the E2E test first (it already exists in `exit.test.ts` and is failing), t
 - Manual smoke: `just dev`, press Ctrl+C in terminal — shell prompt returns (verifies terminal state is cleaned up, not just exit code).
 
 ### Task 2 - Render visual mode selection
+
+- [x] Add E2E coverage for charwise, linewise, clear, delete, and blockwise selection behavior
+- [x] Track visual mode in the TUI and render selection highlights
 
 Write E2E tests for charwise (`v`), linewise (`V`), and visual-block (`Ctrl-V`) selection first, then make them pass.
 
