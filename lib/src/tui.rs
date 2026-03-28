@@ -167,6 +167,9 @@ fn render_frame_internal() -> Result<()> {
                 .block(Block::default().borders(Borders::ALL).title("ReVim"))
                 .alignment(ratatui::layout::Alignment::Left);
             f.render_widget(paragraph, size);
+            let block = Block::default().borders(Borders::ALL).title("ReVim");
+            let inner_area = block.inner(size);
+            f.set_cursor_position((inner_area.x + cursor_col, inner_area.y + cursor_row));
         })
         .map_err(to_napi_error)?;
 

@@ -1,5 +1,8 @@
 {
   "name": "revim",
   "workspaces": ["lib", "app"],
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@microsoft/tui-test": "0.0.3"
+  }
 }
