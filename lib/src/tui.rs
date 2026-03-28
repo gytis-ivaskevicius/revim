@@ -406,6 +406,7 @@ fn render_frame_internal() -> Result<()> {
             if selection_active {
                 let row_index = row as u16;
                 let line_len = line.chars().count() as u16;
+                let highlight_width = line_len.max(1);
                 let selection_range = match visual_mode {
                     VisualMode::None => None,
                     VisualMode::Char => {
@@ -417,15 +418,15 @@ fn render_frame_internal() -> Result<()> {
                         } else if row_index == sel_start_row {
                             Some((sel_start_col.min(line_len), line_len))
                         } else if row_index == sel_end_row {
-                            Some((0, (sel_end_col + 1).min(line_len)))
+                            Some((0, (sel_end_col + 1).min(highlight_width)))
                         } else if row_index > sel_start_row && row_index < sel_end_row {
-                            Some((0, line_len))
+                            Some((0, highlight_width))
                         } else {
                             None
                         }
                     }
                     VisualMode::Line => (row_index >= sel_start_row && row_index <= sel_end_row)
-                        .then_some((0, line_len)),
+                        .then_some((0, highlight_width)),
                     VisualMode::Block => {
                         if row_index >= sel_start_row && row_index <= sel_end_row {
                             let start = anchor_col.min(cursor_col);
