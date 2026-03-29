@@ -16,16 +16,16 @@ import { InputState } from "./input-state"
 import { defineOption } from "./options"
 import { cancelPendingHighlight } from "./search-utils"
 import type {
-  ActionArgs,
   Context,
-  ExArgs,
   KeyMapping,
+  KeyMappingAction,
+  KeyMappingEx,
+  KeyMappingMotion,
+  KeyMappingOperator,
+  KeyMappingOperatorMotion,
+  KeyMappingSearch,
   MappableArgType,
   MappableCommandType,
-  MotionArgs,
-  OperatorArgs,
-  OperatorMotionArgs,
-  SearchArgs,
   VimState,
 } from "./types"
 import { VimApi } from "./vim-api"
@@ -588,37 +588,28 @@ export function _mapCommand(command: KeyMapping) {
 }
 
 export function mapCommand(keys: string, type: MappableCommandType, name: string, args: MappableArgType, extra: any) {
-  const command: KeyMapping = { keys: keys, type: type }
+  const command = createKeyMapping(keys, type, name, args)
+  _mapCommand({ ...command, ...extra })
+}
+
+function createKeyMapping(keys: string, type: string, name: string, args: MappableArgType): KeyMapping {
+  const command = { keys: keys, type: type }
   switch (type) {
     case "motion":
-      command.motion = name
-      command.motionArgs = args as MotionArgs
-      break
+      return { ...command, motion: name, motionArgs: args } as KeyMappingMotion
     case "action":
-      command.action = name
-      command.actionArgs = args as ActionArgs
-      break
+      return { ...command, action: name, actionArgs: args } as KeyMappingAction
     case "operator":
-      command.operator = name
-      command.operatorArgs = args as OperatorArgs
-      break
+      return { ...command, operator: name, operatorArgs: args } as KeyMappingOperator
     case "operatorMotion":
-      command.operatorMotion = name
-      command.operatorMotionArgs = args as OperatorMotionArgs
-      break
+      return { ...command, operatorMotion: name, operatorMotionArgs: args } as KeyMappingOperatorMotion
     case "search":
-      command.search = name
-      command.searchArgs = args as SearchArgs
-      break
+      return { ...command, search: name, searchArgs: args } as KeyMappingSearch
     case "ex":
-      command.ex = name
-      command.exArgs = args as ExArgs
-      break
+      return { ...command, ex: name, exArgs: args } as KeyMappingEx
+    default:
+      throw new Error(`Unknown key mapping type: ${type}`)
   }
-  for (const key of Object.keys(extra)) {
-    ;(command as any)[key] = extra[key]
-  }
-  _mapCommand(command)
 }
 
 // The timeout in milliseconds for the two-character ESC keymap should be

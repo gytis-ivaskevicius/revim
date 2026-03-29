@@ -32,7 +32,16 @@ import { motions } from "./motions"
 import { operators } from "./operators"
 import { getSearchState } from "./search"
 import { clearSearchHighlight, escapeRegex, findNext, showConfirm, showPrompt, updateSearchQuery } from "./search-utils"
-import type { Context, KeyMapping, VimState } from "./types"
+import type {
+  Context,
+  KeyMapping,
+  KeyMappingAction,
+  KeyMappingMotion,
+  KeyMappingOperator,
+  KeyMappingOperatorMotion,
+  KeyMappingSearch,
+  VimState,
+} from "./types"
 import { clipCursorToContent, copyArgs, lineLength } from "./vim-utils"
 
 export class CommandDispatcher {
@@ -83,13 +92,21 @@ export class CommandDispatcher {
     }
   }
 
-  processMotion(adapter: EditorAdapter, vim: VimState, command: KeyMapping) {
+  processMotion(
+    adapter: EditorAdapter,
+    vim: VimState,
+    command: KeyMappingMotion | KeyMappingOperatorMotion | KeyMappingAction,
+  ) {
     vim.inputState.motion = command.motion
     vim.inputState.motionArgs = copyArgs(command.motionArgs)
     this.evalInput(adapter, vim)
   }
 
-  processOperator(adapter: EditorAdapter, vim: VimState, command: KeyMapping) {
+  processOperator(
+    adapter: EditorAdapter,
+    vim: VimState,
+    command: KeyMappingOperator | KeyMappingOperatorMotion | KeyMappingAction,
+  ) {
     const inputState = vim.inputState
     if (inputState.operator) {
       if (inputState.operator === command.operator) {
@@ -119,7 +136,7 @@ export class CommandDispatcher {
     }
   }
 
-  processOperatorMotion(adapter: EditorAdapter, vim: VimState, command: KeyMapping) {
+  processOperatorMotion(adapter: EditorAdapter, vim: VimState, command: KeyMappingOperatorMotion) {
     const visualMode = vim.visualMode
     const operatorMotionArgs = copyArgs(command.operatorMotionArgs)
     if (operatorMotionArgs) {
@@ -134,7 +151,7 @@ export class CommandDispatcher {
     }
   }
 
-  processAction(adapter: EditorAdapter, vim: VimState, command: KeyMapping) {
+  processAction(adapter: EditorAdapter, vim: VimState, command: KeyMappingAction) {
     const inputState = vim.inputState
     const repeat = inputState.getRepeat()
     const repeatIsExplicit = !!repeat
@@ -163,7 +180,7 @@ export class CommandDispatcher {
     actions[command.action!](adapter, actionArgs, vim)
   }
 
-  processSearch(adapter: EditorAdapter, vim: VimState, command: KeyMapping) {
+  processSearch(adapter: EditorAdapter, vim: VimState, command: KeyMappingSearch) {
     if (!adapter.getSearchCursor) {
       // Search depends on SearchCursor.
       return
@@ -572,7 +589,7 @@ export class CommandDispatcher {
       }
     }
   }
-  recordLastEdit(vim: VimState, inputState: InputState, actionCommand?: KeyMapping) {
+  recordLastEdit(vim: VimState, inputState: InputState, actionCommand?: KeyMappingAction) {
     const macroModeState = vimGlobalState.macroModeState
     if (macroModeState.isPlaying) {
       return

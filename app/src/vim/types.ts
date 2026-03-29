@@ -23,7 +23,7 @@ export interface VimState {
   lastEditInputState?: InputState
   // Vim's action command before the last edit, used to repeat actions
   // with '.' and insert mode repeat.
-  lastEditActionCommand?: KeyMapping
+  lastEditActionCommand?: KeyMappingAction
   // When using jk for navigation, if you move from a longer line to a
   // shorter line, the cursor may clip to the end of the shorter line.
   // If j is pressed again and cursor goes to the next line, the
@@ -127,48 +127,30 @@ export type Context = "insert" | "normal" | "visual"
 export type MappableCommandType = "motion" | "action" | "operator" | "operatorMotion" | "search" | "ex"
 export type MappableArgType = MotionArgs | ActionArgs | OperatorArgs | OperatorMotionArgs | SearchArgs | ExArgs
 
-export interface KeyMapping {
-  keys: string
-  type: "keyToKey" | "idle" | "keyToEx" | MappableCommandType
-  context?: Context
-  toKeys?: string
-  action?: string
-  actionArgs?: ActionArgs
-  motion?: string
-  motionArgs?: MotionArgs
-  isEdit?: boolean
-  operator?: string
-  operatorArgs?: OperatorArgs
-  operatorMotion?: string
-  operatorMotionArgs?: OperatorMotionArgs
-  interlaceInsertRepeat?: boolean
-  exitVisualBlock?: boolean
-  search?: string
-  searchArgs?: SearchArgs
-  repeatOverride?: number
-  ex?: string
-  exArgs?: ExArgs
-}
+export type KeyMappingDefault<T> = { type: T; keys: string; context?: Context; repeatOverride?: number }
 
-type KeyMappingDefault = { keys: string; context?: Context }
-export type KeyMappingKeyToKey = KeyMappingDefault & { type: "keyToKey"; toKeys: string }
-export type KeyMappingIdle = KeyMappingDefault & { type: "idle" }
-export type KeyMappingKeyToEx = KeyMappingDefault & { type: "keyToEx"; exArgs: ExArgs }
-export type KeyMappingEx = KeyMappingDefault & { type: "ex"; ex?: string; exArgs?: ExArgs }
-export type KeyMappingMotion = KeyMappingDefault & { type: "motion"; motion: string; motionArgs?: MotionArgs }
-export type KeyMappingOperator = KeyMappingDefault & {
-  type: "operator"
+export type KeyMappingKeyToKey = KeyMappingDefault<"keyToKey"> & { toKeys: string }
+export type KeyMappingIdle = KeyMappingDefault<"idle">
+export type KeyMappingKeyToEx = KeyMappingDefault<"keyToEx"> & { exArgs: ExArgs }
+export type KeyMappingEx = KeyMappingDefault<"ex"> & { ex?: string; exArgs?: ExArgs }
+export type KeyMappingMotion = KeyMappingDefault<"motion"> & { motion: string; motionArgs?: MotionArgs }
+export type KeyMappingOperator = KeyMappingDefault<"operator"> & {
   operator: string
   operatorArgs?: OperatorArgs
   exitVisualBlock?: boolean
+  isEdit?: boolean
 }
-export type KeyMappingOperatorMotion = KeyMappingDefault & {
-  type: "operatorMotion"
-  operatorMotion: string
+export type KeyMappingOperatorMotion = KeyMappingDefault<"operatorMotion"> & {
+  operator?: string
+  operatorMotion?: string
+  motion?: string
+  motionArgs?: MotionArgs
+  operatorArgs?: OperatorArgs
   operatorMotionArgs?: OperatorMotionArgs
+  exitVisualBlock?: boolean
+  isEdit?: boolean
 }
-export type KeyMappingAction = KeyMappingDefault & {
-  type: "action"
+export type KeyMappingAction = KeyMappingDefault<"action"> & {
   action: string
   actionArgs?: ActionArgs
   motion?: string
@@ -177,11 +159,11 @@ export type KeyMappingAction = KeyMappingDefault & {
   operatorArgs?: OperatorArgs
   isEdit?: boolean
   interlaceInsertRepeat?: boolean
-  repeatOverride?: number
+  exitVisualBlock?: boolean
 }
-export type KeyMappingSearch = KeyMappingDefault & { type: "search"; search: string; searchArgs: SearchArgs }
+export type KeyMappingSearch = KeyMappingDefault<"search"> & { searchArgs: SearchArgs }
 
-export type KeyMappingUnion =
+export type KeyMapping =
   | KeyMappingKeyToKey
   | KeyMappingIdle
   | KeyMappingKeyToEx
