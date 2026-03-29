@@ -27,3 +27,10 @@
 **Recommendation**: Add delays after key presses in TUI Test to allow the app to process events. Use constants like `RENDER_DELAY_MS = 100` for maintainability.
 
 ---
+
+## TUI Test worker reuse can contaminate later tests
+**Date**: 2026-03-29
+**What happened**: The full E2E suite produced blank-screen failures that looked like app regressions, but the root cause was TUI Test worker reuse/contamination when worker scheduling was too constrained. Raising the configured worker count stopped the cross-test contamination.
+**Recommendation**: If TUI E2Es fail inconsistently with a blank `>` prompt or state leaking between cases, check `tui-test.config.ts` worker settings first before debugging application logic.
+
+---
