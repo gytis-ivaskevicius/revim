@@ -34,3 +34,10 @@
 **Recommendation**: If TUI E2Es fail inconsistently with a blank `>` prompt or state leaking between cases, check `tui-test.config.ts` worker settings first before debugging application logic.
 
 ---
+
+## Rust delta-based undo had complex position tracking issues
+**Date**: 2026-03-29
+**What happened**: Implementing undo/redo in Rust using delta-based history (storing each replace_range as separate entry) failed because insert mode typed each character as a separate entry with different positions. When undoing in reverse order, positions conflicted and corrupted the buffer.
+**Recommendation**: For undo in this TUI, prefer snapshot-based approach in TypeScript rather than delta-based in Rust. Simpler and more reliable.
+
+---
