@@ -18,6 +18,12 @@
 
 ---
 
+## Redo Already Works - Just Needed Tests
+**Date**: 2026-03-29
+**When useful**: When functionality seems broken but user says it works. The redo (`Ctrl+r`) implementation was already complete in the TypeScript adapter - I assumed there was a key encoding bug because I couldn't find tests. Always trust user feedback about working features and focus on test coverage.
+
+---
+
 ## Parametrized tests for similar behaviors
 **Date**: 2026-03-28
 **When useful**: When testing similar behaviors like cursor movement in different directions. Use a `for` loop over an array of test cases to reduce code duplication and ensure consistent test structure.

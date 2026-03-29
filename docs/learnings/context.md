@@ -14,6 +14,13 @@
 
 ---
 
+## TUI Test Ctrl+Key Requires Options Object
+**Date**: 2026-03-29
+**What happened**: When writing E2E tests for redo (`Ctrl+r`), I initially tried `pressKeys(terminal, ["r"])` which just types the letter 'r'. The TUI Test framework requires `{ ctrl: true }` passed as second argument: `terminal.keyPress("r", { ctrl: true })`.
+**Recommendation**: Use `terminal.keyPress(key, { ctrl: true })` for Ctrl key combinations in TUI Test. Check existing tests in `app/tests/e2e/` for patterns.
+
+---
+
 ## Imported Vim Surface Exceeds Current TUI Semantics
 **Date**: 2026-03-28
 **What happened**: Porting `vim-monaco` into the terminal app was faster than building a Vim layer from scratch, but it also exposed gaps where the TUI backend does not yet match Monaco-style editor capabilities, especially around viewport behavior, visual selection rendering, and deferred actions like undo/redo.
