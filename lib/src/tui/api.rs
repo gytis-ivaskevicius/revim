@@ -199,7 +199,7 @@ pub fn get_line_count() -> Result<u32> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
     Ok(state.demo_text.len() as u32)
 }
 
@@ -211,7 +211,7 @@ pub fn get_all_lines() -> Result<Vec<String>> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
     Ok(state.demo_text.clone())
 }
 
@@ -224,7 +224,7 @@ pub fn set_all_lines(lines: Vec<String>) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
         state.demo_text = lines;
     }
     render_frame_internal()?;
@@ -239,7 +239,7 @@ pub fn get_cursor_pos() -> Result<CursorPosition> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
     Ok(CursorPosition {
         line: state.cursor_row as u32,
         ch: state.cursor_col as u32,
@@ -257,7 +257,7 @@ pub fn set_cursor_pos(line: u32, ch: u32) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
 
         let (line, ch) = state.clip_pos(line, ch);
         state.cursor_row = line;
@@ -276,7 +276,7 @@ pub fn get_range(start_line: u32, start_ch: u32, end_line: u32, end_ch: u32) -> 
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
     Ok(state.get_range(
         start_line as u16,
         start_ch as u16,
@@ -300,7 +300,7 @@ pub fn replace_range(
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
 
         state.replace_range(
             &text,
@@ -335,7 +335,7 @@ pub fn get_selection() -> Result<String> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
 
     let (start_line, start_ch) = (state.anchor_row, state.anchor_col);
     let (end_line, end_ch) = (state.cursor_row, state.cursor_col);
@@ -352,7 +352,7 @@ pub fn set_selection(anchor_line: u32, anchor_ch: u32, head_line: u32, head_ch: 
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
 
         let (anchor_line, anchor_ch) = state.clip_pos(anchor_line as u16, anchor_ch as u16);
         let (head_line, head_ch) = state.clip_pos(head_line as u16, head_ch as u16);
@@ -376,7 +376,7 @@ pub fn get_selections() -> Result<Vec<String>> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
 
     Ok(state
         .selections
@@ -431,7 +431,7 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
 
         let clipped = selections
             .into_iter()
@@ -502,7 +502,7 @@ pub fn set_visual_mode(mode: String) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
 
         state.visual_mode = match mode.as_str() {
             "char" => VisualMode::Char,
@@ -524,7 +524,7 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
 
         let replacements = if texts.len() == state.selections.len() {
             texts
@@ -595,7 +595,7 @@ pub fn indent_line(line: u32, indent_right: bool) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
 
         if let Some(line_str) = state.demo_text.get_mut(line as usize) {
             if indent_right {
@@ -622,7 +622,7 @@ pub fn index_from_pos(line: u32, ch: u32) -> Result<u32> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
 
     Ok(state.index_from_pos(line as u16, ch as u16))
 }
@@ -635,7 +635,7 @@ pub fn pos_from_index(offset: u32) -> Result<CursorPosition> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
 
     let (line, ch) = state.pos_from_index(offset);
     Ok(CursorPosition {
@@ -652,7 +652,7 @@ pub fn get_line_first_non_whitespace(line: u32) -> Result<u32> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
 
     let line_str = state.get_line(line as u16);
     for (i, ch) in line_str.chars().enumerate() {
@@ -672,7 +672,7 @@ pub fn get_scroll_info() -> Result<ScrollInfo> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
 
     Ok(ScrollInfo {
         top: 0,
@@ -708,7 +708,7 @@ pub fn clip_pos(line: u32, ch: u32) -> Result<CursorPosition> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
 
     let (line, ch) = state.clip_pos(line as u16, ch as u16);
     Ok(CursorPosition {
@@ -773,7 +773,7 @@ pub fn set_highlights(_ranges: Vec<HighlightRange>) -> Result<()> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
 
     state.highlights = _ranges;
     render_frame_internal()
@@ -803,7 +803,7 @@ pub fn set_status_text(text: String) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
         state.status_text = text;
     }
     render_frame_internal()
