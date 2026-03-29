@@ -2,62 +2,36 @@
 
 ## Context
 
-ReVim currently stubs out undo and redo: `pushUndoStop()` is a no-op and `trigger_action("undo"/"redo")` returns `Ok(())` without mutating the buffer. The keybindings (`u`, `<C-r>`) and the action dispatch path already exist in TypeScript but have no effect. This story implements real document-level undo/redo backed by an inverse-delta history stack in the Rust `TuiState`.
-
-## Out of Scope
-
-- Persistent undo history across process restarts
-- Undo for register/mark mutations (only buffer text and cursor are tracked)
-- Undo inside visual block `replaceSelections` multi-cursor paths beyond the composite delta already produced by that function
+ReVim currently stubs out undo and redo: `pushUndoStop()` is a no-op and `trigger_action("undo"/"redo")` returns `Ok(())` without mutating the buffer. The keybindings (`u`, `<C-r>`) and the action dispatch path already exist in TypeScript but have no effect. This story implements real document-level undo/redo using a snapshot-based approach in TypeScript.
 
 ## Implementation approach
 
-### Delta-based history in Rust
+### Snapshot-based history in TypeScript
 
-Each undo entry records enough information to invert a single `replace_range` call:
+Instead of delta-based history (which proved complex to implement correctly in Rust due to position tracking), we use full-buffer snapshots:
 
-```rust
-struct HistoryEntry {
-    // Range that was replaced (original coordinates before the edit)
-    start_line: u16,
-    start_ch:   u16,
-    end_line:   u16,
-    end_ch:     u16,
-    // Text that was removed (needed to re-insert on undo)
-    removed:    String,
-    // Text that was inserted (needed to re-delete on redo)
-    inserted:   String,
-    // Cursor position after the edit (restored on undo to the position before)
-    cursor_before_line: u16,
-    cursor_before_ch:   u16,
-    // Cursor position after the edit (restored on redo)
-    cursor_after_line: u16,
-    cursor_after_ch:   u16,
-}
-```
+1. **Rust additions**: Add `getAllLines()` and `setAllLines()` to export the full buffer
+2. **TypeScript**: Maintain `undoStack` and `redoStack` in EditorAdapter
+3. **pushUndoStop**: Push current buffer snapshot to undoStack, clear redoStack
+4. **undo**: Pop from undoStack, push current to redoStack, restore from snapshot
+5. **redo**: Pop from redoStack, push current to undoStack, restore from snapshot
 
-`TuiState` gains two fields:
-```rust
-undo_stack: Vec<HistoryEntry>,
-redo_stack: Vec<HistoryEntry>,
-```
-
-**Undo stop boundary**: `pushUndoStop` inserts a sentinel `HistoryEntry` with an empty `removed` and `inserted` string and zeroed coordinates. On `undo`, entries are popped and applied until a sentinel is reached (inclusive); on `redo`, entries are re-applied until the next sentinel.
-
-**History recording rule**: every `replace_range` call on `TuiState` (the internal method, not just the NAPI export) snapshots the `removed` text via a `get_range` read *before* the splice, then records `inserted` from its `text` argument, then performs the splice. The redo stack is cleared on every new recorded edit (sentinel-only pushes do not clear it).
-
-**Inverse application**: applying a history entry in reverse calls `replace_range` with `removed` at `(start_line, start_ch, start_line + inserted_line_count, inserted_end_ch)` — i.e., using the same `inserted` extent to locate what is now in the buffer — and replaces it with `removed`. The symmetric forward apply (redo) replaces the `removed` extent with `inserted`.
-
-**`replaceSelections`** calls the same internal `replace_range` in a loop; each sub-operation is recorded individually in reverse order so that undo replays them in the correct order.
+This approach is simpler and more reliable than delta-based undo.
 
 ### TypeScript side
 
-No TypeScript changes are required for basic `u` / `<C-r>` support. The existing `triggerEditorAction("undo"/"redo")` calls already reach the Rust NAPI function; the NAPI function just needs to do real work.
+The EditorAdapter class implements:
+- `undoStack: string[][]` - stores buffer snapshots
+- `redoStack: string[][]` - stores undone buffers
+- `pushUndoStop()` - snapshots buffer before edits
+- `undo()` - restores previous snapshot
+- `redo()` - restores next snapshot
+- `undoLine()` - alias for undo (undo all changes on current line)
 
-`U` (undo all changes on current line, normal mode) is added to `default-key-map.ts` as a new action:
-```typescript
-{ keys: "U", type: "action", action: "undoLine", context: "normal" }
-```
+The existing keybindings (`u`, `<C-r>`, `U`) work via the action dispatch:
+- `EditorAdapter.commands.undo` calls `adapter.undo()`
+- `EditorAdapter.commands.redo` calls `adapter.redo()`
+- `EditorAdapter.commands.undoLine` calls `adapter.undoLine()`
 A corresponding `undoLine` action in `actions.ts` calls `EditorAdapter.commands.undoLine`. A new `undoLine` command in `adapter.ts` calls `triggerAction("undoLine")`. The Rust handler for `"undoLine"` pops undo entries until the current line changes, or the stack is exhausted.
 
 ## Tasks
