@@ -20,3 +20,16 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 
 - No cross-platform binary builds configured
 - No vim status bar / mode indicator in the TUI yet
+- No real viewport semantics
+  - separate viewport state from cursor state
+  - make scrollTo, scrollToLine, getScrollInfo, and getVisibleLines behave like an editor window
+- No Undo/redo support
+  - implement real history in the Rust/TUI buffer layer
+  - stop treating undo/redo as successful no-ops
+- No search and prompt UX coverage
+  - add E2E coverage for /, n, N, search highlight behavior, and prompt scroll restore
+- No ex command coverage
+  - add E2E tests for a small supported subset like :w, :q, :sort, :s
+  - explicitly gate/disable unsupported commands
+- No unicode editing regression coverage
+  - add tests for multibyte characters around movement, replace, delete, and range operations
