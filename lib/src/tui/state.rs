@@ -37,6 +37,12 @@ pub struct TuiState {
     pub highlights: Vec<HighlightRange>,
 }
 
+impl Default for TuiState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TuiState {
     pub fn new() -> Self {
         let demo_text = vec![

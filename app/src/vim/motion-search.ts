@@ -1,25 +1,21 @@
-import EditorAdapter from "./adapter";
-import { Pos, cursorEqual, makePos } from "./common";
-import { findNext, highlightSearchMatches } from "./search-utils";
-import { getSearchState } from "./search";
-import { InputState } from "./input-state";
-import { MotionArgs, VimState } from "./types";
+import type EditorAdapter from "./adapter"
+import { cursorEqual, makePos, type Pos } from "./common"
+import type { InputState } from "./input-state"
+import { getSearchState } from "./search"
+import { findNext, highlightSearchMatches } from "./search-utils"
+import type { MotionArgs, VimState } from "./types"
 
-export function motionFindNext(
-  adapter: EditorAdapter,
-  _head: Pos,
-  motionArgs: MotionArgs
-): Pos | undefined {
-  const state = getSearchState(adapter);
-  const query = state.getQuery();
+export function motionFindNext(adapter: EditorAdapter, _head: Pos, motionArgs: MotionArgs): Pos | undefined {
+  const state = getSearchState(adapter)
+  const query = state.getQuery()
   if (!query) {
-    return;
+    return
   }
-  let prev = !motionArgs.forward;
+  let prev = !motionArgs.forward
   // If search is initiated with ? instead of /, negate direction.
-  prev = state.isReversed() ? !prev : prev;
-  highlightSearchMatches(adapter, query);
-  return findNext(adapter, prev /** prev */, query, motionArgs.repeat);
+  prev = state.isReversed() ? !prev : prev
+  highlightSearchMatches(adapter, query)
+  return findNext(adapter, prev /** prev */, query, motionArgs.repeat)
 }
 
 /**
@@ -34,43 +30,40 @@ function findNextFromAndToInclusive(
   prev: boolean,
   query: RegExp,
   repeat: number,
-  vim: VimState
+  vim: VimState,
 ): [Pos, Pos] | undefined {
   if (repeat === undefined) {
-    repeat = 1;
+    repeat = 1
   }
-  const pos = adapter.getCursor();
-  let cursor = adapter.getSearchCursor(query, pos);
+  const pos = adapter.getCursor()
+  let cursor = adapter.getSearchCursor(query, pos)
 
   // Go back one result to ensure that if the cursor is currently a match, we keep it.
-  let found = cursor.find(!prev);
+  let found = cursor.find(!prev)
 
   // If we haven't moved, go back one more (similar to if i==0 logic in findNext).
-  const initialFrom = cursor.from();
+  const initialFrom = cursor.from()
   if (!vim.visualMode && found && initialFrom && cursorEqual(initialFrom, pos)) {
-    cursor.find(!prev);
+    cursor.find(!prev)
   }
 
   for (let i = 0; i < repeat; i++) {
-    found = cursor.find(prev);
+    found = cursor.find(prev)
     if (!found) {
       // SearchCursor may have returned null because it hit EOF, wrap
       // around and try again.
-      cursor = adapter.getSearchCursor(
-        query,
-        makePos(prev ? adapter.lastLine() : adapter.firstLine(), 0)
-      );
+      cursor = adapter.getSearchCursor(query, makePos(prev ? adapter.lastLine() : adapter.firstLine(), 0))
       if (!cursor.find(prev)) {
-        return;
+        return
       }
     }
   }
-  const from = cursor.from();
-  const to = cursor.to();
+  const from = cursor.from()
+  const to = cursor.to()
   if (!from || !to) {
-    return;
+    return
   }
-  return [from, to];
+  return [from, to]
 }
 
 /**
@@ -90,85 +83,79 @@ export function motionFindAndSelectNextInclusive(
   _head: Pos,
   motionArgs: MotionArgs,
   vim: VimState,
-  prevInputState: InputState
+  prevInputState: InputState,
 ): Pos | [Pos, Pos] | undefined {
-  const state = getSearchState(adapter);
-  const query = state.getQuery();
+  const state = getSearchState(adapter)
+  const query = state.getQuery()
 
   if (!query || !vim) {
-    return;
+    return
   }
 
-  let prev = !motionArgs.forward;
-  prev = state.isReversed() ? !prev : prev;
+  let prev = !motionArgs.forward
+  prev = state.isReversed() ? !prev : prev
 
   // next: [from, to] | null
-  const next = findNextFromAndToInclusive(
-    adapter,
-    prev,
-    query,
-    motionArgs.repeat!,
-    vim
-  );
+  const next = findNextFromAndToInclusive(adapter, prev, query, motionArgs.repeat!, vim)
 
   // No matches.
   if (!next || !vim) {
-    return;
+    return
   }
 
   // If there's an operator that will be executed, return the selection.
-  if (prevInputState && prevInputState.operator) {
-    return next;
+  if (prevInputState?.operator) {
+    return next
   }
 
   // At this point, we know that there is no accompanying operator -- let's
   // deal with visual mode in order to select an appropriate match.
 
-  const from = next[0];
+  const from = next[0]
   // For whatever reason, when we use the "to" as returned by searchcursor.js directly,
   // the resulting selection is extended by 1 char. Let's shrink it so that only the
   // match is selected.
-  const to = makePos(next[1].line, next[1].ch - 1);
+  const to = makePos(next[1].line, next[1].ch - 1)
 
   if (vim.visualMode) {
     // If we were in visualLine or visualBlock mode, get out of it.
     if (vim.visualLine || vim.visualBlock) {
-      vim.visualLine = false;
-      vim.visualBlock = false;
+      vim.visualLine = false
+      vim.visualBlock = false
       adapter.emitVimModeChange({
         mode: "visual",
         subMode: "",
-      });
+      })
     }
 
     // If we're currently in visual mode, we should extend the selection to include
     // the search result.
-    const anchor = vim.sel.anchor;
+    const anchor = vim.sel.anchor
     if (anchor) {
       if (state.isReversed()) {
         if (motionArgs.forward) {
-          return [anchor, from];
+          return [anchor, from]
         }
 
-        return [anchor, to];
+        return [anchor, to]
       } else {
         if (motionArgs.forward) {
-          return [anchor, to];
+          return [anchor, to]
         }
 
-        return [anchor, from];
+        return [anchor, from]
       }
     }
   } else {
     // Let's turn visual mode on.
-    vim.visualMode = true;
-    vim.visualLine = false;
-    vim.visualBlock = false;
+    vim.visualMode = true
+    vim.visualLine = false
+    vim.visualBlock = false
     adapter.emitVimModeChange({
       mode: "visual",
       subMode: "",
-    });
+    })
   }
 
-  return prev ? [to, from] : [from, to];
+  return prev ? [to, from] : [from, to]
 }

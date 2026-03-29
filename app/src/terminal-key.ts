@@ -1,6 +1,6 @@
 export interface RawTerminalKeyEvent {
-  key: string;
-  modifiers: string[];
+  key: string
+  modifiers: string[]
 }
 
 const keyAliases: Record<string, string> = {
@@ -18,49 +18,46 @@ const keyAliases: Record<string, string> = {
   End: "End",
   PageUp: "PageUp",
   PageDown: "PageDown",
-};
+}
 
 export function normalizeCtrlCharacter(key: string): string {
   if (key.length !== 1) {
-    return key;
+    return key
   }
 
-  const code = key.charCodeAt(0);
+  const code = key.charCodeAt(0)
   if (code >= 1 && code <= 26) {
-    return String.fromCharCode(code + 96);
+    return String.fromCharCode(code + 96)
   }
 
-  return key;
+  return key
 }
 
-export function encodeTerminalKey(
-  event: RawTerminalKeyEvent,
-  insertMode: boolean
-): string {
-  let key = keyAliases[event.key] || event.key;
-  const hasCtrl = event.modifiers.includes("Ctrl");
-  const hasAlt = event.modifiers.includes("Alt");
-  const hasShift = event.modifiers.includes("Shift");
+export function encodeTerminalKey(event: RawTerminalKeyEvent, insertMode: boolean): string {
+  let key = keyAliases[event.key] || event.key
+  const hasCtrl = event.modifiers.includes("Ctrl")
+  const hasAlt = event.modifiers.includes("Alt")
+  const hasShift = event.modifiers.includes("Shift")
   if (hasCtrl) {
-    key = normalizeCtrlCharacter(key);
+    key = normalizeCtrlCharacter(key)
   }
-  const isPrintable = key.length === 1;
+  const isPrintable = key.length === 1
 
   if (key === " " && !insertMode && !hasCtrl && !hasAlt && !hasShift) {
-    key = "Space";
+    key = "Space"
   } else if (isPrintable && !hasCtrl && !hasAlt) {
-    return `'${key}'`;
+    return `'${key}'`
   }
 
   if (hasCtrl) {
-    key = `Ctrl-${key}`;
+    key = `Ctrl-${key}`
   }
   if (hasShift && !(isPrintable && !hasCtrl && !hasAlt)) {
-    key = `Shift-${key}`;
+    key = `Shift-${key}`
   }
   if (hasAlt) {
-    key = `Alt-${key}`;
+    key = `Alt-${key}`
   }
 
-  return key;
+  return key
 }

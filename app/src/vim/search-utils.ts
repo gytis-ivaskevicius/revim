@@ -1,95 +1,86 @@
-import EditorAdapter from "./adapter";
-import { StringStream } from "./string-stream";
-import { StatusBarInputOptions } from "./statusbar";
-import {
-  Pos,
-  cursorEqual,
-  makePos,
-  isPos,
-  inArray,
-  isNumber,
-} from "./common";
-import { defineOption, getOption } from "./options";
-import { getSearchState, searchOverlay } from "./search";
-import { vimGlobalState } from "./global";
+import type EditorAdapter from "./adapter"
+import { cursorEqual, inArray, isNumber, isPos, makePos, type Pos } from "./common"
+import { vimGlobalState } from "./global"
+import { defineOption, getOption } from "./options"
+import { getSearchState, searchOverlay } from "./search"
+import type { StatusBarInputOptions } from "./statusbar"
+import { StringStream } from "./string-stream"
 
-defineOption("pcre", true, "boolean");
+defineOption("pcre", true, "boolean")
 
 export function escapeRegex(s: string) {
-  return s.replace(/([.?*+$\[\]\/\\(){}|\-])/g, "\\$1");
+  return s.replace(/([.?*+$[\]/\\(){}|-])/g, "\\$1")
 }
 
 export function splitBySlash(argString: string) {
-  return splitBySeparator(argString, "/");
+  return splitBySeparator(argString, "/")
 }
 
 export function findUnescapedSlashes(argString: string) {
-  return findUnescapedSeparators(argString, "/");
+  return findUnescapedSeparators(argString, "/")
 }
 
 export function splitBySeparator(argString: string, separator: string) {
-  const slashes = findUnescapedSeparators(argString, separator) || [];
-  if (!slashes.length) return [];
+  const slashes = findUnescapedSeparators(argString, separator) || []
+  if (!slashes.length) return []
   // in case of strings like foo/bar
-  if (slashes[0] !== 0) return;
+  if (slashes[0] !== 0) return
 
-  return slashes.map((s, i) =>
-    i < slashes.length - 1 ? argString.substring(s + 1, slashes[i + 1]) : ""
-  );
+  return slashes.map((s, i) => (i < slashes.length - 1 ? argString.substring(s + 1, slashes[i + 1]) : ""))
 }
 
 export function findUnescapedSeparators(str: string, separator?: string) {
-  if (!separator) separator = "/";
+  if (!separator) separator = "/"
 
-  let escapeNextChar = false;
-  const slashes: number[] = [];
+  let escapeNextChar = false
+  const slashes: number[] = []
   for (let i = 0; i < str.length; i++) {
-    const c = str.charAt(i);
-    if (!escapeNextChar && c == separator) {
-      slashes.push(i);
+    const c = str.charAt(i)
+    if (!escapeNextChar && c === separator) {
+      slashes.push(i)
     }
-    escapeNextChar = !escapeNextChar && c == "\\";
+    escapeNextChar = !escapeNextChar && c === "\\"
   }
-  return slashes;
+  return slashes
 }
 
 // Translates a search string from ex (vim) syntax into javascript form.
 function translateRegex(str: string) {
   // When these match, add a '\' if unescaped or remove one if escaped.
-  const specials = "|(){";
+  const specials = "|(){"
   // Remove, but never add, a '\' for these.
-  const unescape = "}";
-  let escapeNextChar = false;
-  const out: string[] = [];
+  const unescape = "}"
+  let escapeNextChar = false
+  const out: string[] = []
   for (let i = -1; i < str.length; i++) {
-    const c = str.charAt(i) || "";
-    const n = str.charAt(i + 1) || "";
-    let specialComesNext = n && specials.indexOf(n) != -1;
+    const c = str.charAt(i) || ""
+    const n = str.charAt(i + 1) || ""
+    let specialComesNext = n && specials.indexOf(n) !== -1
     if (escapeNextChar) {
       if (c !== "\\" || !specialComesNext) {
-        out.push(c);
+        out.push(c)
       }
-      escapeNextChar = false;
+      escapeNextChar = false
     } else {
       if (c === "\\") {
-        escapeNextChar = true;
+        escapeNextChar = true
         // Treat the unescape list as special for removing, but not adding '\'.
-        if (n && unescape.indexOf(n) != -1) {
-          specialComesNext = true;
+        if (n && unescape.indexOf(n) !== -1) {
+          specialComesNext = true
         }
         // Not passing this test means removing a '\'.
         if (!specialComesNext || n === "\\") {
-          out.push(c);
+          out.push(c)
         }
       } else {
-        out.push(c);
+        out.push(c)
         if (specialComesNext && n !== "\\") {
-          out.push("\\");
+          out.push("\\")
         }
       }
     }
   }
-  return out.join("");
+  return out.join("")
 }
 
 // Translates the replace part of a search and replace from ex (vim) syntax into
@@ -99,41 +90,41 @@ const charUnescapes: Record<string, string> = {
   "\\n": "\n",
   "\\r": "\r",
   "\\t": "\t",
-};
+}
 export function translateRegexReplace(str: string) {
-  let escapeNextChar = false;
-  const out: string[] = [];
+  let escapeNextChar = false
+  const out: string[] = []
   for (let i = -1; i < str.length; i++) {
-    const c = str.charAt(i) || "";
-    const n = str.charAt(i + 1) || "";
+    const c = str.charAt(i) || ""
+    const n = str.charAt(i + 1) || ""
     if (charUnescapes[c + n]) {
-      out.push(charUnescapes[c + n]);
-      i++;
+      out.push(charUnescapes[c + n])
+      i++
     } else if (escapeNextChar) {
       // At any point in the loop, escapeNextChar is true if the previous
       // character was a '\' and was not escaped.
-      out.push(c);
-      escapeNextChar = false;
+      out.push(c)
+      escapeNextChar = false
     } else {
       if (c === "\\") {
-        escapeNextChar = true;
+        escapeNextChar = true
         if (isNumber(n) || n === "$") {
-          out.push("$");
+          out.push("$")
         } else if (n !== "/" && n !== "\\") {
-          out.push("\\");
+          out.push("\\")
         }
       } else {
         if (c === "$") {
-          out.push("$");
+          out.push("$")
         }
-        out.push(c);
+        out.push(c)
         if (n === "/") {
-          out.push("\\");
+          out.push("\\")
         }
       }
     }
   }
-  return out.join("");
+  return out.join("")
 }
 
 // Unescape \ and / in the replace part, for PCRE mode.
@@ -144,29 +135,29 @@ const unescapes: Record<string, string> = {
   "\\r": "\r",
   "\\t": "\t",
   "\\&": "&",
-};
+}
 export function unescapeRegexReplace(str: string) {
-  const stream = new StringStream(str);
-  const output: string[] = [];
+  const stream = new StringStream(str)
+  const output: string[] = []
   while (!stream.eol()) {
     // Search for \.
-    while (stream.peek() && stream.peek() != "\\") {
-      output.push(stream.next()!);
+    while (stream.peek() && stream.peek() !== "\\") {
+      output.push(stream.next()!)
     }
-    let matched = false;
+    let matched = false
     for (const matcher in unescapes) {
       if (stream.match(matcher, true)) {
-        matched = true;
-        output.push(unescapes[matcher]);
-        break;
+        matched = true
+        output.push(unescapes[matcher])
+        break
       }
     }
     if (!matched) {
       // Don't change anything
-      output.push(stream.next()!);
+      output.push(stream.next()!)
     }
   }
-  return output.join("");
+  return output.join("")
 }
 
 /**
@@ -179,53 +170,49 @@ export function unescapeRegexReplace(str: string) {
  *   then both ignoreCase and smartCase are ignored, and 'i' will be passed
  *   through to the Regex object.
  */
-function parseQuery(
-  query: string | RegExp,
-  ignoreCase: boolean,
-  smartCase: boolean
-) {
+function parseQuery(query: string | RegExp, ignoreCase: boolean, smartCase: boolean) {
   // First update the last search register
-  const lastSearchRegister = vimGlobalState.registerController.getRegister("/");
-  lastSearchRegister.setText(typeof query === "string" ? query : query.source);
+  const lastSearchRegister = vimGlobalState.registerController.getRegister("/")
+  lastSearchRegister.setText(typeof query === "string" ? query : query.source)
   // Check if the query is already a regex.
   if (query instanceof RegExp) {
-    return query;
+    return query
   }
   // First try to extract regex + flags from the input. If no flags found,
   // extract just the regex. IE does not accept flags directly defined in
   // the regex string in the form /regex/flags
-  const slashes = findUnescapedSlashes(query);
-  let regexPart: string;
-  let forceIgnoreCase: boolean | undefined;
+  const slashes = findUnescapedSlashes(query)
+  let regexPart: string
+  let forceIgnoreCase: boolean | undefined
   if (!slashes.length) {
     // Query looks like 'regexp'
-    regexPart = query;
+    regexPart = query
   } else {
     // Query looks like 'regexp/...'
-    regexPart = query.substring(0, slashes[0]);
-    const flagsPart = query.substring(slashes[0]);
-    forceIgnoreCase = flagsPart.includes("i");
+    regexPart = query.substring(0, slashes[0])
+    const flagsPart = query.substring(slashes[0])
+    forceIgnoreCase = flagsPart.includes("i")
   }
   if (!regexPart) {
-    return null;
+    return null
   }
   if (!getOption("pcre")) {
-    regexPart = translateRegex(regexPart);
+    regexPart = translateRegex(regexPart)
   }
   if (smartCase) {
-    ignoreCase = /^[^A-Z]*$/.test(regexPart);
+    ignoreCase = /^[^A-Z]*$/.test(regexPart)
   }
-  return new RegExp(regexPart, ignoreCase || forceIgnoreCase ? "im" : "m");
+  return new RegExp(regexPart, ignoreCase || forceIgnoreCase ? "im" : "m")
 }
 
 export function showConfirm(adapter: EditorAdapter, template: string) {
-  adapter.openNotification(template);
+  adapter.openNotification(template)
 }
 
 interface PromptOptions extends StatusBarInputOptions {
-  prefix: string;
-  desc?: string;
-  onClose: (value: string) => void;
+  prefix: string
+  desc?: string
+  onClose: (value: string) => void
 }
 
 export function showPrompt(adapter: EditorAdapter, options: PromptOptions) {
@@ -235,7 +222,7 @@ export function showPrompt(adapter: EditorAdapter, options: PromptOptions) {
     onClose: options.onClose,
     selectValueOnOpen: false,
     value: options.value,
-  });
+  })
 }
 
 function regexEqual(r1: RegExp | string, r2: RegExp | string) {
@@ -245,103 +232,90 @@ function regexEqual(r1: RegExp | string, r2: RegExp | string) {
       r1.multiline === r2.multiline &&
       r1.ignoreCase === r2.ignoreCase &&
       r1.source === r2.source
-    );
+    )
   }
-  return false;
+  return false
 }
 
 // Returns true if the query is valid.
-export function updateSearchQuery(
-  adapter: EditorAdapter,
-  rawQuery: string,
-  ignoreCase?: boolean,
-  smartCase?: boolean
-) {
+export function updateSearchQuery(adapter: EditorAdapter, rawQuery: string, ignoreCase?: boolean, smartCase?: boolean) {
   if (!rawQuery) {
-    return;
+    return
   }
-  const state = getSearchState(adapter);
-  const query = parseQuery(rawQuery, !!ignoreCase, !!smartCase);
+  const state = getSearchState(adapter)
+  const query = parseQuery(rawQuery, !!ignoreCase, !!smartCase)
   if (!query) {
-    return;
+    return
   }
-  highlightSearchMatches(adapter, query);
+  highlightSearchMatches(adapter, query)
   if (regexEqual(query, state.getQuery()!)) {
-    return query;
+    return query
   }
-  state.setQuery(query);
-  return query;
+  state.setQuery(query)
+  return query
 }
 
-let highlightTimeout: ReturnType<typeof setTimeout>;
+let highlightTimeout: ReturnType<typeof setTimeout>
 
 export function highlightSearchMatches(adapter: EditorAdapter, query: RegExp) {
-  clearTimeout(highlightTimeout);
+  clearTimeout(highlightTimeout)
   highlightTimeout = setTimeout(() => {
-    if (!adapter.state.vim) return;
-    const searchState = getSearchState(adapter);
-    let overlay = searchState.getOverlay();
-    if (!overlay || query != overlay.query) {
+    if (!adapter.state.vim) return
+    const searchState = getSearchState(adapter)
+    let overlay = searchState.getOverlay()
+    if (!overlay || query !== overlay.query) {
       if (overlay) {
-        adapter.removeOverlay();
+        adapter.removeOverlay()
       }
-      overlay = searchOverlay(query);
-      adapter.addOverlay(overlay.query);
-      searchState.setOverlay(overlay);
+      overlay = searchOverlay(query)
+      adapter.addOverlay(overlay.query)
+      searchState.setOverlay(overlay)
     }
-  }, 50);
+  }, 50)
 }
 
 export function cancelPendingHighlight() {
-  clearTimeout(highlightTimeout);
+  clearTimeout(highlightTimeout)
 }
 
-export function findNext(
-  adapter: EditorAdapter,
-  prev: boolean,
-  query: RegExp,
-  repeat?: number
-) {
+export function findNext(adapter: EditorAdapter, prev: boolean, query: RegExp, repeat?: number) {
   if (repeat === undefined) {
-    repeat = 1;
+    repeat = 1
   }
-  const pos = adapter.getCursor();
-  let cursor = adapter.getSearchCursor(query, pos);
+  const pos = adapter.getCursor()
+  let cursor = adapter.getSearchCursor(query, pos)
   for (let i = 0; i < repeat; i++) {
-    let found = cursor.find(prev);
-    const firstFrom = cursor.from();
-    if (i == 0 && found && firstFrom && cursorEqual(firstFrom, pos)) {
-      const lastEndPos = prev ? cursor.from() : cursor.to();
-      found = cursor.find(prev);
-      const repeatedFrom = cursor.from();
+    let found = cursor.find(prev)
+    const firstFrom = cursor.from()
+    if (i === 0 && found && firstFrom && cursorEqual(firstFrom, pos)) {
+      const lastEndPos = prev ? cursor.from() : cursor.to()
+      found = cursor.find(prev)
+      const repeatedFrom = cursor.from()
       if (found && lastEndPos && repeatedFrom && cursorEqual(repeatedFrom, lastEndPos)) {
-        if (adapter.getLine(lastEndPos.line).length == lastEndPos.ch) {
-          found = cursor.find(prev);
+        if (adapter.getLine(lastEndPos.line).length === lastEndPos.ch) {
+          found = cursor.find(prev)
         }
       }
     }
     if (!found) {
       // SearchCursor may have returned null because it hit EOF, wrap
       // around and try again.
-      cursor = adapter.getSearchCursor(
-        query,
-        makePos(prev ? adapter.lastLine() : adapter.firstLine(), 0)
-      );
+      cursor = adapter.getSearchCursor(query, makePos(prev ? adapter.lastLine() : adapter.firstLine(), 0))
       if (!cursor.find(prev)) {
-        return;
+        return
       }
     }
   }
-  return cursor.from();
+  return cursor.from()
 }
 
 export function clearSearchHighlight(adapter: EditorAdapter) {
-  const state = getSearchState(adapter);
-  adapter.removeOverlay();
-  state.setOverlay(undefined);
+  const state = getSearchState(adapter)
+  adapter.removeOverlay()
+  state.setOverlay(undefined)
   if (state.getScrollbarAnnotate()) {
-    state.getScrollbarAnnotate().clear();
-    state.setScrollbarAnnotate(null);
+    state.getScrollbarAnnotate().clear()
+    state.setScrollbarAnnotate(null)
   }
 }
 
@@ -357,15 +331,15 @@ export function clearSearchHighlight(adapter: EditorAdapter) {
  */
 export function isInRange(pos: Pos | number, start: number | number[], end?: number) {
   if (isPos(pos)) {
-    pos = pos.line;
+    pos = pos.line
   }
-  if (start instanceof Array) {
-    return inArray(pos, start);
+  if (Array.isArray(start)) {
+    return inArray(pos, start)
   } else {
     if (typeof end === "number") {
-      return pos >= start && pos <= end;
+      return pos >= start && pos <= end
     } else {
-      return pos == start;
+      return pos === start
     }
   }
 }
