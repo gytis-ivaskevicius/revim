@@ -1,328 +1,46 @@
 use crossterm::{
-    event::{self, Event, KeyCode, KeyModifiers},
+    event::{self, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use napi::{bindgen_prelude::*, Env};
 use napi_derive::napi;
-use ratatui::{
-    backend::CrosstermBackend,
-    style::{Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
-    Terminal,
-};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
+use ratatui::{backend::CrosstermBackend, Terminal};
+use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
 
-static TUI_RUNNING: AtomicBool = AtomicBool::new(false);
+use super::state::{HighlightRange, Selection, VisualMode};
+use super::{
+    extract_modifiers, to_napi_error, wrap_decrement_u16, wrap_increment_u16, TuiContext,
+    TUI_CONTEXT, TUI_RUNNING,
+};
+use super::render::render_frame_internal;
 
-#[derive(Clone)]
 #[napi(object)]
-pub struct Selection {
-    pub anchor_line: u32,
-    pub anchor_ch: u32,
-    pub head_line: u32,
-    pub head_ch: u32,
+pub struct KeyboardEvent {
+    pub key: String,
+    pub modifiers: Vec<String>,
 }
 
-struct TuiState {
-    cursor_row: u16,
-    cursor_col: u16,
-    anchor_row: u16,
-    anchor_col: u16,
-    visual_mode: VisualMode,
-    demo_text: Vec<String>,
-    selections: Vec<Selection>,
-    highlights: Vec<HighlightRange>,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum VisualMode {
-    None,
-    Char,
-    Line,
-    Block,
-}
-
-#[derive(Clone)]
 #[napi(object)]
-pub struct HighlightRange {
-    pub start_line: u32,
-    pub start_ch: u32,
-    pub end_line: u32,
-    pub end_ch: u32,
+pub struct CursorPosition {
+    pub line: u32,
+    pub ch: u32,
 }
 
-impl TuiState {
-    fn new() -> Self {
-        let demo_text = vec![
-            "Welcome to ReVim!".to_string(),
-            "".to_string(),
-            "This is a demo text for the TUI.".to_string(),
-            "Use arrow keys to move the cursor.".to_string(),
-            "Press Ctrl+C to exit.".to_string(),
-            "".to_string(),
-            "The cursor wraps around edges.".to_string(),
-        ];
-        Self {
-            cursor_row: 0,
-            cursor_col: 0,
-            anchor_row: 0,
-            anchor_col: 0,
-            visual_mode: VisualMode::None,
-            demo_text,
-            selections: vec![Selection {
-                anchor_line: 0,
-                anchor_ch: 0,
-                head_line: 0,
-                head_ch: 0,
-            }],
-            highlights: Vec::new(),
-        }
-    }
-
-    fn ordered_range(
-        start_line: u16,
-        start_ch: u16,
-        end_line: u16,
-        end_ch: u16,
-    ) -> (u16, u16, u16, u16) {
-        if start_line < end_line || (start_line == end_line && start_ch <= end_ch) {
-            (start_line, start_ch, end_line, end_ch)
-        } else {
-            (end_line, end_ch, start_line, start_ch)
-        }
-    }
-
-    fn max_rows(&self) -> u16 {
-        self.demo_text.len() as u16
-    }
-
-    fn current_line_len(&self) -> u16 {
-        self.demo_text
-            .get(self.cursor_row as usize)
-            .map(|s| s.len() as u16)
-            .unwrap_or(0)
-            .max(1)
-    }
-
-    fn get_line(&self, line: u16) -> String {
-        self.demo_text
-            .get(line as usize)
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    fn char_to_byte_index(text: &str, ch: u16) -> usize {
-        text.char_indices()
-            .nth(ch as usize)
-            .map(|(idx, _)| idx)
-            .unwrap_or(text.len())
-    }
-
-    fn get_range(&self, start_line: u16, start_ch: u16, end_line: u16, end_ch: u16) -> String {
-        let (start_line, start_ch, end_line, end_ch) =
-            Self::ordered_range(start_line, start_ch, end_line, end_ch);
-        if start_line as usize >= self.demo_text.len() || end_line as usize >= self.demo_text.len()
-        {
-            return String::new();
-        }
-        let start_line_str = &self.demo_text[start_line as usize];
-        if start_line == end_line {
-            let end_ch = end_ch.min(start_line_str.chars().count() as u16);
-            let start_ch = start_ch.min(end_ch);
-            let start_idx = Self::char_to_byte_index(start_line_str, start_ch);
-            let end_idx = Self::char_to_byte_index(start_line_str, end_ch);
-            return start_line_str[start_idx..end_idx].to_string();
-        }
-        let start_idx = Self::char_to_byte_index(start_line_str, start_ch);
-        let mut result = start_line_str[start_idx..].to_string();
-        for i in (start_line + 1)..end_line {
-            if let Some(line) = self.demo_text.get(i as usize) {
-                result.push('\n');
-                result.push_str(line);
-            }
-        }
-        if let Some(end_line_str) = self.demo_text.get(end_line as usize) {
-            result.push('\n');
-            let end_ch = end_ch.min(end_line_str.chars().count() as u16);
-            let end_idx = Self::char_to_byte_index(end_line_str, end_ch);
-            result.push_str(&end_line_str[..end_idx]);
-        }
-        result
-    }
-
-    fn replace_range(
-        &mut self,
-        text: &str,
-        start_line: u16,
-        start_ch: u16,
-        end_line: u16,
-        end_ch: u16,
-    ) {
-        if start_line as usize >= self.demo_text.len() {
-            return;
-        }
-
-        let (start_line, start_ch, end_line, end_ch) =
-            Self::ordered_range(start_line, start_ch, end_line, end_ch);
-        if end_line as usize >= self.demo_text.len() {
-            return;
-        }
-
-        let start_line_str = self.demo_text[start_line as usize].clone();
-        let end_line_str = self.demo_text[end_line as usize].clone();
-        let start_ch = start_ch.min(start_line_str.chars().count() as u16);
-        let end_ch = end_ch.min(end_line_str.chars().count() as u16);
-        let start_idx = Self::char_to_byte_index(&start_line_str, start_ch);
-        let end_idx = Self::char_to_byte_index(&end_line_str, end_ch);
-        let prefix = start_line_str[..start_idx].to_string();
-        let suffix = end_line_str[end_idx..].to_string();
-        let mut replacement_lines: Vec<String> =
-            text.split('\n').map(|line| line.to_string()).collect();
-
-        if replacement_lines.is_empty() {
-            replacement_lines.push(String::new());
-        }
-
-        let new_lines = if replacement_lines.len() == 1 {
-            vec![format!("{}{}{}", prefix, replacement_lines[0], suffix)]
-        } else {
-            let last_index = replacement_lines.len() - 1;
-            replacement_lines[0] = format!("{}{}", prefix, replacement_lines[0]);
-            replacement_lines[last_index] = format!("{}{}", replacement_lines[last_index], suffix);
-            replacement_lines
-        };
-
-        self.demo_text
-            .splice(start_line as usize..=end_line as usize, new_lines);
-    }
-
-    fn clip_pos(&self, line: u16, ch: u16) -> (u16, u16) {
-        let max_line = self.max_rows().saturating_sub(1);
-        let line = line.min(max_line);
-        let max_ch = self.get_line(line).chars().count() as u16;
-        let ch = ch.min(max_ch);
-        (line, ch)
-    }
-
-    fn index_from_pos(&self, line: u16, ch: u16) -> u32 {
-        let mut offset = 0u32;
-        for i in 0..line {
-            if let Some(text) = self.demo_text.get(i as usize) {
-                offset += text.chars().count() as u32 + 1;
-            }
-        }
-        offset + ch as u32
-    }
-
-    fn pos_from_index(&self, offset: u32) -> (u16, u16) {
-        let mut current_offset = 0u32;
-        for (i, line) in self.demo_text.iter().enumerate() {
-            let line_len = line.chars().count() as u32 + 1;
-            if current_offset + line_len > offset {
-                return (i as u16, (offset - current_offset) as u16);
-            }
-            current_offset += line_len;
-        }
-
-        let last_line = self.max_rows().saturating_sub(1);
-        (last_line, self.get_line(last_line).chars().count() as u16)
-    }
-
-    fn sync_primary_selection(&mut self) {
-        self.selections = vec![Selection {
-            anchor_line: self.anchor_row as u32,
-            anchor_ch: self.anchor_col as u32,
-            head_line: self.cursor_row as u32,
-            head_ch: self.cursor_col as u32,
-        }];
-    }
+#[napi(object)]
+pub struct ScrollInfo {
+    pub top: u32,
+    pub height: u32,
+    pub client_height: u32,
 }
 
-struct TuiContext {
-    state: Mutex<TuiState>,
-    terminal: Terminal<CrosstermBackend<std::io::Stdout>>,
-}
-
-static TUI_CONTEXT: Mutex<Option<TuiContext>> = Mutex::new(None);
-
-fn to_napi_error<E: std::fmt::Display>(e: E) -> Error {
-    Error::from_reason(e.to_string())
-}
-
-fn wrap_decrement_u16(val: u16, max: u16) -> u16 {
-    if max == 0 {
-        0
-    } else {
-        (val + max - 1) % max
-    }
-}
-
-fn wrap_increment_u16(val: u16, max: u16) -> u16 {
-    if max == 0 {
-        0
-    } else {
-        (val + 1) % max
-    }
-}
-
-fn extract_modifiers(modifiers: KeyModifiers) -> Vec<String> {
-    let mut mods = Vec::new();
-    if modifiers.contains(KeyModifiers::CONTROL) {
-        mods.push("Ctrl".to_string());
-    }
-    if modifiers.contains(KeyModifiers::SHIFT) {
-        mods.push("Shift".to_string());
-    }
-    if modifiers.contains(KeyModifiers::ALT) {
-        mods.push("Alt".to_string());
-    }
-    mods
-}
-
-fn build_highlighted_line<'a>(
-    line: &'a str,
-    cursor_col: Option<u16>,
-    highlights: &[(u16, u16)],
-) -> Line<'a> {
-    let chars: Vec<char> = line.chars().collect();
-    let col = cursor_col.map(|cursor_col| cursor_col as usize);
-    let max_highlight_end = highlights
-        .iter()
-        .map(|(_, end)| *end as usize)
-        .max()
-        .unwrap_or(0);
-    let width = chars
-        .len()
-        .max(max_highlight_end)
-        .max(col.map(|col| col.saturating_add(1)).unwrap_or(0));
-    let spans: Vec<Span> = (0..width)
-        .map(|i| {
-            let ch = chars.get(i).copied().unwrap_or(' ');
-            let is_cursor = col == Some(i);
-            let is_highlighted = highlights
-                .iter()
-                .any(|(start, end)| i >= *start as usize && i < *end as usize);
-            let mut style = Style::default();
-            if is_highlighted {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
-            if is_cursor {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
-            if is_cursor || is_highlighted {
-                Span::styled(ch.to_string(), style)
-            } else {
-                Span::raw(ch.to_string())
-            }
-        })
-        .collect();
-    Line::from(spans)
+#[napi(object)]
+pub struct VisibleLines {
+    pub top: u32,
+    pub bottom: u32,
 }
 
 #[napi]
@@ -341,147 +59,10 @@ pub fn init_tui() -> Result<()> {
         to_napi_error(e)
     })?;
 
-    *TUI_CONTEXT.lock().map_err(to_napi_error)? = Some(TuiContext {
-        state: Mutex::new(TuiState::new()),
-        terminal,
-    });
+    *TUI_CONTEXT.lock().map_err(to_napi_error)? = Some(TuiContext::new(terminal));
 
     TUI_RUNNING.store(true, Ordering::SeqCst);
     render_frame_internal()?;
-
-    Ok(())
-}
-
-fn render_frame_internal() -> Result<()> {
-    let (
-        cursor_row,
-        cursor_col,
-        anchor_row,
-        anchor_col,
-        visual_mode,
-        demo_text,
-        highlights,
-        selections,
-    ) = {
-        let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let context = ctx
-            .as_ref()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
-
-        let state = context.state.lock().unwrap();
-        let cursor_row = state.cursor_row;
-        let cursor_col = state.cursor_col;
-        let anchor_row = state.anchor_row;
-        let anchor_col = state.anchor_col;
-        let visual_mode = state.visual_mode;
-        let demo_text: Vec<String> = state.demo_text.clone();
-        let highlights = state.highlights.clone();
-        let selections = state.selections.clone();
-        (
-            cursor_row,
-            cursor_col,
-            anchor_row,
-            anchor_col,
-            visual_mode,
-            demo_text,
-            highlights,
-            selections,
-        )
-    };
-
-    let selection_active = visual_mode != VisualMode::None;
-    let (sel_start_row, _, sel_end_row, _) =
-        TuiState::ordered_range(anchor_row, anchor_col, cursor_row, cursor_col);
-
-    let lines: Vec<Line> = demo_text
-        .iter()
-        .enumerate()
-        .map(|(row, line)| {
-            let mut row_highlights: Vec<(u16, u16)> = highlights
-                .iter()
-                .filter(|range| range.start_line == row as u32 && range.end_line == row as u32)
-                .map(|range| (range.start_ch as u16, range.end_ch as u16))
-                .collect();
-
-            if selection_active {
-                let row_index = row as u16;
-                let line_len = line.chars().count() as u16;
-                let highlight_width = line_len.max(1);
-                let selection_range = match visual_mode {
-                    VisualMode::None => None,
-                    VisualMode::Char => selections.first().and_then(|selection| {
-                        let start_line = selection.anchor_line.min(selection.head_line) as u16;
-                        let end_line = selection.anchor_line.max(selection.head_line) as u16;
-                        let start_col = selection.anchor_ch.min(selection.head_ch) as u16;
-                        let end_col = selection.anchor_ch.max(selection.head_ch) as u16;
-
-                        if start_line == end_line {
-                            (row_index == start_line)
-                                .then_some((start_col.min(line_len), end_col.min(highlight_width)))
-                        } else if row_index == start_line {
-                            Some((start_col.min(line_len), line_len))
-                        } else if row_index == end_line {
-                            Some((0, end_col.min(highlight_width)))
-                        } else if row_index > start_line && row_index < end_line {
-                            Some((0, highlight_width))
-                        } else {
-                            None
-                        }
-                    }),
-                    VisualMode::Line => (row_index >= sel_start_row && row_index <= sel_end_row)
-                        .then_some((0, highlight_width)),
-                    VisualMode::Block => {
-                        if row_index >= sel_start_row && row_index <= sel_end_row {
-                            let start = anchor_col.min(cursor_col);
-                            let end = anchor_col.max(cursor_col) + 1;
-                            Some((start, end))
-                        } else {
-                            None
-                        }
-                    }
-                };
-
-                if let Some((start, end)) = selection_range.filter(|(start, end)| start < end) {
-                    row_highlights.push((start, end));
-                }
-            }
-
-            if row == cursor_row as usize {
-                build_highlighted_line(
-                    line,
-                    if selection_active {
-                        None
-                    } else {
-                        Some(cursor_col)
-                    },
-                    &row_highlights,
-                )
-            } else if !row_highlights.is_empty() {
-                build_highlighted_line(line, None, &row_highlights)
-            } else {
-                Line::from(line.as_str())
-            }
-        })
-        .collect();
-
-    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let context = ctx
-        .as_mut()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
-
-    context
-        .terminal
-        .draw(|f| {
-            let size = f.area();
-            let block = Block::default().borders(Borders::ALL).title("ReVim");
-            let paragraph = Paragraph::new(lines)
-                .block(block.clone())
-                .alignment(ratatui::layout::Alignment::Left);
-            f.render_widget(paragraph, size);
-            let inner_area = block.inner(size);
-            f.set_cursor_position((inner_area.x + cursor_col, inner_area.y + cursor_row));
-        })
-        .map_err(to_napi_error)?;
 
     Ok(())
 }
@@ -496,18 +77,6 @@ pub fn shutdown_tui() -> Result<()> {
     execute!(std::io::stdout(), LeaveAlternateScreen).map_err(to_napi_error)?;
 
     Ok(())
-}
-
-#[napi(object)]
-pub struct KeyboardEvent {
-    pub key: String,
-    pub modifiers: Vec<String>,
-}
-
-#[napi(object)]
-pub struct CursorPosition {
-    pub line: u32,
-    pub ch: u32,
 }
 
 #[allow(deprecated)]
@@ -1067,13 +636,6 @@ pub fn get_line_first_non_whitespace(line: u32) -> Result<u32> {
     Ok(line_str.chars().count() as u32)
 }
 
-#[napi(object)]
-pub struct ScrollInfo {
-    pub top: u32,
-    pub height: u32,
-    pub client_height: u32,
-}
-
 #[napi]
 pub fn get_scroll_info() -> Result<ScrollInfo> {
     let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
@@ -1184,12 +746,6 @@ pub fn set_highlights(_ranges: Vec<HighlightRange>) -> Result<()> {
 #[napi]
 pub fn scroll_to_line(line: u32, _position: String) -> Result<()> {
     scroll_to(line)
-}
-
-#[napi(object)]
-pub struct VisibleLines {
-    pub top: u32,
-    pub bottom: u32,
 }
 
 #[napi]

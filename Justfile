@@ -5,7 +5,6 @@ default:
 # Build the Rust library and generate .node binary
 build:
 	cd lib && npm run build
-	rm -rf "lib/target"
 
 # Run the demo application
 dev: build
