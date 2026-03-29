@@ -66,7 +66,7 @@ pub fn render_frame_internal() -> Result<()> {
             .as_ref()
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
 
-        let state = context.state.lock().unwrap();
+        let state = context.state.lock().map_err(to_napi_error)?;
         let cursor_row = state.cursor_row;
         let cursor_col = state.cursor_col;
         let anchor_row = state.anchor_row;
@@ -180,9 +180,19 @@ pub fn render_frame_internal() -> Result<()> {
             let paragraph = Paragraph::new(lines)
                 .block(block.clone())
                 .alignment(Alignment::Left);
-            f.render_widget(paragraph, editor_area);
-            let inner_area = block.inner(editor_area);
-            f.set_cursor_position((inner_area.x + cursor_col, inner_area.y + cursor_row));
+            // Only render editor if it has positive height/width
+            if editor_area.height > 0 && editor_area.width > 0 {
+                f.render_widget(paragraph, editor_area);
+                let inner_area = block.inner(editor_area);
+                // clamp cursor within inner_area to avoid out-of-bounds positioning
+                let cx = inner_area
+                    .x
+                    .saturating_add(cursor_col.min(inner_area.width.saturating_sub(1)));
+                let cy = inner_area
+                    .y
+                    .saturating_add(cursor_row.min(inner_area.height.saturating_sub(1)));
+                f.set_cursor_position((cx, cy));
+            }
 
             let status_bar = Paragraph::new(status_text.as_str()).alignment(Alignment::Left);
             f.render_widget(status_bar, status_area);
