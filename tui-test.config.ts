@@ -4,5 +4,5 @@ import { availableParallelism } from "node:os";
 export default defineConfig({
   testMatch: "app/tests/**/*.test.ts",
   retries: 0,
-  workers: Math.min(availableParallelism(), 24),
+  workers: 100
 });
