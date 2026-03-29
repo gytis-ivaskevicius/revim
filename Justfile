@@ -29,8 +29,9 @@ lint:
 
 # Auto-fix lint issues
 lint-fix:
-	cd lib && cargo clippy --fix --allow-dirty -- -D warnings
 	bunx biome check --write --unsafe app/src
+	cd app && npx tsc --noEmit
+	cd lib && cargo clippy --fix --allow-dirty -- -D warnings
 
 # Run tests and linter
 check: test lint
