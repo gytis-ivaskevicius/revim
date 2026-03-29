@@ -200,7 +200,36 @@ pub fn get_line_count() -> Result<u32> {
         .state
         .lock()
         .unwrap();
-    Ok(state.max_rows() as u32)
+    Ok(state.demo_text.len() as u32)
+}
+
+#[napi]
+pub fn get_all_lines() -> Result<Vec<String>> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+    Ok(state.demo_text.clone())
+}
+
+#[napi]
+pub fn set_all_lines(lines: Vec<String>) -> Result<()> {
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let mut state = ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+    state.demo_text = lines;
+    state.cursor_row = 0;
+    state.cursor_col = 0;
+    state.sync_primary_selection();
+    render_frame_internal()?;
+    Ok(())
 }
 
 #[napi]

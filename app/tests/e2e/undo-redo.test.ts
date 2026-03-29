@@ -31,14 +31,37 @@ test("insert text then undo reverts to original", async ({ terminal }) => {
   await pressKeys(terminal, ["i", "H", "e", "l", "l", "o", "<Esc>"])
 
   const buffer1 = visibleBuffer(terminal)
-  console.log("After insert:", buffer1)
+  expect(buffer1.includes("Hello")).toBe(true)
 
   await pressKeys(terminal, ["u"])
 
   const buffer2 = visibleBuffer(terminal)
-  console.log("After undo:", buffer2)
+  expect(buffer2.includes("Welcome to ReVim!")).toBe(true)
+})
 
-  if (!buffer2.includes("Welcome to ReVim!")) {
-    throw new Error(`Expected buffer to include 'Welcome to ReVim!', got: ${buffer2}`)
-  }
+test("undo at empty history does not change buffer", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+  const bufferBefore = visibleBuffer(terminal)
+  await pressKeys(terminal, ["u"])
+  const bufferAfter = visibleBuffer(terminal)
+  expect(bufferBefore).toBe(bufferAfter)
+})
+
+test("multiple undos revert multiple edit groups", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+
+  await pressKeys(terminal, ["i", "a", "<Esc>"])
+  await pressKeys(terminal, ["i", "b", "<Esc>"])
+  await pressKeys(terminal, ["i", "c", "<Esc>"])
+
+  const buffer1 = visibleBuffer(terminal)
+  expect(buffer1.includes("c")).toBe(true)
+
+  await pressKeys(terminal, ["u"])
+  const buffer2 = visibleBuffer(terminal)
+  expect(buffer2.includes("b")).toBe(true)
+
+  await pressKeys(terminal, ["u"])
+  const buffer3 = visibleBuffer(terminal)
+  expect(buffer3.includes("a")).toBe(true)
 })

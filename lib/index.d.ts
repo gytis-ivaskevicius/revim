@@ -9,6 +9,8 @@ export interface CursorPosition {
 
 export declare function focusEditor(): void
 
+export declare function getAllLines(): Array<string>
+
 export declare function getCursorPos(): CursorPosition
 
 export declare function getLine(line: number): string
@@ -71,6 +73,8 @@ export interface Selection {
   headLine: number
   headCh: number
 }
+
+export declare function setAllLines(lines: Array<string>): void
 
 export declare function setCursorPos(line: number, ch: number): void
 
