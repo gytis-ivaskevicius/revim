@@ -1,6 +1,7 @@
 import {
   clipPos,
   focusEditor,
+  getAllLines,
   getCursorPos,
   getLine,
   getLineCount,
@@ -11,11 +12,11 @@ import {
   indentLine,
   indexFromPos,
   posFromIndex,
-  pushUndoStop,
   replaceRange,
   replaceSelections,
   scrollTo,
   scrollToLine,
+  setAllLines,
   setCursorPos,
   setHighlights,
   setSelection as setNativeSelection,
@@ -134,13 +135,13 @@ export class EditorAdapter {
   }
   static commands: Record<string, (adapter: EditorAdapter, params: ExCommandOptionalParameters) => void> = {
     redo: (adapter: EditorAdapter) => {
-      adapter.triggerEditorAction("redo")
+      adapter.redo()
     },
     undo: (adapter: EditorAdapter) => {
-      adapter.triggerEditorAction("undo")
+      adapter.undo()
     },
     undoLine: (adapter: EditorAdapter) => {
-      adapter.triggerEditorAction("undoLine")
+      adapter.undoLine()
     },
     newlineAndIndent: (adapter: EditorAdapter) => {
       adapter.triggerEditorAction("editor.action.insertLineAfter")
@@ -184,6 +185,8 @@ export class EditorAdapter {
   selectionAnchor: Pos = makePos(0, 0)
   selectionHead: Pos = makePos(0, 0)
   selections: CmSelection[] = [new CmSelection(makePos(0, 0), makePos(0, 0))]
+  undoStack: string[][] = []
+  redoStack: string[][] = []
 
   constructor() {
     const pos = this.readHead()
@@ -361,7 +364,33 @@ export class EditorAdapter {
   }
 
   pushUndoStop() {
-    pushUndoStop()
+    this.undoStack.push(getAllLines())
+    this.redoStack = []
+  }
+
+  undo() {
+    if (this.undoStack.length === 0) {
+      return
+    }
+    const current = getAllLines()
+    this.redoStack.push(current)
+    const previous = this.undoStack.pop()!
+    setAllLines(previous)
+  }
+
+  redo() {
+    if (this.redoStack.length === 0) {
+      return
+    }
+    const current = getAllLines()
+    this.undoStack.push(current)
+    const next = this.redoStack.pop()!
+    setAllLines(next)
+  }
+
+  undoLine() {
+    // Undo all changes on current line - simplified: just undo
+    this.undo()
   }
 
   setCursor(line: Pos, ch?: number): void
