@@ -720,16 +720,12 @@ pub fn clip_pos(line: u32, ch: u32) -> Result<CursorPosition> {
     })
 }
 
+// Note: pushUndoStop is implemented in TypeScript using snapshot-based approach.
+// See app/src/vim/adapter.ts for the implementation.
+
 #[napi]
 pub fn push_undo_stop() -> Result<()> {
-    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let mut state = ctx
-        .as_mut()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?
-        .state
-        .lock()
-        .unwrap();
-    state.push_undo_stop();
+    // No-op: undo/redo is handled in TypeScript
     Ok(())
 }
 
