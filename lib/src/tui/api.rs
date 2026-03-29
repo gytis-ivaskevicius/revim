@@ -705,38 +705,10 @@ pub fn push_undo_stop() -> Result<()> {
 #[napi]
 pub fn trigger_action(action: String) -> Result<()> {
     match action.as_str() {
-        "undo" => {
-            let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-            let mut state = ctx
-                .as_mut()
-                .ok_or_else(|| to_napi_error("TUI not initialized"))?
-                .state
-                .lock()
-                .unwrap();
-            state.undo();
-            render_frame_internal()
-        }
-        "redo" => {
-            let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-            let mut state = ctx
-                .as_mut()
-                .ok_or_else(|| to_napi_error("TUI not initialized"))?
-                .state
-                .lock()
-                .unwrap();
-            state.redo();
-            render_frame_internal()
-        }
-        "undoLine" => {
-            let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-            let mut state = ctx
-                .as_mut()
-                .ok_or_else(|| to_napi_error("TUI not initialized"))?
-                .state
-                .lock()
-                .unwrap();
-            state.undo_line();
-            render_frame_internal()
+        "undo" | "redo" | "undoLine" => {
+            // Undo/redo disabled - needs proper implementation
+            // See story 007 for details
+            Ok(())
         }
         "formatSelection" => {
             let cursor = get_cursor_pos()?;
