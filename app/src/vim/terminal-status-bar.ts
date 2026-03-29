@@ -34,7 +34,10 @@ export class TerminalStatusBar implements IStatusBar {
     try {
       setStatusText(text)
     } catch (_e) {
-      // best-effort; avoid throwing during shutdown
+      // best-effort; avoid throwing during shutdown — surface debug info to help
+      // when running under tests or during development.
+      // eslint-disable-next-line no-console
+      console.debug("setStatusText failed", _e)
     }
   }
 
