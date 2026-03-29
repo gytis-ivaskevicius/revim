@@ -11,12 +11,12 @@ use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Duration;
 
+use super::render::render_frame_internal;
 use super::state::{HighlightRange, Selection, VisualMode};
 use super::{
     extract_modifiers, to_napi_error, wrap_decrement_u16, wrap_increment_u16, TuiContext,
     TUI_CONTEXT, TUI_RUNNING,
 };
-use super::render::render_frame_internal;
 
 #[napi(object)]
 pub struct KeyboardEvent {
@@ -691,13 +691,53 @@ pub fn clip_pos(line: u32, ch: u32) -> Result<CursorPosition> {
 
 #[napi]
 pub fn push_undo_stop() -> Result<()> {
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let mut state = ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .unwrap();
+    state.push_undo_stop();
     Ok(())
 }
 
 #[napi]
 pub fn trigger_action(action: String) -> Result<()> {
     match action.as_str() {
-        "redo" | "undo" => Ok(()),
+        "undo" => {
+            let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+            let mut state = ctx
+                .as_mut()
+                .ok_or_else(|| to_napi_error("TUI not initialized"))?
+                .state
+                .lock()
+                .unwrap();
+            state.undo();
+            render_frame_internal()
+        }
+        "redo" => {
+            let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+            let mut state = ctx
+                .as_mut()
+                .ok_or_else(|| to_napi_error("TUI not initialized"))?
+                .state
+                .lock()
+                .unwrap();
+            state.redo();
+            render_frame_internal()
+        }
+        "undoLine" => {
+            let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+            let mut state = ctx
+                .as_mut()
+                .ok_or_else(|| to_napi_error("TUI not initialized"))?
+                .state
+                .lock()
+                .unwrap();
+            state.undo_line();
+            render_frame_internal()
+        }
         "formatSelection" => {
             let cursor = get_cursor_pos()?;
             indent_line(cursor.line, true)

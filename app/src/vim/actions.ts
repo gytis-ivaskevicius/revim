@@ -181,6 +181,7 @@ export const actions: Record<string, ActionFunc> = {
       exitVisualMode(adapter)
     }
     selectForInsert(adapter, head, height)
+    adapter.pushUndoStop()
   },
   toggleVisualMode: (adapter, actionArgs, vim) => {
     const repeat = actionArgs.repeat!
@@ -444,6 +445,9 @@ export const actions: Record<string, ActionFunc> = {
   },
   redo: (adapter, actionArgs) => {
     repeatFn(() => EditorAdapter.commands.redo(adapter, {}), actionArgs.repeat!)()
+  },
+  undoLine: (adapter, actionArgs) => {
+    repeatFn(() => EditorAdapter.commands.undoLine(adapter, {}), actionArgs.repeat!)()
   },
   setRegister: (adapter, actionArgs, vim) => {
     vim.inputState.registerName = actionArgs.selectedCharacter

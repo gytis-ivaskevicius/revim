@@ -139,6 +139,9 @@ export class EditorAdapter {
     undo: (adapter: EditorAdapter) => {
       adapter.triggerEditorAction("undo")
     },
+    undoLine: (adapter: EditorAdapter) => {
+      adapter.triggerEditorAction("undoLine")
+    },
     newlineAndIndent: (adapter: EditorAdapter) => {
       adapter.triggerEditorAction("editor.action.insertLineAfter")
     },
@@ -355,7 +358,6 @@ export class EditorAdapter {
       origin: "+input",
     })
     this.dispatch("cursorActivity", this)
-    this.pushUndoStop()
   }
 
   pushUndoStop() {
