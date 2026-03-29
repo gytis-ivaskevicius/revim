@@ -217,17 +217,19 @@ pub fn get_all_lines() -> Result<Vec<String>> {
 
 #[napi]
 pub fn set_all_lines(lines: Vec<String>) -> Result<()> {
-    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let mut state = ctx
-        .as_mut()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?
-        .state
-        .lock()
-        .unwrap();
-    state.demo_text = lines;
-    state.cursor_row = 0;
-    state.cursor_col = 0;
-    state.sync_primary_selection();
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let mut state = ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .unwrap();
+        state.demo_text = lines;
+        state.cursor_row = 0;
+        state.cursor_col = 0;
+        state.sync_primary_selection();
+    }
     render_frame_internal()?;
     Ok(())
 }
