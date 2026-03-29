@@ -185,8 +185,8 @@ export class EditorAdapter {
   selectionAnchor: Pos = makePos(0, 0)
   selectionHead: Pos = makePos(0, 0)
   selections: CmSelection[] = [new CmSelection(makePos(0, 0), makePos(0, 0))]
-  undoStack: string[][] = []
-  redoStack: string[][] = []
+  undoStack: { lines: string[]; cursor: Pos }[] = []
+  redoStack: { lines: string[]; cursor: Pos }[] = []
 
   constructor() {
     const pos = this.readHead()
@@ -364,7 +364,10 @@ export class EditorAdapter {
   }
 
   pushUndoStop() {
-    this.undoStack.push(getAllLines())
+    this.undoStack.push({
+      lines: getAllLines(),
+      cursor: this.readHead(),
+    })
     this.redoStack = []
   }
 
@@ -372,20 +375,30 @@ export class EditorAdapter {
     if (this.undoStack.length === 0) {
       return
     }
-    const current = getAllLines()
+    const current = {
+      lines: getAllLines(),
+      cursor: this.readHead(),
+    }
     this.redoStack.push(current)
     const previous = this.undoStack.pop()!
-    setAllLines(previous)
+    setAllLines(previous.lines)
+    this.setCursor(previous.cursor.line, previous.cursor.ch)
+    this.dispatch("cursorActivity", this)
   }
 
   redo() {
     if (this.redoStack.length === 0) {
       return
     }
-    const current = getAllLines()
+    const current = {
+      lines: getAllLines(),
+      cursor: this.readHead(),
+    }
     this.undoStack.push(current)
     const next = this.redoStack.pop()!
-    setAllLines(next)
+    setAllLines(next.lines)
+    this.setCursor(next.cursor.line, next.cursor.ch)
+    this.dispatch("cursorActivity", this)
   }
 
   undoLine() {
