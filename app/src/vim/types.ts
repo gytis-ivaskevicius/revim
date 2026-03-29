@@ -192,25 +192,15 @@ export type KeyMappingUnion =
   | KeyMappingAction
   | KeyMappingSearch
 
-export interface ExCommand {
-  name: string
-  type?: "exToEx" | "exToKey" | "api"
-  shortName?: string
-  possiblyAsync?: boolean
-  excludeFromCommandHistory?: boolean
-  toKeys?: string
-  toInput?: string
-  user?: boolean
-}
-
 export type ExCommandDefault = {
   name: string
   shortName?: string
   excludeFromCommandHistory?: boolean
   user?: boolean
+  possiblyAsync?: boolean
 }
 export type ExCommandExToEx = ExCommandDefault & { type: "exToEx"; toInput: string }
 export type ExCommandExToKey = ExCommandDefault & { type: "exToKey"; toKeys: string }
-export type ExCommandApi = ExCommandDefault & { type: "api"; possiblyAsync?: boolean }
+export type ExCommandApi = ExCommandDefault & { type: "api" }
 
-export type ExCommandUnion = ExCommandExToEx | ExCommandExToKey | ExCommandApi
+export type ExCommand = ExCommandExToEx | ExCommandExToKey | ExCommandApi
