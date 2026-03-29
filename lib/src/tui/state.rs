@@ -26,6 +26,20 @@ pub struct HighlightRange {
     pub end_ch: u32,
 }
 
+#[derive(Clone)]
+pub struct HistoryEntry {
+    pub start_line: u16,
+    pub start_ch: u16,
+    pub end_line: u16,
+    pub end_ch: u16,
+    pub removed: String,
+    pub inserted: String,
+    pub cursor_before_line: u16,
+    pub cursor_before_ch: u16,
+    pub cursor_after_line: u16,
+    pub cursor_after_ch: u16,
+}
+
 pub struct TuiState {
     pub cursor_row: u16,
     pub cursor_col: u16,
@@ -35,6 +49,9 @@ pub struct TuiState {
     pub demo_text: Vec<String>,
     pub selections: Vec<Selection>,
     pub highlights: Vec<HighlightRange>,
+    pub undo_stack: Vec<HistoryEntry>,
+    pub redo_stack: Vec<HistoryEntry>,
+    pub recording_edit: bool,
 }
 
 impl Default for TuiState {
@@ -68,6 +85,9 @@ impl TuiState {
                 head_ch: 0,
             }],
             highlights: Vec::new(),
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
+            recording_edit: false,
         }
     }
 
@@ -166,6 +186,52 @@ impl TuiState {
         let end_ch = end_ch.min(end_line_str.chars().count() as u16);
         let start_idx = Self::char_to_byte_index(&start_line_str, start_ch);
         let end_idx = Self::char_to_byte_index(&end_line_str, end_ch);
+
+        let removed = if start_line == end_line {
+            start_line_str[start_idx..end_idx].to_string()
+        } else {
+            let mut result = start_line_str[start_idx..].to_string();
+            for i in (start_line + 1)..end_line {
+                if let Some(line) = self.demo_text.get(i as usize) {
+                    result.push('\n');
+                    result.push_str(line);
+                }
+            }
+            result.push('\n');
+            result.push_str(&end_line_str[..end_idx]);
+            result
+        };
+
+        let cursor_before_line = self.cursor_row;
+        let cursor_before_ch = self.cursor_col;
+
+        let has_change = !removed.is_empty() || !text.is_empty();
+        if !self.recording_edit && has_change {
+            if !self.recording_edit {
+                self.redo_stack.clear();
+            }
+            let inserted_lines: Vec<&str> = text.split('\n').collect();
+            let inserted_end_line = start_line + (inserted_lines.len() as u16).saturating_sub(1);
+            let inserted_end_ch = if inserted_lines.len() == 1 {
+                start_ch + inserted_lines[0].chars().count() as u16
+            } else {
+                inserted_lines.last().unwrap_or(&"").chars().count() as u16
+            };
+
+            self.undo_stack.push(HistoryEntry {
+                start_line,
+                start_ch,
+                end_line: inserted_end_line,
+                end_ch: inserted_end_ch,
+                removed,
+                inserted: text.to_string(),
+                cursor_before_line,
+                cursor_before_ch,
+                cursor_after_line: self.cursor_row,
+                cursor_after_ch: self.cursor_col,
+            });
+        }
+
         let prefix = start_line_str[..start_idx].to_string();
         let suffix = end_line_str[end_idx..].to_string();
         let mut replacement_lines: Vec<String> =
@@ -227,5 +293,153 @@ impl TuiState {
             head_line: self.cursor_row as u32,
             head_ch: self.cursor_col as u32,
         }];
+    }
+
+    pub fn push_undo_stop(&mut self) {
+        self.undo_stack.push(HistoryEntry {
+            start_line: 0,
+            start_ch: 0,
+            end_line: 0,
+            end_ch: 0,
+            removed: String::new(),
+            inserted: String::new(),
+            cursor_before_line: self.cursor_row,
+            cursor_before_ch: self.cursor_col,
+            cursor_after_line: self.cursor_row,
+            cursor_after_ch: self.cursor_col,
+        });
+    }
+
+    pub fn undo(&mut self) -> bool {
+        let mut undone_something = false;
+
+        loop {
+            let entry = match self.undo_stack.pop() {
+                Some(e) => e,
+                None => return undone_something,
+            };
+
+            self.redo_stack.push(entry.clone());
+
+            if entry.removed.is_empty() && entry.inserted.is_empty() {
+                self.cursor_row = entry.cursor_before_line;
+                self.cursor_col = entry.cursor_before_ch;
+                if undone_something {
+                    break;
+                }
+                continue;
+            }
+
+            self.recording_edit = true;
+            let (end_line, end_ch) =
+                self.compute_end_position(entry.start_line, entry.start_ch, &entry.inserted);
+            self.replace_range(
+                &entry.removed,
+                entry.start_line,
+                entry.start_ch,
+                end_line,
+                end_ch,
+            );
+            self.recording_edit = false;
+
+            self.cursor_row = entry.cursor_before_line;
+            self.cursor_col = entry.cursor_before_ch;
+            undone_something = true;
+        }
+
+        self.sync_primary_selection();
+        true
+    }
+
+    pub fn redo(&mut self) -> bool {
+        loop {
+            let entry = match self.redo_stack.pop() {
+                Some(e) => e,
+                None => return false,
+            };
+
+            self.undo_stack.push(entry.clone());
+
+            if entry.removed.is_empty() && entry.inserted.is_empty() {
+                self.cursor_row = entry.cursor_after_line;
+                self.cursor_col = entry.cursor_after_ch;
+                continue;
+            }
+
+            self.recording_edit = true;
+            self.replace_range(
+                &entry.inserted,
+                entry.start_line,
+                entry.start_ch,
+                entry.end_line,
+                entry.end_ch,
+            );
+            self.recording_edit = false;
+
+            self.cursor_row = entry.cursor_after_line;
+            self.cursor_col = entry.cursor_after_ch;
+
+            break;
+        }
+
+        self.sync_primary_selection();
+        true
+    }
+
+    fn compute_end_position(&self, start_line: u16, start_ch: u16, text: &str) -> (u16, u16) {
+        let lines: Vec<&str> = text.split('\n').collect();
+        let end_line = start_line + (lines.len() as u16).saturating_sub(1);
+        let end_ch = if lines.len() == 1 {
+            start_ch + text.chars().count() as u16
+        } else {
+            lines.last().unwrap_or(&"").chars().count() as u16
+        };
+        (end_line, end_ch)
+    }
+
+    pub fn undo_line(&mut self) -> bool {
+        let current_line = self.cursor_row;
+        let mut undone_any = false;
+
+        while let Some(entry) = self.undo_stack.pop() {
+            if entry.removed.is_empty() && entry.inserted.is_empty() {
+                if entry.cursor_after_line == current_line {
+                    self.redo_stack.push(entry.clone());
+                    self.cursor_row = entry.cursor_before_line;
+                    self.cursor_col = entry.cursor_before_ch;
+                    continue;
+                } else {
+                    self.undo_stack.push(entry);
+                    break;
+                }
+            }
+
+            if entry.cursor_after_line != current_line {
+                self.undo_stack.push(entry);
+                break;
+            }
+
+            self.redo_stack.push(entry.clone());
+
+            self.recording_edit = true;
+            let (end_line, end_ch) =
+                self.compute_end_position(entry.start_line, entry.start_ch, &entry.inserted);
+            self.replace_range(
+                &entry.removed,
+                entry.start_line,
+                entry.start_ch,
+                end_line,
+                end_ch,
+            );
+            self.recording_edit = false;
+
+            self.cursor_row = entry.cursor_before_line;
+            self.cursor_col = entry.cursor_before_ch;
+            undone_any = true;
+        }
+
+        self.cursor_row = current_line;
+        self.sync_primary_selection();
+        undone_any
     }
 }

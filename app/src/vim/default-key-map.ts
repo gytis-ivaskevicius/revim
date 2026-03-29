@@ -684,6 +684,7 @@ export const defaultKeymap: KeyMapping[] = [
     exitVisualBlock: true,
   },
   { keys: "u", type: "action", action: "undo", context: "normal" },
+  { keys: "U", type: "action", action: "undoLine", context: "normal" },
   {
     keys: "u",
     type: "operator",

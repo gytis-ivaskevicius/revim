@@ -135,6 +135,7 @@ export function exitInsertMode(adapter: EditorAdapter) {
     logInsertModeChange(macroModeState)
   }
   adapter.enterVimMode()
+  adapter.pushUndoStop()
 }
 
 /**

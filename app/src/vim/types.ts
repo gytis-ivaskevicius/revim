@@ -150,6 +150,48 @@ export interface KeyMapping {
   exArgs?: ExArgs
 }
 
+type KeyMappingDefault = { keys: string; context?: Context }
+export type KeyMappingKeyToKey = KeyMappingDefault & { type: "keyToKey"; toKeys: string }
+export type KeyMappingIdle = KeyMappingDefault & { type: "idle" }
+export type KeyMappingKeyToEx = KeyMappingDefault & { type: "keyToEx"; exArgs: ExArgs }
+export type KeyMappingEx = KeyMappingDefault & { type: "ex"; ex?: string; exArgs?: ExArgs }
+export type KeyMappingMotion = KeyMappingDefault & { type: "motion"; motion: string; motionArgs?: MotionArgs }
+export type KeyMappingOperator = KeyMappingDefault & {
+  type: "operator"
+  operator: string
+  operatorArgs?: OperatorArgs
+  exitVisualBlock?: boolean
+}
+export type KeyMappingOperatorMotion = KeyMappingDefault & {
+  type: "operatorMotion"
+  operatorMotion: string
+  operatorMotionArgs?: OperatorMotionArgs
+}
+export type KeyMappingAction = KeyMappingDefault & {
+  type: "action"
+  action: string
+  actionArgs?: ActionArgs
+  motion?: string
+  motionArgs?: MotionArgs
+  operator?: string
+  operatorArgs?: OperatorArgs
+  isEdit?: boolean
+  interlaceInsertRepeat?: boolean
+  repeatOverride?: number
+}
+export type KeyMappingSearch = KeyMappingDefault & { type: "search"; search: string; searchArgs: SearchArgs }
+
+export type KeyMappingUnion =
+  | KeyMappingKeyToKey
+  | KeyMappingIdle
+  | KeyMappingKeyToEx
+  | KeyMappingEx
+  | KeyMappingMotion
+  | KeyMappingOperator
+  | KeyMappingOperatorMotion
+  | KeyMappingAction
+  | KeyMappingSearch
+
 export interface ExCommand {
   name: string
   type?: "exToEx" | "exToKey" | "api"
@@ -160,3 +202,15 @@ export interface ExCommand {
   toInput?: string
   user?: boolean
 }
+
+export type ExCommandDefault = {
+  name: string
+  shortName?: string
+  excludeFromCommandHistory?: boolean
+  user?: boolean
+}
+export type ExCommandExToEx = ExCommandDefault & { type: "exToEx"; toInput: string }
+export type ExCommandExToKey = ExCommandDefault & { type: "exToKey"; toKeys: string }
+export type ExCommandApi = ExCommandDefault & { type: "api"; possiblyAsync?: boolean }
+
+export type ExCommandUnion = ExCommandExToEx | ExCommandExToKey | ExCommandApi
