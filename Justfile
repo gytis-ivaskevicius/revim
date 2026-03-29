@@ -25,11 +25,11 @@ test: test-rust test-e2e
 lint:
 	cd app && npx tsc --noEmit
 	cd lib && cargo clippy -- -D warnings
-	bunx biome check app/src
+	bunx biome check
 
 # Auto-fix lint issues
 lint-fix:
-	bunx biome check --write --unsafe app/src
+	bunx biome check --write --unsafe
 	cd app && npx tsc --noEmit
 	cd lib && cargo clippy --fix --allow-dirty -- -D warnings
 

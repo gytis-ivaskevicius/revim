@@ -1,6 +1,9 @@
 {
   "name": "revim",
-  "workspaces": ["lib", "app"],
+  "workspaces": [
+    "lib",
+    "app"
+  ],
   "private": true,
   "devDependencies": {
     "@biomejs/biome": "2.4.9",

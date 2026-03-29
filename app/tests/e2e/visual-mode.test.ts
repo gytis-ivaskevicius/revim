@@ -1,51 +1,52 @@
-import { test, expect, KEY_PRESS_DELAY_MS } from "./test-utils.js";
+import { expect, KEY_PRESS_DELAY_MS, test } from "./test-utils.js"
 
-const delay = () => new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS));
+const delay = () => new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS))
 
 const visibleBuffer = (terminal: { getViewableBuffer: () => string[][] }) =>
-  terminal.getViewableBuffer().map((row) => row.join("")).join("\n");
+  terminal
+    .getViewableBuffer()
+    .map((row) => row.join(""))
+    .join("\n")
 
 const cellShift = (
   terminal: { serialize: () => { shifts: Map<string, { inverse?: number }> } },
   x: number,
-  y: number
-) => terminal.serialize().shifts.get(`${x},${y}`);
+  y: number,
+) => terminal.serialize().shifts.get(`${x},${y}`)
 
-type KeyPress = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean };
+type KeyPress = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
 
 async function pressKeys(
   terminal: {
-    keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void;
-    keyEscape: () => void;
+    keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void
+    keyEscape: () => void
   },
-  keys: KeyPress[]
+  keys: KeyPress[],
 ) {
   for (const key of keys) {
     if (key === "<Esc>") {
-      terminal.keyEscape();
+      terminal.keyEscape()
     } else if (typeof key === "string") {
-      terminal.keyPress(key);
+      terminal.keyPress(key)
     } else {
-      terminal.keyPress(key.key, key);
+      terminal.keyPress(key.key, key)
     }
-    await delay();
+    await delay()
   }
 }
 
 const snapshotCases: Array<{
-  name: string;
-  readyText?: string;
-  keys: KeyPress[];
-  assertions?: (terminal: {
-    serialize: () => { shifts: Map<string, { inverse?: number }> };
-  }) => void;
+  name: string
+  readyText?: string
+  keys: KeyPress[]
+  assertions?: (terminal: { serialize: () => { shifts: Map<string, { inverse?: number }> } }) => void
 }> = [
   {
     name: "charwise visual selection renders reversed cells",
     readyText: "Welcome to ReVim!",
     keys: ["v"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864)
     },
   },
   {
@@ -53,7 +54,7 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: ["v", "l"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
+      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864)
     },
   },
   {
@@ -66,8 +67,8 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: [{ key: "V", shift: true }, "j"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
-      expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864);
+      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864)
     },
   },
   {
@@ -80,8 +81,8 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: [{ key: "v", ctrl: true }, "j"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864);
-      expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864);
+      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864)
     },
   },
   {
@@ -89,8 +90,8 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: ["l", "l", "l", "l", "l", { key: "v", ctrl: true }, "j"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 6, 1)?.inverse).toBe(67108864);
-      expect(cellShift(terminal, 6, 2)?.inverse).toBe(67108864);
+      expect(cellShift(terminal, 6, 1)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 6, 2)?.inverse).toBe(67108864)
     },
   },
   {
@@ -98,27 +99,27 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: ["l", "l", "l", "l", "l", "l", "l", "l", { key: "v", ctrl: true }, "l"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 9, 1)?.inverse).toBe(67108864);
-      expect(cellShift(terminal, 11, 1)?.inverse).toBe(0);
+      expect(cellShift(terminal, 9, 1)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 11, 1)?.inverse).toBe(0)
     },
   },
-];
+]
 
 for (const { name, readyText = "Welcome to ReVim!", keys, assertions } of snapshotCases) {
   test(name, async ({ terminal }) => {
-    await expect(terminal.getByText(readyText)).toBeVisible();
-    await pressKeys(terminal, keys);
-    assertions?.(terminal);
-    await expect(terminal).toMatchSnapshot({ includeColors: true });
-  });
+    await expect(terminal.getByText(readyText)).toBeVisible()
+    await pressKeys(terminal, keys)
+    assertions?.(terminal)
+    await expect(terminal).toMatchSnapshot({ includeColors: true })
+  })
 }
 
 const deleteCases: Array<{
-  name: string;
-  readyText: string;
-  keys: KeyPress[];
-  absentText?: string;
-  presentText: string[];
+  name: string
+  readyText: string
+  keys: KeyPress[]
+  absentText?: string
+  presentText: string[]
 }> = [
   {
     name: "charwise visual delete removes selected text",
@@ -134,34 +135,37 @@ const deleteCases: Array<{
     absentText: "Press Ctrl+C to exit.",
     presentText: [" Ctrl+C to exit."],
   },
-];
+]
 
 for (const { name, readyText, keys, absentText, presentText } of deleteCases) {
   test(name, async ({ terminal }) => {
-    await expect(terminal.getByText(readyText)).toBeVisible();
-    await pressKeys(terminal, keys);
+    await expect(terminal.getByText(readyText)).toBeVisible()
+    await pressKeys(terminal, keys)
 
-    const bufferText = visibleBuffer(terminal);
+    const bufferText = visibleBuffer(terminal)
     if (absentText && bufferText.includes(absentText)) {
-      throw new Error(`Expected selected text to be deleted:\n${bufferText}`);
+      throw new Error(`Expected selected text to be deleted:\n${bufferText}`)
     }
 
     for (const text of presentText) {
-      await expect(terminal.getByText(text)).toBeVisible();
+      await expect(terminal.getByText(text)).toBeVisible()
     }
-  });
+  })
 }
 
 test("blockwise x deletes columns without joining lines", async ({ terminal }) => {
-  await expect(terminal.getByText("This is a demo text for the TUI.")).toBeVisible();
-  await pressKeys(terminal, ["j", "j", { key: "v", ctrl: true }, "j"]);
-  await pressKeys(terminal, Array.from({ length: 13 }, () => "l"));
-  await pressKeys(terminal, ["x"]);
+  await expect(terminal.getByText("This is a demo text for the TUI.")).toBeVisible()
+  await pressKeys(terminal, ["j", "j", { key: "v", ctrl: true }, "j"])
+  await pressKeys(
+    terminal,
+    Array.from({ length: 13 }, () => "l"),
+  )
+  await pressKeys(terminal, ["x"])
 
-  const bufferText = visibleBuffer(terminal);
+  const bufferText = visibleBuffer(terminal)
   if (bufferText.includes("demo texUse arrow")) {
-    throw new Error(`Expected block delete to preserve line breaks:\n${bufferText}`);
+    throw new Error(`Expected block delete to preserve line breaks:\n${bufferText}`)
   }
-  await expect(terminal.getByText(" text for the TUI.")).toBeVisible();
-  await expect(terminal.getByText(" to move the cursor.")).toBeVisible();
-});
+  await expect(terminal.getByText(" text for the TUI.")).toBeVisible()
+  await expect(terminal.getByText(" to move the cursor.")).toBeVisible()
+})
