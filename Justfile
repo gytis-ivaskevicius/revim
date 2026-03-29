@@ -23,9 +23,9 @@ test: test-rust test-e2e
 
 # Run linter
 lint:
+	cd app && npx tsc --noEmit
 	cd lib && cargo clippy -- -D warnings
 	bunx biome check app/src
-	cd app && npx tsc --noEmit
 
 # Auto-fix lint issues
 lint-fix:

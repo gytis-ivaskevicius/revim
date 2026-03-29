@@ -167,10 +167,19 @@ export function getOption(name: string, adapter?: EditorAdapter, cfg?: OptionCon
     if (scope !== "local") {
       return option.callback()
     }
-    return
+    return new Error(`Unknown option: ${name}`)
   } else {
-    const local = scope !== "global" && adapter && (adapter.state.vim as VimState).options[name]
-    return (local || (scope !== "local" && option))?.value
+    const vimState = adapter?.state.vim as VimState | undefined
+    const local = vimState?.options[name]
+    const localVal = local?.value
+    if (scope !== "global" && localVal !== undefined) {
+      return localVal
+    }
+    if (scope !== "local") {
+      const globalVal = option?.value
+      if (globalVal !== undefined) return globalVal
+    }
+    return new Error(`Option ${name} not found`)
   }
 }
 

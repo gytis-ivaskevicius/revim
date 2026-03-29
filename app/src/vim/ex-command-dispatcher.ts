@@ -87,8 +87,9 @@ export class ExCommandDispatcher {
         this.parseCommandArgs_(inputStream, params, command)
         if (command.type === "exToKey") {
           // Handle Ex to Key mapping.
-          for (let i = 0; i < command.toKeys?.length; i++) {
-            vimApi.handleKey(adapter, command.toKeys?.[i], "mapping")
+          const toKeys = command.toKeys!
+          for (let i = 0; i < toKeys.length; i++) {
+            vimApi.handleKey(adapter, toKeys[i], "mapping")
           }
           return
         } else if (command.type === "exToEx") {

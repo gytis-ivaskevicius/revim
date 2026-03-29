@@ -238,7 +238,12 @@ function regexEqual(r1: RegExp | string, r2: RegExp | string) {
 }
 
 // Returns true if the query is valid.
-export function updateSearchQuery(adapter: EditorAdapter, rawQuery: string, ignoreCase?: boolean, smartCase?: boolean) {
+export function updateSearchQuery(
+  adapter: EditorAdapter,
+  rawQuery?: string,
+  ignoreCase?: boolean,
+  smartCase?: boolean,
+) {
   if (!rawQuery) {
     return
   }
