@@ -20,15 +20,12 @@ import {
 } from "./common";
 import {
   bigWordCharTest,
-  clipCursorToContent,
   expandWordUnderCursor,
-  findNext,
   getMarkPos,
-  highlightSearchMatches,
   keywordCharTest,
-  lineLength,
-  offsetCursor,
 } from "./keymap_vim";
+import { clipCursorToContent, lineLength, offsetCursor } from "./vim-utils";
+import { findNext, highlightSearchMatches } from "./search-utils";
 import { InputState } from "./input-state";
 import { getSearchState } from "./search";
 import { vimGlobalState } from "./global";

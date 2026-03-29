@@ -8,7 +8,7 @@ import {
   makePos,
 } from "./common";
 import { vimGlobalState } from "./global";
-import { offsetCursor, lineLength, clipCursorToContent } from "./keymap_vim";
+import { offsetCursor, lineLength, clipCursorToContent } from "./vim-utils";
 import { motions } from "./motions";
 import { OperatorArgs, VimState } from "./types";
 

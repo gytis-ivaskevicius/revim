@@ -1,10 +1,7 @@
 import { isUpperCase } from "./common";
 import { vimGlobalState } from "./global";
-import {
-  InsertModeChanges,
-  createInsertModeChanges,
-  validRegisters,
-} from "./keymap_vim";
+import { InsertModeChanges, createInsertModeChanges } from "./insert-mode";
+import { validRegisters } from "./keymap_vim";
 
 export interface IRegister {
   /** Indicates that the text was yanked linewise */

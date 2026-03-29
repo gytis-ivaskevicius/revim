@@ -2,14 +2,16 @@ import EditorAdapter from "./adapter";
 import { StringStream } from "./string-stream";
 import { defaultKeymap } from "./default-key-map";
 import {
-  ExCommandOptionalParameters,
   exitVisualMode,
-  showConfirm,
   vimApi,
-  exCommands,
   getMarkPos,
-  trim,
 } from "./keymap_vim";
+import { trim } from "./vim-utils";
+import { showConfirm } from "./search-utils";
+import {
+  ExCommandOptionalParameters,
+  exCommands,
+} from "./ex-commands";
 import { vimGlobalState } from "./global";
 import { ExCommand, VimState, Context, KeyMapping } from "./types";
 

@@ -16,27 +16,27 @@ import { InputState } from "./input-state";
 import {
   commandMatches,
   lastChar,
-  copyArgs,
   clearInputState,
   updateCmSelection,
-  updateSearchQuery,
-  showConfirm,
-  logSearchQuery,
-  findNext,
-  clearSearchHighlight,
-  showPrompt,
-  expandWordUnderCursor,
-  escapeRegex,
-  exCommandDispatcher,
-  clipCursorToContent,
   recordJumpPosition,
   updateMark,
   makeCmSelection,
-  lineLength,
   expandSelectionToLine,
   clipToLine,
   exitVisualMode,
+  expandWordUnderCursor,
 } from "./keymap_vim";
+import { exCommandDispatcher } from "./ex-commands";
+import { logSearchQuery } from "./insert-mode";
+import { copyArgs, lineLength, clipCursorToContent } from "./vim-utils";
+import {
+  updateSearchQuery,
+  showConfirm,
+  findNext,
+  clearSearchHighlight,
+  showPrompt,
+  escapeRegex,
+} from "./search-utils";
 import { getSearchState } from "./search";
 import { vimGlobalState } from "./global";
 import { KeyMapping, Context, VimState } from "./types";

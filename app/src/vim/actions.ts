@@ -11,21 +11,20 @@ import {
 } from "./common";
 import { vimGlobalState } from "./global";
 import {
-  lineLength,
-  offsetCursor,
   exitVisualMode,
-  clipCursorToContent,
-  exitInsertMode,
-  exCommandDispatcher,
-  onChange,
-  selectForInsert,
   updateCmSelection,
   updateMark,
-  repeatLastEdit,
   updateLastSelection,
   vimApi,
-  repeatInsertModeChanges,
 } from "./keymap_vim";
+import { exCommandDispatcher } from "./ex-commands";
+import { lineLength, offsetCursor, clipCursorToContent, selectForInsert } from "./vim-utils";
+import {
+  exitInsertMode,
+  onChange,
+  repeatLastEdit,
+  repeatInsertModeChanges,
+} from "./insert-mode";
 import { MacroModeState } from "./macro-mode-state";
 import { motions } from "./motions";
 import { ActionArgs, VimState } from "./types";
