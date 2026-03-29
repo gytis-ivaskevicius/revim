@@ -131,7 +131,7 @@ pub fn move_cursor(direction: String) -> Result<CursorPosition> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
 
         match direction.as_str() {
             "up" => (
@@ -165,7 +165,7 @@ pub fn move_cursor(direction: String) -> Result<CursorPosition> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?
             .state
             .lock()
-            .unwrap();
+            .map_err(to_napi_error)?;
         state.cursor_row = row;
         state.cursor_col = col;
         state.sync_primary_selection();
@@ -187,7 +187,7 @@ pub fn get_line(line: u32) -> Result<String> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
     Ok(state.get_line(line as u16))
 }
 
@@ -689,7 +689,7 @@ pub fn scroll_to(y: u32) -> Result<()> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?
         .state
         .lock()
-        .unwrap();
+        .map_err(to_napi_error)?;
 
     state.cursor_row = (y as u16).min(state.max_rows().saturating_sub(1));
     state.cursor_col = state
