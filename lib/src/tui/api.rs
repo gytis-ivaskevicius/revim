@@ -226,9 +226,6 @@ pub fn set_all_lines(lines: Vec<String>) -> Result<()> {
             .lock()
             .unwrap();
         state.demo_text = lines;
-        state.cursor_row = 0;
-        state.cursor_col = 0;
-        state.sync_primary_selection();
     }
     render_frame_internal()?;
     Ok(())

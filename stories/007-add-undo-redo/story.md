@@ -2,41 +2,44 @@
 
 ## Context
 
-ReVim currently stubs out undo and redo: `pushUndoStop()` is a no-op and `trigger_action("undo"/"redo")` returns `Ok(())` without mutating the buffer. The keybindings (`u`, `<C-r>`) and the action dispatch path already exist in TypeScript but have no effect. This story implements real document-level undo/redo using a snapshot-based approach in TypeScript.
+ReVim currently stubs out undo and redo: `pushUndoStop()` is a no-op and `trigger_action("undo"/"redo")` returns `Ok(())` without mutating the buffer. This story implements real document-level undo/redo using a snapshot-based approach in TypeScript.
 
-## Implementation approach
+## Implementation: TypeScript Snapshot-Based Undo
 
-### Snapshot-based history in TypeScript
+### Overview
 
-Instead of delta-based history (which proved complex to implement correctly in Rust due to position tracking), we use full-buffer snapshots:
+Undo/redo is implemented in TypeScript using full-buffer snapshots. Each snapshot stores both the buffer content and cursor position.
 
-1. **Rust additions**: Add `getAllLines()` and `setAllLines()` to export the full buffer
-2. **TypeScript**: Maintain `undoStack` and `redoStack` in EditorAdapter
-3. **pushUndoStop**: Push current buffer snapshot to undoStack, clear redoStack
-4. **undo**: Pop from undoStack, push current to redoStack, restore from snapshot
-5. **redo**: Pop from redoStack, push current to undoStack, restore from snapshot
+**Rust additions**:
+- `getAllLines()` - returns all buffer lines as `string[]`
+- `setAllLines(lines)` - replaces all buffer lines
 
-This approach is simpler and more reliable than delta-based undo.
+**TypeScript implementation** (in `EditorAdapter`):
+- `undoStack: { lines: string[]; cursor: Pos }[]` - stores buffer+cursor snapshots
+- `redoStack: { lines: string[]; cursor: Pos }[]` - stores undone states
+- `pushUndoStop()` - pushes current buffer+cursor to undoStack, clears redoStack
+- `undo()` - pops from undoStack, pushes to redoStack, restores buffer+cursor
+- `redo()` - pops from redoStack, pushes to undoStack, restores buffer+cursor
+- `undoLine()` - alias for undo
 
-### TypeScript side
+The keybindings (`u`, `<C-r>`, `U`) are wired in TypeScript:
+- `EditorAdapter.commands.undo` → `adapter.undo()`
+- `EditorAdapter.commands.redo` → `adapter.redo()`
+- `EditorAdapter.commands.undoLine` → `adapter.undoLine()`
 
-The EditorAdapter class implements:
-- `undoStack: string[][]` - stores buffer snapshots
-- `redoStack: string[][]` - stores undone buffers
-- `pushUndoStop()` - snapshots buffer before edits
-- `undo()` - restores previous snapshot
-- `redo()` - restores next snapshot
-- `undoLine()` - alias for undo (undo all changes on current line)
+### Why Snapshot-Based
 
-The existing keybindings (`u`, `<C-r>`, `U`) work via the action dispatch:
-- `EditorAdapter.commands.undo` calls `adapter.undo()`
-- `EditorAdapter.commands.redo` calls `adapter.redo()`
-- `EditorAdapter.commands.undoLine` calls `adapter.undoLine()`
-A corresponding `undoLine` action in `actions.ts` calls `EditorAdapter.commands.undoLine`. A new `undoLine` command in `adapter.ts` calls `triggerAction("undoLine")`. The Rust handler for `"undoLine"` pops undo entries until the current line changes, or the stack is exhausted.
+Delta-based undo (storing each text change as a diff) proved complex to implement correctly in Rust due to position tracking issues with multi-character insertions. Snapshot-based undo is simpler and more reliable.
+
+### Limitations
+
+- No history depth limit (could exhaust memory with many edits)
+- Full buffer copies on each undo stop (memory intensive for large files)
+- Future: consider delta-based Rust implementation for better scalability
 
 ## Tasks
 
-### Task 1 — Rust: implement delta history in TuiState
+### Task 1 — TypeScript: implement snapshot-based undo/redo
 
 #### Acceptance Criteria
 
@@ -62,7 +65,7 @@ A corresponding `undoLine` action in `actions.ts` calls `EditorAdapter.commands.
 
 None.
 
-### Task 2 — Rust: implement `U` (undo line)
+### Task 2 — TypeScript: U (undo line)
 
 #### Acceptance Criteria
 
@@ -71,23 +74,6 @@ None.
   - → cursor remains on line N
 - no changes on current line + `U` pressed
   - → buffer unchanged
-
-#### Non-Automatable
-
-None.
-
-### Task 3 — TypeScript: wire `undoLine` action and `U` keymap
-
-#### Acceptance Criteria
-
-- `U` pressed in normal mode
-  - → `triggerAction("undoLine")` is called (covered by the E2E test for Task 2)
-- `u` in visual mode is unaffected (changeCase toLower)
-  - → existing visual-mode `u` behaviour unchanged
-
-#### Non-Automatable
-
-None.
 
 ### Task 4 — E2E tests
 
