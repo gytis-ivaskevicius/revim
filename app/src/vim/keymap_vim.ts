@@ -433,7 +433,7 @@ export function clipToLine(adapter: EditorAdapter, curStart: Pos, curEnd: Pos) {
     // Cases:
     // 1. Last word is an empty line - do not clip the trailing '\n'
     // 2. Last word is not an empty line - clip the trailing '\n'
-    let line
+    let line: string | undefined
     // Find the line containing the last word, and clip all whitespace up
     // to it.
     for (line = lines.pop(); lines.length > 0 && line && isWhiteSpaceString(line); line = lines.pop()) {

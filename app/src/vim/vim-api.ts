@@ -192,7 +192,7 @@ export class VimApi {
     }
     const doKeyToKey = (keys: string) => {
       // TODO: prevent infinite recursion.
-      let match
+      let match: RegExpExecArray | null = null
       while (keys) {
         // Pull off one command key, which is either a single character
         // or a special sequence wrapped in '<' and '>', e.g. '<Space>'.

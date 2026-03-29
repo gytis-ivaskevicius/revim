@@ -149,7 +149,7 @@ export function charIdxInLine(start: number, line: string, character: string, fo
   // If includeChar = true, include it too.
   // If forward = true, search forward, else search backwards.
   // If char is not found on this line, do nothing
-  let idx
+  let idx: number
   if (forward) {
     idx = line.indexOf(character, start + 1)
     if (idx !== -1 && !includeChar) {

@@ -176,6 +176,7 @@ function doReplace(
         callback = savedCallback
         break
       }
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: intentional fallthrough to call stop(close)
       case "L":
         replace()
       // fall through and exit.
