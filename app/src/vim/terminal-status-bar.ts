@@ -33,7 +33,7 @@ export class TerminalStatusBar implements IStatusBar {
     const text = this.keyBuffer ? `${label}  ${this.keyBuffer}` : label
     try {
       setStatusText(text)
-    } catch (e) {
+    } catch (_e) {
       // best-effort; avoid throwing during shutdown
     }
   }
