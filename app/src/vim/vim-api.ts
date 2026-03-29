@@ -4,19 +4,23 @@ import { ActionFunc, defineAction } from "./actions";
 import EditorAdapter from "./adapter";
 import { defaultKeymap, defaultKeymapLength } from "./default-key-map";
 import {
-  InsertModeKey,
   maybeInitVimState,
-  exCommandDispatcher,
-  ExCommandFunc,
-  exCommands,
   clearInputState,
-  logKey,
   exitVisualMode,
-  exitInsertMode,
-  offsetCursor,
   mapCommand,
   _mapCommand,
 } from "./keymap_vim";
+import { offsetCursor } from "./vim-utils";
+import {
+  InsertModeKey,
+  exitInsertMode,
+  logKey,
+} from "./insert-mode";
+import {
+  exCommandDispatcher,
+  ExCommandFunc,
+  exCommands,
+} from "./ex-commands";
 import { MotionFunc, defineMotion } from "./motions";
 import { OperatorFunc, defineOperator } from "./operators";
 import {

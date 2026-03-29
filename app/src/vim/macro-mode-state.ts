@@ -1,6 +1,6 @@
 import EditorAdapter from "./adapter";
 import { vimGlobalState } from "./global";
-import { InsertModeChanges, createInsertModeChanges } from "./keymap_vim";
+import { InsertModeChanges, createInsertModeChanges } from "./insert-mode";
 
 export class MacroModeState {
   latestRegister?: string = undefined;
