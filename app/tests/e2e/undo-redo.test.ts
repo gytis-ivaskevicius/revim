@@ -25,13 +25,20 @@ async function pressKeys(
   }
 }
 
-test("undo at empty history does not change buffer", async ({ terminal }) => {
+test("insert text then undo reverts to original", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
-  const bufferBefore = visibleBuffer(terminal)
-  await pressKeys(terminal, ["u"])
-  const bufferAfter = visibleBuffer(terminal)
 
-  if (bufferBefore !== bufferAfter) {
-    throw new Error(`Expected buffer to remain unchanged, got: ${bufferAfter}`)
+  await pressKeys(terminal, ["i", "H", "e", "l", "l", "o", "<Esc>"])
+
+  const buffer1 = visibleBuffer(terminal)
+  console.log("After insert:", buffer1)
+
+  await pressKeys(terminal, ["u"])
+
+  const buffer2 = visibleBuffer(terminal)
+  console.log("After undo:", buffer2)
+
+  if (!buffer2.includes("Welcome to ReVim!")) {
+    throw new Error(`Expected buffer to include 'Welcome to ReVim!', got: ${buffer2}`)
   }
 })

@@ -311,6 +311,10 @@ impl TuiState {
     }
 
     pub fn undo(&mut self) -> bool {
+        if self.undo_stack.is_empty() {
+            return false;
+        }
+
         let mut undone_something = false;
 
         loop {
