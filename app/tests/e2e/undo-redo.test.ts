@@ -65,3 +65,19 @@ test("multiple undos revert multiple edit groups", async ({ terminal }) => {
   const buffer3 = visibleBuffer(terminal)
   expect(buffer3.includes("a")).toBe(true)
 })
+
+test("U undoes all changes on current line", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+  await pressKeys(terminal, ["i", "H", "e", "l", "l", "o", "<Esc>", "U"])
+
+  const buffer = visibleBuffer(terminal)
+  expect(buffer.includes("Welcome to ReVim!")).toBe(true)
+})
+
+test("no changes on current line then U pressed does nothing", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+  const bufferBefore = visibleBuffer(terminal)
+  await pressKeys(terminal, ["U"])
+  const bufferAfter = visibleBuffer(terminal)
+  expect(bufferBefore).toBe(bufferAfter)
+})
