@@ -9,6 +9,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - **Terminal Testing Framework** — E2E tests using @microsoft/tui-test for terminal automation, snapshot testing for rendered output, and Rust unit tests for rendering logic ([story](stories/003-add-terminal-testing/story.md))
 - **Fork vim-monaco** — Port vim-monaco's TypeScript vim state machine (motions, operators, keymaps, ex commands) into `app/src/vim/`, strip all browser/Monaco dependencies, and wire to the Rust/ratatui backend via a new `TerminalAdapter` and NAPI-RS FFI surface ([story](stories/005-fork-vim-monaco/story.md))
 - **Ctrl+C exit and visual mode** — Fix Ctrl+C exit (ThreadsafeFunction unref + synchronous process.exit), and render charwise/linewise/blockwise visual selection in the TUI ([story](stories/006-ctrl-c-exit-visual-mode/story.md))
+- **Undo/redo** — Delta-based document history in the Rust TUI layer; `u`, `<C-r>`, and `U` perform real undo/redo instead of no-ops ([story](stories/007-add-undo-redo/story.md))
 
 ## Non-Goals
 
@@ -23,9 +24,6 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - No real viewport semantics
   - separate viewport state from cursor state
   - make scrollTo, scrollToLine, getScrollInfo, and getVisibleLines behave like an editor window
-- No Undo/redo support
-  - implement real history in the Rust/TUI buffer layer
-  - stop treating undo/redo as successful no-ops
 - No search and prompt UX coverage
   - add E2E coverage for /, n, N, search highlight behavior, and prompt scroll restore
 - No ex command coverage
