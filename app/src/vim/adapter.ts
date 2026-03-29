@@ -578,7 +578,7 @@ export class EditorAdapter {
       const regex = isRegex
         ? new RegExp(query, matchCase ? "g" : "gi")
         : new RegExp(this.escapeRegex(query), matchCase ? "g" : "gi")
-      let match
+      let match: RegExpExecArray | null
       while ((match = regex.exec(line)) !== null) {
         allMatches.push({
           line: lineIdx,

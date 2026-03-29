@@ -49,7 +49,7 @@ function translateRegex(str: string) {
   // When these match, add a '\' if unescaped or remove one if escaped.
   const specials = "|(){"
   // Remove, but never add, a '\' for these.
-  const unescape = "}"
+  const charsToUnescape = "}"
   let escapeNextChar = false
   const out: string[] = []
   for (let i = -1; i < str.length; i++) {
@@ -65,7 +65,7 @@ function translateRegex(str: string) {
       if (c === "\\") {
         escapeNextChar = true
         // Treat the unescape list as special for removing, but not adding '\'.
-        if (n && unescape.indexOf(n) !== -1) {
+        if (n && charsToUnescape.indexOf(n) !== -1) {
           specialComesNext = true
         }
         // Not passing this test means removing a '\'.

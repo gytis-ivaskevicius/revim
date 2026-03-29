@@ -333,8 +333,8 @@ export class CommandDispatcher {
       close: (value?: string) => void,
     ): boolean => {
       const keyName = getEventKeyName(e)
-      let up
-      let _offset
+      let up: boolean
+      let _offset: number | undefined
       if (
         keyName === "Esc" ||
         keyName === "Ctrl-C" ||

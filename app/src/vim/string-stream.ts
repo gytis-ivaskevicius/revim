@@ -98,7 +98,7 @@ export class StringStream {
       }
       return null
     } else {
-      var match = this.str.slice(this.pos).match(pattern)
+      const match = this.str.slice(this.pos).match(pattern)
       if (match?.index && match.index > 0) {
         return null
       }
@@ -113,7 +113,7 @@ export class StringStream {
     return this.str.slice(this.start, this.pos)
   }
 
-  hideFirstChars(n: number, inner: () => {}) {
+  hideFirstChars(n: number, inner: () => void) {
     this.lineStart += n
     try {
       return inner()
