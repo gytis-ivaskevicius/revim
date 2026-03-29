@@ -104,7 +104,7 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
         return
       }
       idx.line = adapter.getLine(idx.ln)
-      idx.pos = idx.dir > 0 ? 0 : idx.line.length - 1
+      idx.pos = idx.dir > 0 ? 0 : Math.max(idx.line.length - 1, 0)
     } else {
       idx.pos += idx.dir
     }
@@ -135,18 +135,22 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
     // Move one step to skip character we start on
     nextChar(adapter, curr)
 
-    while (curr.line === undefined && curr.pos !== undefined) {
+    while (curr.line !== undefined && curr.pos !== undefined) {
       last_valid.ln = curr.ln
       last_valid.pos = curr.pos
 
+      const currChar = curr.line[curr.pos]
+      const nextLineChar = curr.line[curr.pos + 1]
+
       if (curr.line === "" && !skip_empty_lines) {
         return { ln: curr.ln, pos: curr.pos }
-      } else if (stop && curr.line && !isWhiteSpaceString(curr.line[curr.pos])) {
+      } else if (stop && currChar !== undefined && !isWhiteSpaceString(currChar)) {
         return { ln: curr.ln, pos: curr.pos }
       } else if (
-        isEndOfSentenceSymbol(curr.line?.[curr.pos]) &&
+        currChar !== undefined &&
+        isEndOfSentenceSymbol(currChar) &&
         !stop &&
-        (curr.pos === curr.line?.length - 1 || isWhiteSpaceString(curr.line?.[curr.pos + 1]))
+        (curr.pos === curr.line.length - 1 || isWhiteSpaceString(nextLineChar))
       ) {
         stop = true
       }
