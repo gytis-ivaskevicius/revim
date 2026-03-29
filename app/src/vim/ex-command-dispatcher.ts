@@ -5,7 +5,7 @@ import { vimGlobalState } from "./global"
 import { exitVisualMode, getMarkPos, vimApi } from "./keymap_vim"
 import { showConfirm } from "./search-utils"
 import { StringStream } from "./string-stream"
-import type { Context, ExCommand, KeyMapping, VimState } from "./types"
+import type { Context, ExCommand, ExCommandDefault, KeyMapping, VimState } from "./types"
 import { trim } from "./vim-utils"
 
 /**
@@ -14,7 +14,7 @@ import { trim } from "./vim-utils"
  * pair of commands that have a shared prefix, at least one of their
  * shortNames must not match the prefix of the other command.
  */
-const defaultExCommandMap: ExCommand[] = [
+const defaultExCommandMap: ExCommandDefault[] = [
   { name: "colorscheme", shortName: "colo" },
   { name: "map" },
   { name: "imap", shortName: "im" },
@@ -221,7 +221,7 @@ export class ExCommandDispatcher {
     this.commandMap_.clear()
     defaultExCommandMap.forEach((command) => {
       const key = command.shortName || command.name
-      this.commandMap_.set(key, command)
+      this.commandMap_.set(key, { type: "api", ...command })
     })
   }
 
