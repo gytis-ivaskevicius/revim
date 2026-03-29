@@ -42,6 +42,8 @@ export class CommandDispatcher {
       return { type: "none" }
     } else if (!matches.full && matches.partial) {
       return { type: "partial" }
+    } else if (!matches.full) {
+      return { type: "none" }
     }
 
     const bestMatch = matches.full?.[0]
@@ -366,7 +368,7 @@ export class CommandDispatcher {
     }
     if (command.type === "keyToEx") {
       // Handle user defined Ex to Ex mappings
-      exCommandDispatcher.processCommand(adapter, command.exArgs?.input)
+      exCommandDispatcher.processCommand(adapter, command.exArgs!.input)
     } else {
       if (vim.visualMode) {
         showPrompt(adapter, {

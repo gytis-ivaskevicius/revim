@@ -310,11 +310,13 @@ export const actions: Record<string, ActionFunc> = {
         return tabs * tabSize + spaces * 1
       }
       const currentLine = adapter.getLine(adapter.getCursor().line)
-      const indent = whitespaceLength(currentLine.match(/^\s*/)?.[0])
+      const currentLineMatch = currentLine.match(/^\s*/)
+      const indent = currentLineMatch ? whitespaceLength(currentLineMatch[0]) : 0
       // chomp last newline b/c don't want it to match /^\s*/gm
       const chompedText = text.replace(/\n$/, "")
       const wasChomped = text !== chompedText
-      const firstIndent = whitespaceLength(text.match(/^\s*/)?.[0])
+      const textMatch = text.match(/^\s*/)
+      const firstIndent = textMatch ? whitespaceLength(textMatch[0]) : 0
       text = chompedText.replace(/^\s*/gm, (wspace: string) => {
         const newIndent = indent + (whitespaceLength(wspace) - firstIndent)
         if (newIndent < 0) {

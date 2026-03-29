@@ -67,11 +67,13 @@ export function findParagraph(
 }
 
 interface Index {
-  line?: string
-  ln?: number
-  pos?: number
+  line: string
+  ln: number
+  pos: number
   dir: -1 | 1
 }
+
+type PartialIndex = Partial<Pick<Index, "line" | "ln" | "pos">> & { dir: -1 | 1 }
 
 export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, dir: -1 | 1): Pos {
   /*
@@ -86,7 +88,7 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
         next valid position or sets them to null if there are
         no more valid positions.
        */
-  const nextChar = (adapter: EditorAdapter, idx: Index) => {
+  const nextChar = (adapter: EditorAdapter, idx: PartialIndex) => {
     if (idx.line === undefined || idx.ln === undefined || idx.pos === undefined) {
       idx.line = undefined
       idx.ln = undefined
@@ -123,7 +125,7 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
       dir: dir,
     }
 
-    const last_valid: Pick<Index, "ln" | "pos"> = {
+    const last_valid = {
       ln: curr.ln,
       pos: curr.pos,
     }
@@ -182,7 +184,7 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
       dir: dir,
     }
 
-    let last_valid: Pick<Index, "ln" | "pos"> = {
+    let last_valid: { ln?: number; pos?: number } = {
       ln: curr.ln,
       pos: undefined,
     }
@@ -228,7 +230,7 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
     return last_valid
   }
 
-  let curr_index: Pick<Index, "ln" | "pos"> = {
+  let curr_index: { ln?: number; pos?: number } = {
     ln: cur.line,
     pos: cur.ch,
   }
