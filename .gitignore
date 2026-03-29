@@ -21,3 +21,5 @@ Thumbs.db
 tui-traces/
 
 .scannerwork
+lib/index.d.ts
+lib/index.js

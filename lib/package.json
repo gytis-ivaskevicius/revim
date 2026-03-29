@@ -5,7 +5,9 @@
   "types": "index.d.ts",
   "napi": {
     "binaryName": "revim-lib",
-    "targets": ["x86_64-unknown-linux-gnu"]
+    "targets": [
+      "x86_64-unknown-linux-gnu"
+    ]
   },
   "scripts": {
     "build": "napi build --platform --release"
