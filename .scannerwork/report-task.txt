@@ -2,5 +2,5 @@ projectKey=revim
 serverUrl=http://localhost:9000
 serverVersion=26.3.0.120487
 dashboardUrl=http://localhost:9000/dashboard?id=revim
-ceTaskId=872cdf80-9a8f-4f24-b65a-68e9081a05f6
-ceTaskUrl=http://localhost:9000/api/ce/task?id=872cdf80-9a8f-4f24-b65a-68e9081a05f6
+ceTaskId=946f7a71-6c29-4d2e-b3f6-270aabdc16a2
+ceTaskUrl=http://localhost:9000/api/ce/task?id=946f7a71-6c29-4d2e-b3f6-270aabdc16a2
