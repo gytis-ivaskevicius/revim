@@ -1305,14 +1305,14 @@ const kDigraphList: Array<[string, number]> = [
   ["fl", 0xfb02], // 64258	LATIN SMALL LIGATURE FL
   ["ft", 0xfb05], // 64261	LATIN SMALL LIGATURE LONG S T
   ["st", 0xfb06], // 64262	LATIN SMALL LIGATURE ST
-];
+]
 
-const kDigraphMap = new Map<string, number>(kDigraphList);
+const kDigraphMap = new Map<string, number>(kDigraphList)
 
 export const findDigraph = (keys: string): string => {
-  const match = kDigraphMap.get(keys);
+  const match = kDigraphMap.get(keys)
   if (!match) {
-    return "";
+    return ""
   }
-  return String.fromCodePoint(match);
-};
+  return String.fromCodePoint(match)
+}

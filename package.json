@@ -3,6 +3,7 @@
   "workspaces": ["lib", "app"],
   "private": true,
   "devDependencies": {
+    "@biomejs/biome": "2.4.9",
     "@microsoft/tui-test": "0.0.3"
   }
 }

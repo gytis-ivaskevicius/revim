@@ -1,6 +1,6 @@
-import { KeyMapping } from "./types";
+import type { KeyMapping } from "./types"
 
-export let defaultKeymap: KeyMapping[] = [
+export const defaultKeymap: KeyMapping[] = [
   // Key to key mapping. This goes first to make it possible to override
   // existing mappings.
   { keys: "<Left>", type: "keyToKey", toKeys: "h" },
@@ -836,6 +836,6 @@ export let defaultKeymap: KeyMapping[] = [
   },
   // Ex command
   { keys: ":", type: "ex" },
-];
+]
 
-export let defaultKeymapLength = defaultKeymap.length;
+export const defaultKeymapLength = defaultKeymap.length
