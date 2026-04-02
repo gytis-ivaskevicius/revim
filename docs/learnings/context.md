@@ -21,6 +21,13 @@
 
 ---
 
+## Local commit GPG signing can block quick commits
+**Date**: 2026-03-30
+**What happened**: Committing changes failed in this session because GPG signing timed out in the environment. This prevented an immediate signed commit and required committing with signing disabled.
+**Recommendation**: Document a recommended fallback for local development: if GPG signing fails, either unlock the key agent or run `git -c commit.gpgsign=false commit -m "..."` to bypass signing for the interim. For CI, ensure a non-interactive signing strategy or disable signing on automated runners.
+
+---
+
 ## Imported Vim Surface Exceeds Current TUI Semantics
 **Date**: 2026-03-28
 **What happened**: Porting `vim-monaco` into the terminal app was faster than building a Vim layer from scratch, but it also exposed gaps where the TUI backend does not yet match Monaco-style editor capabilities, especially around viewport behavior, visual selection rendering, and deferred actions like undo/redo.
