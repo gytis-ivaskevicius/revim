@@ -35,6 +35,13 @@
 
 ---
 
+## Threaded callback errors were ignored
+**Date**: 2026-03-30
+**What happened**: The keyboard listener spawned a thread that called a N-API ThreadsafeFunction but ignored the returned Result. Failures (callback dropped or shutdown races) were silently dropped and made debugging shutdown flakiness hard.
+**Recommendation**: Always inspect the Result from `ThreadsafeFunction::call(...)` in spawned threads and emit a visible diagnostic (e.g., `eprintln!`) when it fails. This preserves best-effort behavior while surfacing issues in CI logs.
+
+---
+
 ## Rust delta-based undo had complex position tracking issues
 **Date**: 2026-03-29
 **What happened**: Implementing undo/redo in Rust using delta-based history (storing each replace_range as separate entry) failed because insert mode typed each character as a separate entry with different positions. When undoing in reverse order, positions conflicted and corrupted the buffer.

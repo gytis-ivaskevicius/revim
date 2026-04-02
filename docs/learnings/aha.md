@@ -29,3 +29,9 @@
 **When useful**: When testing similar behaviors like cursor movement in different directions. Use a `for` loop over an array of test cases to reduce code duplication and ensure consistent test structure.
 
 ---
+
+## N-API error tests: assert Err when uninitialized
+**Date**: 2026-03-30
+**When useful**: When modifying N-API boundary code (Rust) — add small unit tests asserting exported functions return `Err` when `TUI_CONTEXT` is `None`. These tests catch accidental reintroduction of panics (`unwrap()`) and confirm `to_napi_error` mapping remains in place.
+
+---
