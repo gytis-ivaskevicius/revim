@@ -38,6 +38,7 @@ pub struct TuiState {
     pub demo_text: Vec<String>,
     pub selections: Vec<Selection>,
     pub highlights: Vec<HighlightRange>,
+    pub status_text: String,
 }
 
 impl Default for TuiState {
@@ -71,6 +72,7 @@ impl TuiState {
                 head_ch: 0,
             }],
             highlights: Vec::new(),
+            status_text: String::new(),
         }
     }
 

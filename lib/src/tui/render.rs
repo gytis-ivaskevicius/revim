@@ -1,6 +1,6 @@
 use napi::bindgen_prelude::*;
 use ratatui::{
-    layout::Alignment,
+    layout::{Alignment, Constraint, Layout},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
@@ -59,13 +59,14 @@ pub fn render_frame_internal() -> Result<()> {
         demo_text,
         highlights,
         selections,
+        status_text,
     ) = {
         let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
             .as_ref()
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
 
-        let state = context.state.lock().unwrap();
+        let state = context.state.lock().map_err(to_napi_error)?;
         let cursor_row = state.cursor_row;
         let cursor_col = state.cursor_col;
         let anchor_row = state.anchor_row;
@@ -74,6 +75,7 @@ pub fn render_frame_internal() -> Result<()> {
         let demo_text: Vec<String> = state.demo_text.clone();
         let highlights = state.highlights.clone();
         let selections = state.selections.clone();
+        let status_text = state.status_text.clone();
         (
             cursor_row,
             cursor_col,
@@ -83,6 +85,7 @@ pub fn render_frame_internal() -> Result<()> {
             demo_text,
             highlights,
             selections,
+            status_text,
         )
     };
 
@@ -170,13 +173,29 @@ pub fn render_frame_internal() -> Result<()> {
         .terminal
         .draw(|f| {
             let size = f.area();
+            let layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]);
+            let [editor_area, status_area] = layout.areas(size);
+
             let block = Block::default().borders(Borders::ALL).title("ReVim");
             let paragraph = Paragraph::new(lines)
                 .block(block.clone())
                 .alignment(Alignment::Left);
-            f.render_widget(paragraph, size);
-            let inner_area = block.inner(size);
-            f.set_cursor_position((inner_area.x + cursor_col, inner_area.y + cursor_row));
+            // Only render editor if it has positive height/width
+            if editor_area.height > 0 && editor_area.width > 0 {
+                f.render_widget(paragraph, editor_area);
+                let inner_area = block.inner(editor_area);
+                // clamp cursor within inner_area to avoid out-of-bounds positioning
+                let cx = inner_area
+                    .x
+                    .saturating_add(cursor_col.min(inner_area.width.saturating_sub(1)));
+                let cy = inner_area
+                    .y
+                    .saturating_add(cursor_row.min(inner_area.height.saturating_sub(1)));
+                f.set_cursor_position((cx, cy));
+            }
+
+            let status_bar = Paragraph::new(status_text.as_str()).alignment(Alignment::Left);
+            f.render_widget(status_bar, status_area);
         })
         .map_err(to_napi_error)?;
 
