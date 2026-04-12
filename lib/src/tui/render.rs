@@ -9,38 +9,25 @@ use ratatui::{
 use super::state::{TuiState, VisualMode};
 use super::{to_napi_error, TUI_CONTEXT};
 
-pub fn build_highlighted_line<'a>(
-    line: &'a str,
-    cursor_col: Option<u16>,
-    highlights: &[(u16, u16)],
-) -> Line<'a> {
+pub fn build_highlighted_line<'a>(line: &'a str, highlights: &[(u16, u16)]) -> Line<'a> {
     let chars: Vec<char> = line.chars().collect();
-    let col = cursor_col.map(|cursor_col| cursor_col as usize);
     let max_highlight_end = highlights
         .iter()
         .map(|(_, end)| *end as usize)
         .max()
         .unwrap_or(0);
-    let width = chars
-        .len()
-        .max(max_highlight_end)
-        .max(col.map(|col| col.saturating_add(1)).unwrap_or(0));
+    let width = chars.len().max(max_highlight_end);
     let spans: Vec<Span> = (0..width)
         .map(|i| {
             let ch = chars.get(i).copied().unwrap_or(' ');
-            let is_cursor = col == Some(i);
             let is_highlighted = highlights
                 .iter()
                 .any(|(start, end)| i >= *start as usize && i < *end as usize);
-            let mut style = Style::default();
             if is_highlighted {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
-            if is_cursor {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
-            if is_cursor || is_highlighted {
-                Span::styled(ch.to_string(), style)
+                Span::styled(
+                    ch.to_string(),
+                    Style::default().add_modifier(Modifier::REVERSED),
+                )
             } else {
                 Span::raw(ch.to_string())
             }
@@ -146,18 +133,8 @@ pub fn render_frame_internal() -> Result<()> {
                 }
             }
 
-            if row == cursor_row as usize {
-                build_highlighted_line(
-                    line,
-                    if selection_active {
-                        None
-                    } else {
-                        Some(cursor_col)
-                    },
-                    &row_highlights,
-                )
-            } else if !row_highlights.is_empty() {
-                build_highlighted_line(line, None, &row_highlights)
+            if !row_highlights.is_empty() {
+                build_highlighted_line(line, &row_highlights)
             } else {
                 Line::from(line.as_str())
             }
