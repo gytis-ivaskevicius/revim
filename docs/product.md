@@ -11,6 +11,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - **Ctrl+C exit and visual mode** — Fix Ctrl+C exit (ThreadsafeFunction unref + synchronous process.exit), and render charwise/linewise/blockwise visual selection in the TUI ([story](stories/006-ctrl-c-exit-visual-mode/story.md))
 - **Undo/redo** — Delta-based document history in the Rust TUI layer; `u`, `<C-r>`, and `U` perform real undo/redo instead of no-ops ([story](stories/007-add-undo-redo/story.md))
 - **Status bar (MVP)** — Terminal status bar showing current vim mode and pending key-chord buffer; `IStatusBar` interface wired via `TerminalStatusBar` and a new `setStatusText` N-API function ([story](stories/008-add-status-bar/story.md))
+- **Fix cursor visibility and undo regressions** — Eliminate cursor double-inversion (hardware cursor + REVERSED span cancelled each other in normal mode), fix `r<char>` undo missing undo stop, and add targeted E2E regression tests ([story](stories/009-fix-cursor-undo-regressions/story.md))
 
 ## Non-Goals
 
@@ -32,7 +33,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
   - separate viewport state from cursor state
   - make scrollTo, scrollToLine, getScrollInfo, and getVisibleLines behave like an editor window
 - No search and prompt UX coverage
-  - add E2E coverage for /, n, N, search highlight behavior, and prompt scroll restore
+  - add E2E coverage for /, n, N, search highlight behavior, and prompt scroll restore (tracked for a dedicated follow-up story after 009)
 - No ex command coverage
   - add E2E tests for a small supported subset like :w, :q, :sort, :s
   - explicitly gate/disable unsupported commands
