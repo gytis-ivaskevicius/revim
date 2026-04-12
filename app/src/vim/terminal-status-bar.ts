@@ -12,7 +12,6 @@ function modeLabelFor(event: ModeChangeEvent | undefined): string {
       return "VISUAL"
     case "replace":
       return "REPLACE"
-    case "normal":
     default:
       return "NORMAL"
   }

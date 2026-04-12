@@ -179,3 +179,77 @@ test("dd then u restores deleted line", async ({ terminal }) => {
   const bufferAfterUndo = visibleBuffer(terminal)
   expect(bufferAfterUndo.includes("Welcome to ReVim!")).toBe(true)
 })
+
+test("r<char> replaces character and u undoes it", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+  const initialCursor = terminal.getCursor()
+
+  await pressKeys(terminal, ["r", "Z"])
+
+  const bufferAfterReplace = visibleBuffer(terminal)
+  expect(bufferAfterReplace.includes("Zelcome to ReVim!")).toBe(true)
+
+  await pressKeys(terminal, ["u"])
+
+  const bufferAfterUndo = visibleBuffer(terminal)
+  expect(bufferAfterUndo.includes("Welcome to ReVim!")).toBe(true)
+  expect(terminal.getCursor().x).toBe(initialCursor.x)
+})
+
+test("r<char> then u then Ctrl+r redoes the replace", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+
+  await pressKeys(terminal, ["r", "Z"])
+
+  await pressKeys(terminal, ["u"])
+
+  const bufferAfterUndo = visibleBuffer(terminal)
+  expect(bufferAfterUndo.includes("Welcome to ReVim!")).toBe(true)
+
+  await pressCtrlR(terminal)
+
+  const bufferAfterRedo = visibleBuffer(terminal)
+  expect(bufferAfterRedo.includes("Zelcome to ReVim!")).toBe(true)
+})
+
+test("r<char> then u then new edit clears redo stack", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+
+  await pressKeys(terminal, ["r", "Z"])
+
+  await pressKeys(terminal, ["u"])
+
+  await pressKeys(terminal, ["i", "X", "<Esc>"])
+
+  await pressCtrlR(terminal)
+
+  const buffer = visibleBuffer(terminal)
+  expect(buffer.includes("X")).toBe(true)
+  expect(buffer.includes("Zelcome")).toBe(false)
+})
+
+test("r<Enter> splits line and u restores it", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+
+  await pressKeys(terminal, ["r", "Enter"])
+
+  const bufferAfterSplit = visibleBuffer(terminal)
+  expect(bufferAfterSplit.includes("elcome to ReVim!")).toBe(true)
+
+  await pressKeys(terminal, ["u"])
+
+  const bufferAfterUndo = visibleBuffer(terminal)
+  expect(bufferAfterUndo.includes("Welcome to ReVim!")).toBe(true)
+})
+
+test("empty undo history then r<char> then u reverts the replace", async ({ terminal }) => {
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+  await pressKeys(terminal, ["u"])
+
+  await pressKeys(terminal, ["r", "Z"])
+
+  await pressKeys(terminal, ["u"])
+
+  const buffer = visibleBuffer(terminal)
+  expect(buffer.includes("Welcome to ReVim!")).toBe(true)
+})
