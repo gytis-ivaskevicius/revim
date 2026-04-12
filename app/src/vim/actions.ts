@@ -463,6 +463,7 @@ export const actions: Record<string, ActionFunc> = {
     updateMark(adapter, vim, markName, adapter.getCursor())
   },
   replace: (adapter, actionArgs, vim) => {
+    adapter.pushUndoStop()
     const replaceWith = actionArgs.selectedCharacter!
     let curStart = adapter.getCursor()
     let replaceTo: number

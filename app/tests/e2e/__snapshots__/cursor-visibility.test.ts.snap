@@ -1,0 +1,216 @@
+// TUI Test Snapshot v1
+
+exports[`ArrowDown x1 snapshot has no inverse on cursor cell | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+│NORMAL                                                                          │
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  }
+}
+`;
+
+exports[`ArrowRight x4 snapshot has no inverse on cursor cell | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+│NORMAL                                                                          │
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  }
+}
+`;
+
+exports[`initial render snapshot has no inverse on cursor cell | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+│NORMAL                                                                          │
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  }
+}
+`;
+
+exports[`v + ArrowRight x3 preserves visual selection inverse | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                             ││
+││                                                                              ││
+││This is a demo text for the TUI.                                              ││
+││Use arrow keys to move the cursor.                                            ││
+││Press Ctrl+C to exit.                                                         ││
+││                                                                              ││
+││The cursor wraps around edges.                                                ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+││                                                                              ││
+│└──────────────────────────────────────────────────────────────────────────────┘│
+│VISUAL                                                                          │
+╰────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  },
+  "1,1": {
+    "inverse": 67108864
+  },
+  "5,1": {
+    "inverse": 0
+  }
+}
+`;
+
