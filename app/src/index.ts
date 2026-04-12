@@ -1,6 +1,7 @@
 import { initTui, shutdownTui, startKeyboardListener } from "@revim/lib"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
 import { VimMode } from "./vim"
+import TerminalStatusBar from "./vim/terminal-status-bar"
 
 function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: string[] }) {
   const insertMode = Boolean(vimMode.adapter.state.vim?.insertMode)
@@ -10,7 +11,7 @@ function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: stri
 async function main() {
   initTui()
 
-  const vimMode = new VimMode()
+  const vimMode = new VimMode(new TerminalStatusBar())
   vimMode.enable()
   const keepAlive = setInterval(() => {}, 1_000)
   let cleanedUp = false
