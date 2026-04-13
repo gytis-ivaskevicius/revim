@@ -62,3 +62,10 @@
 **Recommendation**: Test assertions must directly verify the claimed behavior. `toBeLessThanOrEqual` is too weak for boundary tests — if wrapping should go exactly to 0, assert exactly 0. A test that passes regardless of whether a feature works is worse than no test.
 
 ---
+
+## Rust unit tests race on shared global state
+**Date**: 2026-04-14
+**What happened**: The logging module used a `static Mutex<Option<ManuallyDrop<File>>>` to store the log file descriptor. Three unit tests all accessed this shared state and interfered with each other when run in parallel, causing flaky failures. Adding `#[serial]` attribute from `serial_test` crate fixed the issue.
+**Recommendation**: When writing Rust unit tests that access shared statics, either use `#[serial]` attribute, run tests with `--test-threads=1`, or refactor to use non-global state in tests. Using `tempfile::NamedTempFile` for unique paths per test helps but doesn't solve the race on the global LOG_FILE itself.
+
+---
