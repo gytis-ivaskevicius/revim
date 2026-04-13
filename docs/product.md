@@ -12,6 +12,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - **Undo/redo** — Delta-based document history in the Rust TUI layer; `u`, `<C-r>`, and `U` perform real undo/redo instead of no-ops ([story](stories/007-add-undo-redo/story.md))
 - **Status bar (MVP)** — Terminal status bar showing current vim mode and pending key-chord buffer; `IStatusBar` interface wired via `TerminalStatusBar` and a new `setStatusText` N-API function ([story](stories/008-add-status-bar/story.md))
 - **Fix cursor visibility and undo regressions** — Eliminate cursor double-inversion (hardware cursor + REVERSED span cancelled each other in normal mode), fix `r<char>` undo missing undo stop, and add targeted E2E regression tests ([story](stories/009-fix-cursor-undo-regressions/story.md))
+- **Scroll support** — Expanded demo buffer (~50 lines), `scroll_top` viewport state in Rust, auto-scroll cursor-follows-viewport, `zz`/`zt`/`zb` viewport positioning, and live `get_scroll_info`/`get_visible_lines` API ([story](stories/012-add-scroll-support/story.md))
 
 ## Non-Goals
 
@@ -29,9 +30,6 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
   - Cursor position indicator (line:col) in the status bar
   - File name display in the status bar
   - Status bar colors / theming
-- No real viewport semantics
-  - separate viewport state from cursor state
-  - make scrollTo, scrollToLine, getScrollInfo, and getVisibleLines behave like an editor window
 - No search and prompt UX coverage
   - add E2E coverage for /, n, N, search highlight behavior, and prompt scroll restore (tracked for a dedicated follow-up story after 009)
 - No ex command coverage
