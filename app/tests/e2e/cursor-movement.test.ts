@@ -1,4 +1,4 @@
-import { expect, KEY_PRESS_DELAY_MS, RENDER_DELAY_MS, test } from "./test-utils.js"
+import { expect, RENDER_DELAY_MS, test } from "./test-utils.js"
 
 const movements = [
   { name: "ArrowDown moves cursor down", key: "down", axis: "y" as const, delta: 1, wraps: false },
