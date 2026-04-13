@@ -7,8 +7,8 @@ build:
 	cd lib && npm run build
 
 # Run the demo application
-dev: build
-    cd app && bun run dev
+dev *args: build
+	cd app && bun run src/index.ts {{args}}
 
 # Run Rust unit tests
 test-rust:

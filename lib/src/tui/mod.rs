@@ -1,4 +1,5 @@
 mod api;
+mod log;
 mod render;
 pub mod state;
 
@@ -9,6 +10,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicU16;
 use std::sync::Mutex;
 
+pub(crate) use log::{append_log, revim_log};
 use state::TuiState;
 
 pub use api::*;

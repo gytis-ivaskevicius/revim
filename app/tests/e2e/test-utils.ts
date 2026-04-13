@@ -25,3 +25,7 @@ export function keyEscape(terminal: any) {
   if (typeof terminal.key === "function") return terminal.key("Escape")
   throw new Error("Terminal does not support keyEscape/key")
 }
+
+export function withLog(logPath: string) {
+  return { program: { file: "bun", args: ["run", "app/src/index.ts", "--log", logPath] } }
+}
