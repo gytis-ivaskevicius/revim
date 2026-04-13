@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs"
-import { expect, test } from "@microsoft/tui-test"
-import { keyPress, RENDER_DELAY_MS, withLog } from "./test-utils.js"
+import { expect, keyPress, RENDER_DELAY_MS, test, withLog } from "./test-utils.js"
 
 const LOG = "/tmp/revim-logging-test.log"
 
