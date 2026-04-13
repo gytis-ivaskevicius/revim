@@ -1,5 +1,5 @@
 import { setStatusText } from "@revim/lib"
-import type { IStatusBar, ModeChangeEvent } from "./statusbar"
+import type { IStatusBar, ModeChangeEvent, StatusBarInputOptions, StatusBarKeyEvent } from "./statusbar"
 
 function modeLabelFor(event: ModeChangeEvent | undefined): string {
   if (!event) return "NORMAL"
@@ -20,6 +20,11 @@ function modeLabelFor(event: ModeChangeEvent | undefined): string {
 export class TerminalStatusBar implements IStatusBar {
   private mode: ModeChangeEvent | undefined
   private keyBuffer = ""
+  private promptState: {
+    prefix: string
+    query: string
+    options: StatusBarInputOptions
+  } | null = null
 
   constructor() {
     this.mode = { mode: "normal" }
@@ -62,8 +67,108 @@ export class TerminalStatusBar implements IStatusBar {
     return () => {}
   }
 
-  startPrompt(_prefix: string, _desc: string, _options: any) {
-    return () => {}
+  isPrompting(): boolean {
+    return this.promptState !== null
+  }
+
+  handlePromptKey(encodedKey: string): void {
+    if (!this.promptState) return
+    const state = this.promptState
+
+    const evt = this.decodeKey(encodedKey)
+    if (!evt) return
+
+    const close = (value?: string) => {
+      if (value !== undefined) {
+        state.query = value
+        setStatusText(state.prefix + value)
+      } else {
+        this.promptState = null
+        this.update()
+      }
+    }
+
+    try {
+      state.options.onKeyDown?.(evt, state.query, close)
+    } catch (_e) {
+      // ignore onKeyDown errors to prevent freezing
+    }
+
+    // For Escape, ensure prompt closes even if onKeyDown threw before calling close()
+    if (evt.key === "Escape" && this.promptState !== null) {
+      close()
+      return
+    }
+
+    if (this.promptState === null) return
+
+    if (evt.key === "Backspace" && state.query.length > 0) {
+      state.query = state.query.slice(0, -1)
+    } else if (evt.key.length === 1 && !evt.ctrlKey && !evt.altKey && !evt.metaKey) {
+      state.query += evt.key
+    }
+
+    setStatusText(state.prefix + state.query)
+
+    // Note: onKeyUp temporarily disabled to isolate typing issue
+    // try {
+    //   state.options.onKeyUp?.(evt, state.query, close)
+    // } catch (_e) {
+    //   // ignore onKeyUp errors
+    // }
+
+    if (evt.key === "Enter") {
+      // Set promptState = null FIRST to prevent state leak if onClose throws
+      this.promptState = null
+      this.update()
+      state.options.onClose?.(state.query)
+    }
+  }
+
+  private decodeKey(encodedKey: string): StatusBarKeyEvent | null {
+    const stopPropagation = () => {}
+    const preventDefault = () => {}
+
+    if (encodedKey.startsWith("'") && encodedKey.endsWith("'") && encodedKey.length === 3) {
+      return { key: encodedKey[1], stopPropagation, preventDefault }
+    }
+
+    const singleKeyMap: Record<string, string> = {
+      Space: " ",
+      Enter: "Enter",
+      Escape: "Escape",
+      Esc: "Escape",
+      Backspace: "Backspace",
+      Up: "Up",
+      Down: "Down",
+      Left: "Left",
+      Right: "Right",
+    }
+
+    if (singleKeyMap[encodedKey]) {
+      return { key: singleKeyMap[encodedKey], stopPropagation, preventDefault }
+    }
+
+    const ctrlMatch = encodedKey.match(/^Ctrl-(.+)$/)
+    if (ctrlMatch) {
+      return { key: ctrlMatch[1], ctrlKey: true, stopPropagation, preventDefault }
+    }
+
+    const altMatch = encodedKey.match(/^Alt-(.+)$/)
+    if (altMatch) {
+      return { key: altMatch[1], altKey: true, stopPropagation, preventDefault }
+    }
+
+    return null
+  }
+
+  startPrompt(prefix: string, _desc: string, options: StatusBarInputOptions) {
+    this.promptState = { prefix, query: "", options }
+    setStatusText(prefix)
+    return () => {
+      this.promptState = null
+      this.update()
+    }
   }
 
   closeInput() {

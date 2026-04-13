@@ -524,7 +524,9 @@ export const exCommands: Record<string, ExCommandFunc> = {
     }
     // now that we have the regexPart, search for regex matches in the
     // specified range of lines
-    const query = getSearchState(adapter).getQuery()!
+    const searchState = getSearchState(adapter)
+    if (!searchState) return
+    const query = searchState.getQuery()!
     const matchedLines: { line: number; text: string }[] = []
     for (let i = lineStart; i <= lineEnd; i++) {
       const line = adapter.getLine(i)
@@ -623,6 +625,10 @@ export const exCommands: Record<string, ExCommandFunc> = {
       return
     }
     const state = getSearchState(adapter)
+    if (!state) {
+      showConfirm(adapter, "No previous search query")
+      return
+    }
     const query = state.getQuery()!
     let lineStart = params.line !== undefined ? params.line : adapter.getCursor().line
     let lineEnd = params.lineEnd || lineStart

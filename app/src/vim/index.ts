@@ -53,6 +53,10 @@ export class VimMode implements EventTarget {
   }
 
   handleKey(key: string) {
+    if (this.statusBar_?.isPrompting()) {
+      this.statusBar_.handlePromptKey(key)
+      return
+    }
     const keyMapState = this.adapter_.state.keyMap as string
     const keymap = EditorAdapter.keyMap[keyMapState]
     const command = keymap?.call?.(key, this.adapter_)

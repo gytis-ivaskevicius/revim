@@ -187,9 +187,13 @@ export class CommandDispatcher {
     }
     const forward = command.searchArgs?.forward
     const wholeWordOnly = command.searchArgs?.wholeWordOnly
-    getSearchState(adapter).setReversed(!forward)
+    const searchState = getSearchState(adapter)
+    if (!searchState) {
+      return
+    }
+    searchState.setReversed(!forward)
     const promptPrefix = forward ? "/" : "?"
-    const originalQuery = getSearchState(adapter).getQuery()
+    const originalQuery = searchState.getQuery()
     const originalScrollPos = adapter.getScrollInfo()
     const handleQuery = (query: string, ignoreCase: boolean, smartCase: boolean) => {
       vimGlobalState.searchHistoryController.pushInput(query)
@@ -212,8 +216,12 @@ export class CommandDispatcher {
       })
     }
     const onPromptClose = (query: string) => {
-      adapter.scrollTo(originalScrollPos.left, originalScrollPos.top)
-      handleQuery(query, true /** ignoreCase */, true /** smartCase */)
+      // Note: scrollTo removed - it moves cursor, not viewport
+      try {
+        handleQuery(query, true /** ignoreCase */, true /** smartCase */)
+      } catch (_e) {
+        // Handle errors in query execution
+      }
       const macroModeState = vimGlobalState.macroModeState
       if (macroModeState.isRecording) {
         logSearchQuery(macroModeState, query)
@@ -247,7 +255,7 @@ export class CommandDispatcher {
         adapter.scrollIntoView(nextPos)
       } else {
         clearSearchHighlight(adapter)
-        adapter.scrollTo(originalScrollPos.left, originalScrollPos.top)
+        // Note: scrollTo removed - it moves cursor, not viewport
       }
     }
     const onPromptKeyDown = (
@@ -256,25 +264,24 @@ export class CommandDispatcher {
       close: (text?: string) => void,
     ): boolean => {
       const keyName = getEventKeyName(e)
-      if (
-        keyName === "Esc" ||
-        keyName === "Ctrl-C" ||
-        keyName === "Ctrl-[" ||
-        (keyName === "Backspace" && query === "")
-      ) {
-        vimGlobalState.searchHistoryController.pushInput(query)
-        vimGlobalState.searchHistoryController.reset()
-        updateSearchQuery(adapter, originalQuery?.source)
-        clearSearchHighlight(adapter)
-        adapter.scrollTo(originalScrollPos.left, originalScrollPos.top)
-        stopEvent(e)
-        clearInputState(adapter)
+      if (keyName === "Esc" || (keyName === "Backspace" && query === "")) {
+        // Close prompt FIRST before any cleanup that might throw
         close()
-        adapter.focus()
+        try {
+          vimGlobalState.searchHistoryController.pushInput(query)
+          vimGlobalState.searchHistoryController.reset()
+          updateSearchQuery(adapter, originalQuery?.source)
+          clearSearchHighlight(adapter)
+          stopEvent(e)
+          clearInputState(adapter)
+          adapter.focus()
+        } catch (_e) {
+          // Best effort cleanup - prompt already closed
+        }
       } else if (keyName === "Up" || keyName === "Down") {
         stopEvent(e)
-      } else if (keyName === "Ctrl-U") {
-        // Ctrl-U clears input.
+      } else if (keyName === "Ctrl-u") {
+        // Ctrl-u clears input.
         stopEvent(e)
         close("")
       }
