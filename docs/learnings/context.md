@@ -34,3 +34,10 @@
 **Recommendation**: When extending the port, either narrow the advertised Vim surface to what the TUI truly supports or track follow-up tasks for missing semantics immediately so silent partial behavior does not accumulate.
 
 ---
+
+## Viewport scrolling changes cursor position interpretation
+**Date**: 2026-04-13
+**What happened**: Tests checking `terminal.getCursor()` after many key presses failed because `getCursor()` returns the VIEWPORT position (0-26 for a 27-row viewport), not the buffer position. After scrolling, the viewport position differs from the buffer cursor position. Old tests designed for a 7-line buffer that fits entirely in the viewport assumed direct buffer position = viewport position.
+**Recommendation**: When writing cursor position tests with scrolling, account for the viewport offset. The viewport shows rows `[scroll_top, scroll_top + viewport_height)` and cursor is at `cursor_row - scroll_top` within the viewport. Use scroll tests (`scroll.test.ts`) to verify viewport behavior rather than relying on raw cursor positions after scrolling.
+
+---

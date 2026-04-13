@@ -48,3 +48,10 @@
 **Recommendation**: For undo in this TUI, prefer snapshot-based approach in TypeScript rather than delta-based in Rust. Simpler and more reliable.
 
 ---
+
+## Expanding demo buffer breaks tests with hardcoded line counts
+**Date**: 2026-04-13
+**What happened**: Expanding demo text from 7 to 47 lines broke tests that hardcoded `demoTextLines = 7` or assumed specific line counts. The original test "ArrowDown at last row stays on last row" checked `after.y >= before.y + demoTextLines - 1` which assumed the buffer fits in the viewport. With scrolling, this assertion is impossible to satisfy (max viewport y is 26 but assertion requires >= 41).
+**Recommendation**: When expanding demo text, update or remove tests that assume specific line counts. The acceptance criteria saying "demoTextLines constant updated" may require test redesign rather than just updating a number, especially if the test logic was based on buffer-fitting-in-viewport assumptions.
+
+---
