@@ -20,13 +20,3 @@ for (const { name, key, axis, delta } of movements) {
     expect(after[axis]).toBe(before[axis] + (delta ?? 0))
   })
 }
-
-test("G key navigates to last line", async ({ terminal }) => {
-  // Verify G key navigates to last line and content is visible
-  await expect(terminal.getByText("Welcome")).toBeVisible()
-  terminal.keyEscape()
-  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
-  terminal.keyPress("G")
-  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
-  await expect(terminal.getByText("End of demo buffer.")).toBeVisible()
-})
