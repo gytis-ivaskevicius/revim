@@ -21,11 +21,9 @@ for (const { name, key, axis, delta } of movements) {
   })
 }
 
-test("ArrowDown at last row wraps to first row", async ({ terminal }) => {
-  // This test verifies basic navigation to last row works.
-  // The actual wrapping and scroll behavior is verified by scroll.test.ts.
+test("G key navigates to last line", async ({ terminal }) => {
+  // Verify G key navigates to last line and content is visible
   await expect(terminal.getByText("Welcome")).toBeVisible()
-  // Navigate to last row with G and verify it works
   terminal.keyEscape()
   await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
   terminal.keyPress("G")
