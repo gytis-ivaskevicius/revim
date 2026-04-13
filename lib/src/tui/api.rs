@@ -690,9 +690,7 @@ pub fn scroll_to(y: u32) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
         viewport_height = context.viewport_height.load(Ordering::Relaxed);
         let mut state = context.state.lock().map_err(to_napi_error)?;
-        let max_rows = state.max_rows();
-        let max_scroll = max_rows.saturating_sub(viewport_height);
-        state.scroll_top = (y as u16).min(max_scroll);
+        state.scroll_top = (y as u16).min(state.max_scroll_top(viewport_height));
     }
 
     render_frame_internal()
@@ -786,17 +784,14 @@ pub fn scroll_to_line(line: u32, position: String) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
         let viewport_height = context.viewport_height.load(Ordering::Relaxed);
         let mut state = context.state.lock().map_err(to_napi_error)?;
-        let max_rows = state.max_rows();
-        let max_scroll = max_rows.saturating_sub(viewport_height);
         let line = line as u16;
-        let vh = viewport_height as u16;
         let new_scroll_top = match position.as_str() {
             "top" => line,
-            "center" => line.saturating_sub(vh / 2),
-            "bottom" => line.saturating_sub(vh - 1),
+            "center" => line.saturating_sub(viewport_height / 2),
+            "bottom" => line.saturating_sub(viewport_height - 1),
             _ => line,
         };
-        state.scroll_top = new_scroll_top.min(max_scroll);
+        state.scroll_top = new_scroll_top.min(state.max_scroll_top(viewport_height));
     }
 
     render_frame_internal()
@@ -809,7 +804,7 @@ pub fn get_visible_lines() -> Result<VisibleLines> {
         .as_ref()
         .ok_or_else(|| to_napi_error("TUI not initialized"))?;
     let state = context.state.lock().map_err(to_napi_error)?;
-    let viewport_height = context.viewport_height.load(Ordering::Relaxed);
+    let viewport_height = context.viewport_height.load(Ordering::Relaxed).max(1);
     let total_lines = state.max_rows();
 
     let top = state.scroll_top;
