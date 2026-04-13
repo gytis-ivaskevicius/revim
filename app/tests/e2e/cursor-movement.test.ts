@@ -23,17 +23,22 @@ for (const { name, key, axis, delta } of movements) {
 
 test("ArrowDown at last row wraps to first row", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome")).toBeVisible()
-  // Use G to jump to last line
+  // Use G to jump to last line (row 46, the last of 47 lines)
   terminal.keyEscape()
   await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
   terminal.keyPress("G")
   await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
   // "End of demo buffer." should be visible
   await expect(terminal.getByText("End of demo buffer.")).toBeVisible()
-  // Now press ArrowDown - with wrapping, cursor goes to first row
-  // Note: The viewport may not immediately scroll due to timing
+  // Now press ArrowDown - with wrapping at 47 lines, cursor goes to first row
   terminal.keyDown()
-  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS * 5))
-  // Cursor should now be at first row (verified by gg test)
-  // This test verifies wrapping occurs; the scroll tests verify scrolling behavior
+  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+  // Press gg to verify we can return to first line
+  terminal.keyPress("g")
+  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+  terminal.keyPress("g")
+  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+  // "Welcome to ReVim!" should be visible
+  await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
 })
