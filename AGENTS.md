@@ -9,6 +9,8 @@
   - `motions.ts`, `operators.ts` — core motion/operator behavior
   - `motion-paragraph.ts` — paragraph/sentence motions for `{`, `}`, `(`, `)`
   - `default-key-map.ts` — Vim keybinding table
+- `app/src/log.ts` — logging API (initLog, log); wire `--log <path>` in index.ts
+- `lib/src/tui/log.rs` — Rust logging (setLogFd, appendLog, revim_log! macro)
 - `lib/src/tui/api.rs` — N-API boundary for cursor, buffer, keyboard listener
 - `lib/src/tui/state.rs` — demo buffer, cursor state, clipping rules
 - `lib/src/tui/render.rs` — terminal rendering and cursor placement
