@@ -4,31 +4,31 @@ exports[`blockwise visual selection can expand horizontally | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
+││This is a line of text.                                                       ││
+││ReVim is a terminal-based text editor.                                        ││
+││It mimics the behavior of Vim.                                                ││
 ││                                                                              ││
-││This is a demo text for the TUI.                                              ││
-││Use arrow keys to move the cursor.                                            ││
-││Press Ctrl+C to exit.                                                         ││
+││Basic movement keys:                                                          ││
+││  h - move left                                                               ││
+││  j - move down                                                               ││
+││  k - move up                                                                 ││
+││  l - move right                                                              ││
 ││                                                                              ││
-││The cursor wraps around edges.                                                ││
+││Word motion:                                                                  ││
+││  w - next word                                                               ││
+││  b - previous word                                                           ││
+││  e - end of word                                                             ││
 ││                                                                              ││
+││Line numbers are not shown yet.                                               ││
+││Visual mode selection works.                                                  ││
+││You can delete, yank, and put text.                                           ││
 ││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
+││Insert mode:                                                                  ││
+││  i - insert before cursor                                                    ││
+││  a - insert after cursor                                                     ││
+││  A - append at line end                                                      ││
+││  o - open new line below                                                     ││
+││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │V-BLOCK                                                                         │
@@ -62,31 +62,31 @@ exports[`blockwise visual selection highlights the same column across rows | 1`]
 ╭────────────────────────────────────────────────────────────────────────────────╮
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
+││This is a line of text.                                                       ││
+││ReVim is a terminal-based text editor.                                        ││
+││It mimics the behavior of Vim.                                                ││
 ││                                                                              ││
-││This is a demo text for the TUI.                                              ││
-││Use arrow keys to move the cursor.                                            ││
-││Press Ctrl+C to exit.                                                         ││
+││Basic movement keys:                                                          ││
+││  h - move left                                                               ││
+││  j - move down                                                               ││
+││  k - move up                                                                 ││
+││  l - move right                                                              ││
 ││                                                                              ││
-││The cursor wraps around edges.                                                ││
+││Word motion:                                                                  ││
+││  w - next word                                                               ││
+││  b - previous word                                                           ││
+││  e - end of word                                                             ││
 ││                                                                              ││
+││Line numbers are not shown yet.                                               ││
+││Visual mode selection works.                                                  ││
+││You can delete, yank, and put text.                                           ││
 ││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
+││Insert mode:                                                                  ││
+││  i - insert before cursor                                                    ││
+││  a - insert after cursor                                                     ││
+││  A - append at line end                                                      ││
+││  o - open new line below                                                     ││
+││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │V-BLOCK                                                                         │
@@ -126,31 +126,31 @@ exports[`blockwise visual selection stays aligned past empty lines | 1`] = Strin
 ╭────────────────────────────────────────────────────────────────────────────────╮
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
+││This is a line of text.                                                       ││
+││ReVim is a terminal-based text editor.                                        ││
+││It mimics the behavior of Vim.                                                ││
 ││                                                                              ││
-││This is a demo text for the TUI.                                              ││
-││Use arrow keys to move the cursor.                                            ││
-││Press Ctrl+C to exit.                                                         ││
+││Basic movement keys:                                                          ││
+││  h - move left                                                               ││
+││  j - move down                                                               ││
+││  k - move up                                                                 ││
+││  l - move right                                                              ││
 ││                                                                              ││
-││The cursor wraps around edges.                                                ││
+││Word motion:                                                                  ││
+││  w - next word                                                               ││
+││  b - previous word                                                           ││
+││  e - end of word                                                             ││
 ││                                                                              ││
+││Line numbers are not shown yet.                                               ││
+││Visual mode selection works.                                                  ││
+││You can delete, yank, and put text.                                           ││
 ││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
+││Insert mode:                                                                  ││
+││  i - insert before cursor                                                    ││
+││  a - insert after cursor                                                     ││
+││  A - append at line end                                                      ││
+││  o - open new line below                                                     ││
+││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │V-BLOCK                                                                         │
@@ -190,31 +190,31 @@ exports[`charwise visual motion extends the selection | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
+││This is a line of text.                                                       ││
+││ReVim is a terminal-based text editor.                                        ││
+││It mimics the behavior of Vim.                                                ││
 ││                                                                              ││
-││This is a demo text for the TUI.                                              ││
-││Use arrow keys to move the cursor.                                            ││
-││Press Ctrl+C to exit.                                                         ││
+││Basic movement keys:                                                          ││
+││  h - move left                                                               ││
+││  j - move down                                                               ││
+││  k - move up                                                                 ││
+││  l - move right                                                              ││
 ││                                                                              ││
-││The cursor wraps around edges.                                                ││
+││Word motion:                                                                  ││
+││  w - next word                                                               ││
+││  b - previous word                                                           ││
+││  e - end of word                                                             ││
 ││                                                                              ││
+││Line numbers are not shown yet.                                               ││
+││Visual mode selection works.                                                  ││
+││You can delete, yank, and put text.                                           ││
 ││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
+││Insert mode:                                                                  ││
+││  i - insert before cursor                                                    ││
+││  a - insert after cursor                                                     ││
+││  A - append at line end                                                      ││
+││  o - open new line below                                                     ││
+││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │VISUAL                                                                          │
@@ -248,31 +248,31 @@ exports[`charwise visual selection renders reversed cells | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
+││This is a line of text.                                                       ││
+││ReVim is a terminal-based text editor.                                        ││
+││It mimics the behavior of Vim.                                                ││
 ││                                                                              ││
-││This is a demo text for the TUI.                                              ││
-││Use arrow keys to move the cursor.                                            ││
-││Press Ctrl+C to exit.                                                         ││
+││Basic movement keys:                                                          ││
+││  h - move left                                                               ││
+││  j - move down                                                               ││
+││  k - move up                                                                 ││
+││  l - move right                                                              ││
 ││                                                                              ││
-││The cursor wraps around edges.                                                ││
+││Word motion:                                                                  ││
+││  w - next word                                                               ││
+││  b - previous word                                                           ││
+││  e - end of word                                                             ││
 ││                                                                              ││
+││Line numbers are not shown yet.                                               ││
+││Visual mode selection works.                                                  ││
+││You can delete, yank, and put text.                                           ││
 ││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
+││Insert mode:                                                                  ││
+││  i - insert before cursor                                                    ││
+││  a - insert after cursor                                                     ││
+││  A - append at line end                                                      ││
+││  o - open new line below                                                     ││
+││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │VISUAL                                                                          │
@@ -306,31 +306,31 @@ exports[`escape clears visual selection | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
+││This is a line of text.                                                       ││
+││ReVim is a terminal-based text editor.                                        ││
+││It mimics the behavior of Vim.                                                ││
 ││                                                                              ││
-││This is a demo text for the TUI.                                              ││
-││Use arrow keys to move the cursor.                                            ││
-││Press Ctrl+C to exit.                                                         ││
+││Basic movement keys:                                                          ││
+││  h - move left                                                               ││
+││  j - move down                                                               ││
+││  k - move up                                                                 ││
+││  l - move right                                                              ││
 ││                                                                              ││
-││The cursor wraps around edges.                                                ││
+││Word motion:                                                                  ││
+││  w - next word                                                               ││
+││  b - previous word                                                           ││
+││  e - end of word                                                             ││
 ││                                                                              ││
+││Line numbers are not shown yet.                                               ││
+││Visual mode selection works.                                                  ││
+││You can delete, yank, and put text.                                           ││
 ││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
+││Insert mode:                                                                  ││
+││  i - insert before cursor                                                    ││
+││  a - insert after cursor                                                     ││
+││  A - append at line end                                                      ││
+││  o - open new line below                                                     ││
+││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │NORMAL  <Esc>                                                                   │
@@ -358,31 +358,31 @@ exports[`linewise visual selection highlights empty lines | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
+││This is a line of text.                                                       ││
+││ReVim is a terminal-based text editor.                                        ││
+││It mimics the behavior of Vim.                                                ││
 ││                                                                              ││
-││This is a demo text for the TUI.                                              ││
-││Use arrow keys to move the cursor.                                            ││
-││Press Ctrl+C to exit.                                                         ││
+││Basic movement keys:                                                          ││
+││  h - move left                                                               ││
+││  j - move down                                                               ││
+││  k - move up                                                                 ││
+││  l - move right                                                              ││
 ││                                                                              ││
-││The cursor wraps around edges.                                                ││
+││Word motion:                                                                  ││
+││  w - next word                                                               ││
+││  b - previous word                                                           ││
+││  e - end of word                                                             ││
 ││                                                                              ││
+││Line numbers are not shown yet.                                               ││
+││Visual mode selection works.                                                  ││
+││You can delete, yank, and put text.                                           ││
 ││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
+││Insert mode:                                                                  ││
+││  i - insert before cursor                                                    ││
+││  a - insert after cursor                                                     ││
+││  A - append at line end                                                      ││
+││  o - open new line below                                                     ││
+││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │V-LINE                                                                          │
@@ -412,7 +412,7 @@ exports[`linewise visual selection highlights empty lines | 1`] = String.raw`
   "1,2": {
     "inverse": 67108864
   },
-  "2,2": {
+  "24,2": {
     "inverse": 0
   }
 }
@@ -422,31 +422,31 @@ exports[`linewise visual selection highlights the full line | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
+││This is a line of text.                                                       ││
+││ReVim is a terminal-based text editor.                                        ││
+││It mimics the behavior of Vim.                                                ││
 ││                                                                              ││
-││This is a demo text for the TUI.                                              ││
-││Use arrow keys to move the cursor.                                            ││
-││Press Ctrl+C to exit.                                                         ││
+││Basic movement keys:                                                          ││
+││  h - move left                                                               ││
+││  j - move down                                                               ││
+││  k - move up                                                                 ││
+││  l - move right                                                              ││
 ││                                                                              ││
-││The cursor wraps around edges.                                                ││
+││Word motion:                                                                  ││
+││  w - next word                                                               ││
+││  b - previous word                                                           ││
+││  e - end of word                                                             ││
 ││                                                                              ││
+││Line numbers are not shown yet.                                               ││
+││Visual mode selection works.                                                  ││
+││You can delete, yank, and put text.                                           ││
 ││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
-││                                                                              ││
+││Insert mode:                                                                  ││
+││  i - insert before cursor                                                    ││
+││  a - insert after cursor                                                     ││
+││  A - append at line end                                                      ││
+││  o - open new line below                                                     ││
+││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │V-LINE                                                                          │

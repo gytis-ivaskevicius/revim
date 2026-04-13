@@ -130,10 +130,10 @@ const deleteCases: Array<{
   },
   {
     name: "charwise visual delete removes the full word on later lines",
-    readyText: "Press Ctrl+C to exit.",
-    keys: ["j", "j", "j", "j", "v", "e", "d"],
-    absentText: "Press Ctrl+C to exit.",
-    presentText: [" Ctrl+C to exit."],
+    readyText: "Basic movement keys:",
+    keys: ["j", "j", "j", "j", "j", "v", "e", "d"],
+    absentText: "Basic movement keys:",
+    presentText: ["movement keys:"],
   },
 ]
 
@@ -154,18 +154,18 @@ for (const { name, readyText, keys, absentText, presentText } of deleteCases) {
 }
 
 test("blockwise x deletes columns without joining lines", async ({ terminal }) => {
-  await expect(terminal.getByText("This is a demo text for the TUI.")).toBeVisible()
-  await pressKeys(terminal, ["j", "j", { key: "v", ctrl: true }, "j"])
+  await expect(terminal.getByText("ReVim is a terminal-based text editor.")).toBeVisible()
+  await pressKeys(terminal, ["j", "j", "j", { key: "v", ctrl: true }, "j"])
   await pressKeys(
     terminal,
-    Array.from({ length: 13 }, () => "l"),
+    Array.from({ length: 10 }, () => "l"),
   )
   await pressKeys(terminal, ["x"])
 
   const bufferText = visibleBuffer(terminal)
-  if (bufferText.includes("demo texUse arrow")) {
+  if (bufferText.includes(" Vim is a teBasic mov")) {
     throw new Error(`Expected block delete to preserve line breaks:\n${bufferText}`)
   }
-  await expect(terminal.getByText(" text for the TUI.")).toBeVisible()
-  await expect(terminal.getByText(" to move the cursor.")).toBeVisible()
+  await expect(terminal.getByText("ed text editor.")).toBeVisible()
+  await expect(terminal.getByText("ment keys:")).toBeVisible()
 })

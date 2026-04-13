@@ -39,6 +39,7 @@ pub struct TuiState {
     pub selections: Vec<Selection>,
     pub highlights: Vec<HighlightRange>,
     pub status_text: String,
+    pub scroll_top: u16,
 }
 
 impl Default for TuiState {
@@ -51,12 +52,52 @@ impl TuiState {
     pub fn new() -> Self {
         let demo_text = vec![
             "Welcome to ReVim!".to_string(),
+            "This is a line of text.".to_string(),
+            "ReVim is a terminal-based text editor.".to_string(),
+            "It mimics the behavior of Vim.".to_string(),
             "".to_string(),
-            "This is a demo text for the TUI.".to_string(),
-            "Use arrow keys to move the cursor.".to_string(),
-            "Press Ctrl+C to exit.".to_string(),
+            "Basic movement keys:".to_string(),
+            "  h - move left".to_string(),
+            "  j - move down".to_string(),
+            "  k - move up".to_string(),
+            "  l - move right".to_string(),
             "".to_string(),
-            "The cursor wraps around edges.".to_string(),
+            "Word motion:".to_string(),
+            "  w - next word".to_string(),
+            "  b - previous word".to_string(),
+            "  e - end of word".to_string(),
+            "".to_string(),
+            "Line numbers are not shown yet.".to_string(),
+            "Visual mode selection works.".to_string(),
+            "You can delete, yank, and put text.".to_string(),
+            "".to_string(),
+            "Insert mode:".to_string(),
+            "  i - insert before cursor".to_string(),
+            "  a - insert after cursor".to_string(),
+            "  A - append at line end".to_string(),
+            "  o - open new line below".to_string(),
+            "  O - open new line above".to_string(),
+            "".to_string(),
+            "To exit ReVim:".to_string(),
+            "  Press Ctrl+C to quit".to_string(),
+            "".to_string(),
+            "Sentence motions:".to_string(),
+            "  ( - go to previous sentence".to_string(),
+            "  ) - go to next sentence".to_string(),
+            "  { - go to previous paragraph".to_string(),
+            "  } - go to next paragraph".to_string(),
+            "".to_string(),
+            "This buffer has 42 lines total.".to_string(),
+            "Scrolling is now supported!".to_string(),
+            "The viewport shows 27 lines.".to_string(),
+            "Use ArrowDown to scroll down.".to_string(),
+            "When cursor moves past viewport,".to_string(),
+            "the view automatically scrolls.".to_string(),
+            "".to_string(),
+            "Press G to jump to last line.".to_string(),
+            "Press gg to return to first line.".to_string(),
+            "".to_string(),
+            "End of demo buffer.".to_string(),
         ];
         Self {
             cursor_row: 0,
@@ -73,6 +114,7 @@ impl TuiState {
             }],
             highlights: Vec::new(),
             status_text: String::new(),
+            scroll_top: 0,
         }
     }
 
@@ -251,5 +293,66 @@ impl TuiState {
             head_line: self.cursor_row as u32,
             head_ch: self.cursor_col as u32,
         }];
+    }
+
+    pub fn adjust_scroll(&mut self, viewport_height: u16) {
+        let max_rows = self.max_rows();
+        if self.cursor_row < self.scroll_top {
+            self.scroll_top = self.cursor_row;
+        } else if self.cursor_row >= self.scroll_top + viewport_height {
+            self.scroll_top = self.cursor_row - viewport_height + 1;
+        }
+        self.scroll_top = self
+            .scroll_top
+            .min(max_rows.saturating_sub(viewport_height));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_state_with_text(line_count: u16) -> TuiState {
+        let demo_text: Vec<String> = (0..line_count).map(|i| format!("Line {}", i)).collect();
+        TuiState {
+            demo_text,
+            ..TuiState::default()
+        }
+    }
+
+    #[test]
+    fn adjust_scroll_cursor_at_row_0_vh_27() {
+        let mut state = create_state_with_text(50);
+        state.cursor_row = 0;
+        state.scroll_top = 0;
+        state.adjust_scroll(27);
+        assert_eq!(state.scroll_top, 0);
+    }
+
+    #[test]
+    fn adjust_scroll_cursor_at_row_26_vh_27() {
+        let mut state = create_state_with_text(50);
+        state.cursor_row = 26;
+        state.scroll_top = 0;
+        state.adjust_scroll(27);
+        assert_eq!(state.scroll_top, 0);
+    }
+
+    #[test]
+    fn adjust_scroll_cursor_at_row_27_vh_27() {
+        let mut state = create_state_with_text(50);
+        state.cursor_row = 27;
+        state.scroll_top = 0;
+        state.adjust_scroll(27);
+        assert_eq!(state.scroll_top, 1);
+    }
+
+    #[test]
+    fn adjust_scroll_cursor_at_last_row_vh_27_max_rows_50() {
+        let mut state = create_state_with_text(50);
+        state.cursor_row = 49;
+        state.scroll_top = 0;
+        state.adjust_scroll(27);
+        assert_eq!(state.scroll_top, 49 - 27 + 1);
     }
 }

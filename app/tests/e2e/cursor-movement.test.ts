@@ -24,7 +24,7 @@ for (const { name, key, axis, delta } of movements) {
 test("ArrowDown at last row stays on last row", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome")).toBeVisible()
   const before = terminal.getCursor()
-  const demoTextLines = 7
+  const demoTextLines = 27
   for (let i = 0; i < demoTextLines + 1; i++) {
     terminal.keyDown()
     await new Promise((r) => setTimeout(r, KEY_PRESS_DELAY_MS))

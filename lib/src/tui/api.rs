@@ -667,35 +667,42 @@ pub fn get_line_first_non_whitespace(line: u32) -> Result<u32> {
 #[napi]
 pub fn get_scroll_info() -> Result<ScrollInfo> {
     let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let state = ctx
+    let context = ctx
         .as_ref()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?
-        .state
-        .lock()
-        .map_err(to_napi_error)?;
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+    let state = context.state.lock().map_err(to_napi_error)?;
+    let viewport_height = context.viewport_height.load(Ordering::Relaxed);
 
     Ok(ScrollInfo {
-        top: 0,
+        top: state.scroll_top as u32,
         height: state.max_rows() as u32,
-        client_height: 20,
+        client_height: viewport_height as u32,
     })
 }
 
 #[napi]
 pub fn scroll_to(y: u32) -> Result<()> {
-    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let state = &mut ctx
-        .as_mut()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?
-        .state
-        .lock()
-        .map_err(to_napi_error)?;
+    let viewport_height = {
+        let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let context = ctx
+            .as_ref()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        context.viewport_height.load(Ordering::Relaxed)
+    };
 
-    state.cursor_row = (y as u16).min(state.max_rows().saturating_sub(1));
-    state.cursor_col = state
-        .cursor_col
-        .min(state.current_line_len().saturating_sub(1));
-    state.sync_primary_selection();
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .map_err(to_napi_error)?;
+
+        let max_rows = state.max_rows();
+        let max_scroll = max_rows.saturating_sub(viewport_height);
+        state.scroll_top = (y as u16).min(max_scroll);
+    }
 
     render_frame_internal()
 }
@@ -780,13 +787,57 @@ pub fn set_highlights(_ranges: Vec<HighlightRange>) -> Result<()> {
 }
 
 #[napi]
-pub fn scroll_to_line(line: u32, _position: String) -> Result<()> {
-    scroll_to(line)
+pub fn scroll_to_line(line: u32, position: String) -> Result<()> {
+    let viewport_height = {
+        let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let context = ctx
+            .as_ref()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        context.viewport_height.load(Ordering::Relaxed)
+    };
+
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .map_err(to_napi_error)?;
+
+        let max_rows = state.max_rows();
+        let max_scroll = max_rows.saturating_sub(viewport_height);
+        let line = line as u16;
+        let vh = viewport_height as u16;
+        let new_scroll_top = match position.as_str() {
+            "top" => line,
+            "center" => line.saturating_sub(vh / 2),
+            "bottom" => line.saturating_sub(vh - 1),
+            _ => line,
+        };
+        state.scroll_top = new_scroll_top.min(max_scroll);
+    }
+
+    render_frame_internal()
 }
 
 #[napi]
 pub fn get_visible_lines() -> Result<VisibleLines> {
-    Ok(VisibleLines { top: 0, bottom: 20 })
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let context = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+    let state = context.state.lock().map_err(to_napi_error)?;
+    let viewport_height = context.viewport_height.load(Ordering::Relaxed);
+    let total_lines = state.max_rows();
+
+    let top = state.scroll_top;
+    let bottom = (top + viewport_height - 1).min(total_lines.saturating_sub(1));
+
+    Ok(VisibleLines {
+        top: top as u32,
+        bottom: bottom as u32,
+    })
 }
 
 #[napi]
