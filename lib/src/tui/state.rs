@@ -87,7 +87,7 @@ impl TuiState {
             "  { - go to previous paragraph".to_string(),
             "  } - go to next paragraph".to_string(),
             "".to_string(),
-            "This buffer has 47 lines total.".to_string(),
+            "This buffer has 46 lines total.".to_string(),
             "Scrolling is now supported!".to_string(),
             "Use ArrowDown to scroll down.".to_string(),
             "When cursor moves past viewport,".to_string(),
