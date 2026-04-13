@@ -5,6 +5,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
+use std::sync::atomic::Ordering;
 
 use super::state::{TuiState, VisualMode};
 use super::{to_napi_error, TUI_CONTEXT};
@@ -37,6 +38,7 @@ pub fn build_highlighted_line<'a>(line: &'a str, highlights: &[(u16, u16)]) -> L
 }
 
 pub fn render_frame_internal() -> Result<()> {
+    // Phase 1: Size phase - inside first TuiState Mutex lock
     let (
         cursor_row,
         cursor_col,
@@ -47,13 +49,25 @@ pub fn render_frame_internal() -> Result<()> {
         highlights,
         selections,
         status_text,
+        scroll_top,
+        viewport_height,
     ) = {
         let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
             .as_ref()
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
 
-        let state = context.state.lock().map_err(to_napi_error)?;
+        // Compute viewport_height from terminal size
+        let terminal_size = context.terminal.size().map_err(to_napi_error)?;
+        let vp_height = terminal_size.height.saturating_sub(3).max(1);
+
+        let mut state = context.state.lock().map_err(to_napi_error)?;
+
+        // Store viewport_height and adjust scroll
+        context.viewport_height.store(vp_height, Ordering::Relaxed);
+        state.adjust_scroll(vp_height);
+
+        let scroll_top = state.scroll_top;
         let cursor_row = state.cursor_row;
         let cursor_col = state.cursor_col;
         let anchor_row = state.anchor_row;
@@ -73,17 +87,25 @@ pub fn render_frame_internal() -> Result<()> {
             highlights,
             selections,
             status_text,
+            scroll_top,
+            vp_height,
         )
     };
+
+    // Phase 2: Line-building phase (outside locks)
+    let total_lines = demo_text.len() as u16;
+    let visible_end = (scroll_top + viewport_height).min(total_lines);
+    let visible_lines: Vec<String> = demo_text[scroll_top as usize..visible_end as usize].to_vec();
 
     let selection_active = visual_mode != VisualMode::None;
     let (sel_start_row, _, sel_end_row, _) =
         TuiState::ordered_range(anchor_row, anchor_col, cursor_row, cursor_col);
 
-    let lines: Vec<Line> = demo_text
+    let lines: Vec<Line> = visible_lines
         .iter()
         .enumerate()
-        .map(|(row, line)| {
+        .map(|(idx, line)| {
+            let row = (scroll_top as usize + idx) as u16;
             let mut row_highlights: Vec<(u16, u16)> = highlights
                 .iter()
                 .filter(|range| range.start_line == row as u32 && range.end_line == row as u32)
@@ -91,7 +113,7 @@ pub fn render_frame_internal() -> Result<()> {
                 .collect();
 
             if selection_active {
-                let row_index = row as u16;
+                let row_index = row;
                 let line_len = line.chars().count() as u16;
                 let highlight_width = line_len.max(1);
                 let selection_range = match visual_mode {
@@ -141,6 +163,7 @@ pub fn render_frame_internal() -> Result<()> {
         })
         .collect();
 
+    // Phase 3: Draw phase - inside outer TUI_CONTEXT Mutex lock
     let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
     let context = ctx
         .as_mut()
@@ -161,13 +184,14 @@ pub fn render_frame_internal() -> Result<()> {
             if editor_area.height > 0 && editor_area.width > 0 {
                 f.render_widget(paragraph, editor_area);
                 let inner_area = block.inner(editor_area);
-                // clamp cursor within inner_area to avoid out-of-bounds positioning
+                // Compute cursor position relative to viewport
+                let cursor_row_in_viewport = cursor_row.saturating_sub(scroll_top);
                 let cx = inner_area
                     .x
                     .saturating_add(cursor_col.min(inner_area.width.saturating_sub(1)));
-                let cy = inner_area
-                    .y
-                    .saturating_add(cursor_row.min(inner_area.height.saturating_sub(1)));
+                let cy = inner_area.y.saturating_add(
+                    cursor_row_in_viewport.min(inner_area.height.saturating_sub(1)),
+                );
                 f.set_cursor_position((cx, cy));
             }
 

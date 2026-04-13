@@ -6,6 +6,7 @@ use crossterm::event::KeyModifiers;
 use napi::bindgen_prelude::*;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicU16;
 use std::sync::Mutex;
 
 use state::TuiState;
@@ -18,6 +19,7 @@ pub(crate) static TUI_RUNNING: AtomicBool = AtomicBool::new(false);
 pub(crate) struct TuiContext {
     pub state: Mutex<TuiState>,
     pub terminal: Terminal<CrosstermBackend<std::io::Stdout>>,
+    pub viewport_height: AtomicU16,
 }
 
 impl TuiContext {
@@ -25,6 +27,7 @@ impl TuiContext {
         Self {
             state: Mutex::new(TuiState::new()),
             terminal,
+            viewport_height: AtomicU16::new(27),
         }
     }
 }
