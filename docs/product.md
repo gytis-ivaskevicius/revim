@@ -14,6 +14,8 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - **Fix cursor visibility and undo regressions** — Eliminate cursor double-inversion (hardware cursor + REVERSED span cancelled each other in normal mode), fix `r<char>` undo missing undo stop, and add targeted E2E regression tests ([story](stories/009-fix-cursor-undo-regressions/story.md))
 - **Scroll support** — Expanded demo buffer (~50 lines), `scroll_top` viewport state in Rust, auto-scroll cursor-follows-viewport, `zz`/`zt`/`zb` viewport positioning, and live `get_scroll_info`/`get_visible_lines` API ([story](stories/012-add-scroll-support/story.md))
 
+- **Logging API** — File-based debug logging from both Rust and TypeScript; enabled via `--log /path/to/file` CLI flag; `withLog(path)` helper for E2E tests ([story](stories/013-add-logging-api/story.md))
+
 ## Non-Goals
 
 - Full vim compatibility (aiming for vim-inspired, not vim-compatible)
