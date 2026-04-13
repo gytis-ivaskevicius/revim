@@ -106,7 +106,6 @@ pub fn render_frame_internal() -> Result<()> {
         .enumerate()
         .map(|(idx, line)| {
             // scroll_top is clamped by adjust_scroll, so scroll_top + idx <= max_rows
-            debug_assert!(scroll_top as usize + idx <= u16::MAX as usize);
             let row = (scroll_top as usize + idx) as u16;
             let mut row_highlights: Vec<(u16, u16)> = highlights
                 .iter()

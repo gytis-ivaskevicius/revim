@@ -682,13 +682,12 @@ pub fn get_scroll_info() -> Result<ScrollInfo> {
 
 #[napi]
 pub fn scroll_to(y: u32) -> Result<()> {
-    let viewport_height;
     {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
             .as_mut()
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
-        viewport_height = context.viewport_height.load(Ordering::Relaxed);
+        let viewport_height = context.viewport_height.load(Ordering::Relaxed);
         let mut state = context.state.lock().map_err(to_napi_error)?;
         state.scroll_top = (y as u16).min(state.max_scroll_top(viewport_height));
     }
