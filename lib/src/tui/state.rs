@@ -89,7 +89,6 @@ impl TuiState {
             "".to_string(),
             "This buffer has 47 lines total.".to_string(),
             "Scrolling is now supported!".to_string(),
-            "The viewport shows 27 lines.".to_string(),
             "Use ArrowDown to scroll down.".to_string(),
             "When cursor moves past viewport,".to_string(),
             "the view automatically scrolls.".to_string(),
@@ -133,6 +132,10 @@ impl TuiState {
 
     pub fn max_rows(&self) -> u16 {
         self.demo_text.len() as u16
+    }
+
+    pub fn max_scroll_top(&self, viewport_height: u16) -> u16 {
+        self.max_rows().saturating_sub(viewport_height)
     }
 
     pub fn current_line_len(&self) -> u16 {

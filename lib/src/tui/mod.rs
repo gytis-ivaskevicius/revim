@@ -16,6 +16,10 @@ pub use state::{HighlightRange, Selection};
 
 pub(crate) static TUI_RUNNING: AtomicBool = AtomicBool::new(false);
 
+// Default viewport height (30 terminal rows - 1 status bar - 2 borders)
+// Actual viewport height is computed dynamically from terminal.size() on first render
+const DEFAULT_VIEWPORT_HEIGHT: u16 = 27;
+
 pub(crate) struct TuiContext {
     pub state: Mutex<TuiState>,
     pub terminal: Terminal<CrosstermBackend<std::io::Stdout>>,
@@ -27,7 +31,7 @@ impl TuiContext {
         Self {
             state: Mutex::new(TuiState::new()),
             terminal,
-            viewport_height: AtomicU16::new(27),
+            viewport_height: AtomicU16::new(DEFAULT_VIEWPORT_HEIGHT),
         }
     }
 }
