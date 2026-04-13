@@ -91,10 +91,10 @@ pub fn start_keyboard_listener(
             if matches!(event::poll(Duration::from_millis(100)), Ok(true)) {
                 if let Ok(Event::Key(key_event)) = event::read() {
                     let key = match key_event.code {
-                        KeyCode::Up => "ArrowUp".to_string(),
-                        KeyCode::Down => "ArrowDown".to_string(),
-                        KeyCode::Left => "ArrowLeft".to_string(),
-                        KeyCode::Right => "ArrowRight".to_string(),
+                        KeyCode::Up => "Up".to_string(),
+                        KeyCode::Down => "Down".to_string(),
+                        KeyCode::Left => "Left".to_string(),
+                        KeyCode::Right => "Right".to_string(),
                         KeyCode::Delete => "Delete".to_string(),
                         KeyCode::Insert => "Insert".to_string(),
                         KeyCode::Home => "Home".to_string(),
@@ -105,7 +105,7 @@ pub fn start_keyboard_listener(
                         KeyCode::Enter => "Enter".to_string(),
                         KeyCode::Backspace => "Backspace".to_string(),
                         KeyCode::Tab => "Tab".to_string(),
-                        KeyCode::Esc => "Escape".to_string(),
+                        KeyCode::Esc => "Esc".to_string(),
                         _ => continue,
                     };
 

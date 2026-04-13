@@ -37,5 +37,6 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - No ex command coverage
   - add E2E tests for a small supported subset like :w, :q, :sort, :s
   - explicitly gate/disable unsupported commands
+- **Remove key alias mapping** — Rust `api.rs` now emits canonical key names (`"Up"`, `"Down"`, `"Left"`, `"Right"`, `"Esc"`) directly; the redundant `keyAliases` table in `terminal-key.ts` is deleted ([story](stories/011-remove-key-alias-mapping/story.md))
 - No unicode editing regression coverage
   - add tests for multibyte characters around movement, replace, delete, and range operations
