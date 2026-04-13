@@ -682,23 +682,14 @@ pub fn get_scroll_info() -> Result<ScrollInfo> {
 
 #[napi]
 pub fn scroll_to(y: u32) -> Result<()> {
-    let viewport_height = {
-        let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let context = ctx
-            .as_ref()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
-        context.viewport_height.load(Ordering::Relaxed)
-    };
-
+    let viewport_height;
     {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let state = &mut ctx
+        let context = ctx
             .as_mut()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?
-            .state
-            .lock()
-            .map_err(to_napi_error)?;
-
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        viewport_height = context.viewport_height.load(Ordering::Relaxed);
+        let mut state = context.state.lock().map_err(to_napi_error)?;
         let max_rows = state.max_rows();
         let max_scroll = max_rows.saturating_sub(viewport_height);
         state.scroll_top = (y as u16).min(max_scroll);
@@ -788,23 +779,13 @@ pub fn set_highlights(_ranges: Vec<HighlightRange>) -> Result<()> {
 
 #[napi]
 pub fn scroll_to_line(line: u32, position: String) -> Result<()> {
-    let viewport_height = {
-        let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let context = ctx
-            .as_ref()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
-        context.viewport_height.load(Ordering::Relaxed)
-    };
-
     {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let state = &mut ctx
+        let context = ctx
             .as_mut()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?
-            .state
-            .lock()
-            .map_err(to_napi_error)?;
-
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        let viewport_height = context.viewport_height.load(Ordering::Relaxed);
+        let mut state = context.state.lock().map_err(to_napi_error)?;
         let max_rows = state.max_rows();
         let max_scroll = max_rows.saturating_sub(viewport_height);
         let line = line as u16;
