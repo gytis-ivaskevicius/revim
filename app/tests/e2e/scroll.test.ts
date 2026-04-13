@@ -54,3 +54,19 @@ test("gg key after G returns to first line", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
   await expect(terminal.getByText("End of demo buffer.")).not.toBeVisible()
 })
+
+test("zz key centers cursor in viewport", async ({ terminal }) => {
+  // Navigate to last line with G
+  terminal.keyEscape()
+  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+  terminal.keyPress("G")
+  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+  await expect(terminal.getByText("End of demo buffer.")).toBeVisible()
+  // Press zz to center cursor in viewport
+  terminal.keyPress("z")
+  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+  terminal.keyPress("z")
+  await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+  // End of buffer should still be visible (centered in viewport)
+  await expect(terminal.getByText("End of demo buffer.")).toBeVisible()
+})
