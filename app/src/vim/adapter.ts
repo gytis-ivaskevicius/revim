@@ -27,6 +27,7 @@ import {
   setVisualMode,
   triggerAction,
 } from "@revim/lib"
+import { log } from "../log"
 import { cursorEqual, cursorMax, cursorMin, makePos, type Pos } from "./common"
 import type { ModeChangeEvent, StatusBarInputOptions } from "./statusbar"
 
@@ -254,6 +255,7 @@ export class EditorAdapter {
       setVisualMode("")
     }
 
+    log(`vim mode: ${mode.mode}`)
     this.dispatch("vim-mode-change", mode)
   }
 

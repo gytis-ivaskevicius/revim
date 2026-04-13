@@ -8,7 +8,7 @@ use ratatui::{
 use std::sync::atomic::Ordering;
 
 use super::state::{TuiState, VisualMode};
-use super::{to_napi_error, TUI_CONTEXT};
+use super::{revim_log, to_napi_error, TUI_CONTEXT};
 
 pub fn build_highlighted_line<'a>(line: &'a str, highlights: &[(u16, u16)]) -> Line<'a> {
     let chars: Vec<char> = line.chars().collect();
@@ -201,5 +201,6 @@ pub fn render_frame_internal() -> Result<()> {
         })
         .map_err(to_napi_error)?;
 
+    revim_log!("render_frame_internal: rendered");
     Ok(())
 }

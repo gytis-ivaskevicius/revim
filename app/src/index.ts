@@ -1,14 +1,32 @@
 import { initTui, shutdownTui, startKeyboardListener } from "@revim/lib"
+import { initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
 import { VimMode } from "./vim"
 import TerminalStatusBar from "./vim/terminal-status-bar"
 
+function parseLogPath(args: string[]): string | undefined {
+  for (let i = 0; i < args.length - 1; i++) {
+    if (args[i] === "--log") {
+      return args[i + 1]
+    }
+  }
+  return undefined
+}
+
 function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: string[] }) {
   const insertMode = Boolean(vimMode.adapter.state.vim?.insertMode)
-  vimMode.handleKey(encodeTerminalKey(event, insertMode))
+  const encodedKey = encodeTerminalKey(event, insertMode)
+  log(`key: ${encodedKey}`)
+  vimMode.handleKey(encodedKey)
 }
 
 async function main() {
+  const logPath = parseLogPath(process.argv)
+  if (logPath) {
+    initLog(logPath)
+    log("revim starting")
+  }
+
   initTui()
 
   const vimMode = new VimMode(new TerminalStatusBar())
@@ -26,6 +44,9 @@ async function main() {
     process.removeListener("SIGINT", handleSigint)
     vimMode.disable()
     shutdownTui()
+    if (logPath) {
+      log("revim shutdown")
+    }
   }
 
   const shutdown = (exitCode: number) => {
