@@ -20,3 +20,4 @@ description: Terminal vim adapter notes that are useful when changing FFI or edi
 
 - Terminal key events are normalized in `app/src/index.ts` and then routed through `VimMode.handleKey()`.
 - Arrow keys should stay on the Vim path; do not add a second direct cursor-movement path in the app entrypoint.
+- Rust `api.rs` emits canonical key names (`"Up"`, `"Down"`, `"Left"`, `"Right"`, `"Esc"`) directly from the `KeyCode` match arm. There is no alias table in TypeScript — `encodeTerminalKey` uses `event.key` verbatim.
