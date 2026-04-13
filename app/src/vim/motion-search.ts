@@ -7,6 +7,7 @@ import type { MotionArgs, VimState } from "./types"
 
 export function motionFindNext(adapter: EditorAdapter, _head: Pos, motionArgs: MotionArgs): Pos | undefined {
   const state = getSearchState(adapter)
+  if (!state) return
   const query = state.getQuery()
   if (!query) {
     return
@@ -86,6 +87,7 @@ export function motionFindAndSelectNextInclusive(
   prevInputState: InputState,
 ): Pos | [Pos, Pos] | undefined {
   const state = getSearchState(adapter)
+  if (!state) return
   const query = state.getQuery()
 
   if (!query || !vim) {
