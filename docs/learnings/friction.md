@@ -55,3 +55,10 @@
 **Recommendation**: When expanding demo text, update or remove tests that assume specific line counts. The acceptance criteria saying "demoTextLines constant updated" may require test redesign rather than just updating a number, especially if the test logic was based on buffer-fitting-in-viewport assumptions.
 
 ---
+
+## False-confidence tests can pass when functionality is broken
+**Date**: 2026-04-13
+**What happened**: A test assertion `expect(after.y).toBeLessThanOrEqual(atLast.y)` passes even when wrapping is completely non-functional because equal values satisfy "less than or equal". The test name claimed to verify "wraps to first row" but the assertion didn't actually verify wrapping occurred.
+**Recommendation**: Test assertions must directly verify the claimed behavior. `toBeLessThanOrEqual` is too weak for boundary tests — if wrapping should go exactly to 0, assert exactly 0. A test that passes regardless of whether a feature works is worse than no test.
+
+---

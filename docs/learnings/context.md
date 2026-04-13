@@ -41,3 +41,10 @@
 **Recommendation**: When writing cursor position tests with scrolling, account for the viewport offset. The viewport shows rows `[scroll_top, scroll_top + viewport_height)` and cursor is at `cursor_row - scroll_top` within the viewport. Use scroll tests (`scroll.test.ts`) to verify viewport behavior rather than relying on raw cursor positions after scrolling.
 
 ---
+
+## Running only one reviewer delays finding issues
+**Date**: 2026-04-13
+**What happened**: The workflow requires both acceptance reviewer AND code reviewer to pass. Running only acceptance reviewer and assuming code review would pass later delayed finding real issues. Code reviewer found false-confidence tests, duplicate tests, and missing coverage that acceptance reviewer missed.
+**Recommendation**: Always run both `@acceptance-reviewer` and `@code-reviewer` together after each fix. Per AGENTS.md: "A story is complete only when the latest acceptance-review and code-review verdict commits both Pass."
+
+---

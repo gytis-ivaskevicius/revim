@@ -35,3 +35,9 @@
 **When useful**: When modifying N-API boundary code (Rust) — add small unit tests asserting exported functions return `Err` when `TUI_CONTEXT` is `None`. These tests catch accidental reintroduction of panics (`unwrap()`) and confirm `to_napi_error` mapping remains in place.
 
 ---
+
+## G/gg commands more reliable than repeated ArrowDown for scroll tests
+**Date**: 2026-04-13
+**When useful**: When testing scroll behavior that requires navigating to specific lines. Pressing ArrowDown 40+ times is slow and timing-sensitive. Using `G` to jump directly to the last line and `gg` to return is faster and more deterministic. For scroll tests, prefer G/gg navigation over repeated ArrowDown presses.
+
+---
