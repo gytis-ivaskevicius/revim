@@ -84,6 +84,7 @@ pub(crate) use revim_log;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::fs::OpenOptions;
     use std::io::Read;
     use std::os::unix::io::IntoRawFd;
@@ -95,12 +96,14 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_append_log_without_set_log_fd() {
         cleanup_log();
         append_log("hello");
     }
 
     #[test]
+    #[serial]
     fn test_set_log_fd_invalid_fd() {
         cleanup_log();
 
@@ -111,6 +114,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_set_log_fd_and_append() {
         cleanup_log();
 

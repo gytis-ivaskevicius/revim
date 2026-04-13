@@ -14,7 +14,7 @@ use std::time::Duration;
 use super::render::render_frame_internal;
 use super::state::{HighlightRange, Selection, VisualMode};
 use super::{
-    append_log, extract_modifiers, to_napi_error, wrap_decrement_u16, wrap_increment_u16,
+    extract_modifiers, revim_log, to_napi_error, wrap_decrement_u16, wrap_increment_u16,
     TuiContext, TUI_CONTEXT, TUI_RUNNING,
 };
 
@@ -62,7 +62,7 @@ pub fn init_tui() -> Result<()> {
     *TUI_CONTEXT.lock().map_err(to_napi_error)? = Some(TuiContext::new(terminal));
 
     TUI_RUNNING.store(true, Ordering::SeqCst);
-    append_log("init_tui: TUI initialized");
+    revim_log!("init_tui: TUI initialized");
     render_frame_internal()?;
 
     Ok(())
@@ -74,7 +74,7 @@ pub fn shutdown_tui() -> Result<()> {
 
     *TUI_CONTEXT.lock().map_err(to_napi_error)? = None;
 
-    append_log("shutdown_tui: TUI shut down");
+    revim_log!("shutdown_tui: TUI shut down");
 
     disable_raw_mode().map_err(to_napi_error)?;
     execute!(std::io::stdout(), LeaveAlternateScreen).map_err(to_napi_error)?;

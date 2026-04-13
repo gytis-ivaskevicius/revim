@@ -10,7 +10,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicU16;
 use std::sync::Mutex;
 
-pub(crate) use log::{append_log, revim_log};
+pub(crate) use log::revim_log;
 use state::TuiState;
 
 pub use api::*;
