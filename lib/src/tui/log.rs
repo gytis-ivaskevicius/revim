@@ -3,7 +3,7 @@ use napi_derive::napi;
 use std::fs::File;
 use std::io::Write;
 use std::mem::ManuallyDrop;
-use std::os::unix::io::{AsRawFd, FromRawFd};
+use std::os::unix::io::FromRawFd;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -56,22 +56,12 @@ fn is_leap_year(year: i64) -> bool {
 
 #[napi]
 pub fn set_log_fd(fd: i32) -> Result<()> {
-    // First close any previously set file (TS-owned fd that was passed to us)
-    if let Ok(mut guard) = LOG_FILE.lock() {
-        if let Some(old_file) = guard.take() {
-            // Convert back to raw fd and close it
-            let raw_fd = std::mem::ManuallyDrop::into_inner(old_file).as_raw_fd();
-            // Safety: we owned this fd from a previous set_log_fd call, now we close it
-            unsafe {
-                libc::close(raw_fd);
-            }
-        }
-        if fd < 0 {
-            return Err(Error::from_reason("Invalid fd"));
-        }
-        let file = unsafe { ManuallyDrop::new(File::from_raw_fd(fd as std::os::unix::io::RawFd)) };
-        *guard = Some(file);
+    if fd < 0 {
+        return Err(Error::from_reason("Invalid fd"));
     }
+    let file = unsafe { ManuallyDrop::new(File::from_raw_fd(fd as std::os::unix::io::RawFd)) };
+    let mut guard = LOG_FILE.lock().unwrap_or_else(|e| e.into_inner());
+    *guard = Some(file);
     Ok(())
 }
 
@@ -97,69 +87,44 @@ mod tests {
     use std::fs::OpenOptions;
     use std::io::Read;
     use std::os::unix::io::IntoRawFd;
-    use std::sync::Once;
-
-    static TEST_SETUP: Once = Once::new();
-
-    fn setup_log_for_test() {
-        TEST_SETUP.call_once(|| {
-            // Ensure LOG_FILE is clean at start of first test
-            if let Ok(mut guard) = LOG_FILE.lock() {
-                guard.take();
-            }
-        });
-    }
 
     fn cleanup_log() {
         if let Ok(mut guard) = LOG_FILE.lock() {
-            if let Some(old_file) = guard.take() {
-                let raw_fd = std::mem::ManuallyDrop::into_inner(old_file).as_raw_fd();
-                unsafe { libc::close(raw_fd) };
-            }
+            guard.take();
         }
     }
 
     #[test]
     fn test_append_log_without_set_log_fd() {
-        setup_log_for_test();
-        // LOG_FILE should be None, so this should not panic and not write
+        cleanup_log();
         append_log("hello");
-        // No assertion on file content since nothing should be written
     }
 
     #[test]
     fn test_set_log_fd_invalid_fd() {
-        setup_log_for_test();
-        cleanup_log(); // Clear any previous state
+        cleanup_log();
 
         let result = set_log_fd(-1);
         assert!(result.is_err());
 
-        // Even though set_log_fd failed, append_log should not panic
-        // but it also shouldn't write anywhere since LOG_FILE should be None
         append_log("hello after invalid fd");
-
-        // Note: This test verifies that set_log_fd(-1) returns error
-        // and append_log doesn't panic. We don't check file content
-        // because LOG_FILE should be None after failed set_log_fd.
     }
 
     #[test]
     fn test_set_log_fd_and_append() {
-        setup_log_for_test();
-        cleanup_log(); // Clear any previous state
+        cleanup_log();
 
-        // Create a unique temp file for this test
-        let temp_file = tempfile::NamedTempFile::new().unwrap();
-        let path = temp_file.path().to_str().unwrap().to_string();
-        drop(temp_file); // Close the file handle, but path remains valid
+        let temp_dir = std::env::temp_dir();
+        let unique_id = std::process::id();
+        let thread_id = std::thread::current().id();
+        let temp_path = temp_dir.join(format!("revim_test_{}_{:?}.log", unique_id, thread_id));
+        let path_str = temp_path.to_str().unwrap();
 
-        // Open with a new file handle and get fd
         let file = OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
-            .open(&path)
+            .open(path_str)
             .unwrap();
         let fd = file.into_raw_fd();
 
@@ -168,15 +133,15 @@ mod tests {
 
         append_log("hello");
 
-        cleanup_log();
-
         let mut contents = String::new();
         OpenOptions::new()
             .read(true)
-            .open(&path)
+            .open(path_str)
             .unwrap()
             .read_to_string(&mut contents)
             .unwrap();
+
+        cleanup_log();
 
         let re =
             regex::Regex::new(r"^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z\] \[RS\] hello\n$")
@@ -186,5 +151,7 @@ mod tests {
             "Line did not match regex: {:?}",
             contents
         );
+
+        std::fs::remove_file(path_str).ok();
     }
 }

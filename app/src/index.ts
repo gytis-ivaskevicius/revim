@@ -44,9 +44,7 @@ async function main() {
     process.removeListener("SIGINT", handleSigint)
     vimMode.disable()
     shutdownTui()
-    if (logPath) {
-      log("revim shutdown")
-    }
+    log("revim shutdown")
   }
 
   const shutdown = (exitCode: number) => {
