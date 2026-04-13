@@ -48,3 +48,10 @@
 **Recommendation**: Always run both `@acceptance-reviewer` and `@code-reviewer` together after each fix. Per AGENTS.md: "A story is complete only when the latest acceptance-review and code-review verdict commits both Pass."
 
 ---
+
+## ManuallyDrop with file descriptors requires careful handling
+**Date**: 2026-04-14
+**What happened**: Using `ManuallyDrop::into_inner(file).as_raw_fd()` to get a raw fd from a ManuallyDrop-wrapped File causes a double-close: `into_inner` returns the File by value (consuming the ManuallyDrop), then `as_raw_fd()` borrows it. The temporary File is dropped at the `;` line ending, closing the fd. Then `libc::close(raw_fd)` closes it again. The fix is using `ManuallyDrop::into_inner(file).into_raw_fd()` which consumes the File without running its Drop.
+**Recommendation**: When extracting a raw fd from a ManuallyDrop-wrapped type, use `IntoRawFd::into_raw_fd()` (consuming the value without Drop) rather than `as_raw_fd()` (which borrows and leaves the value to be dropped). Or simply don't close the fd at all if TS owns the lifetime.
+
+---
