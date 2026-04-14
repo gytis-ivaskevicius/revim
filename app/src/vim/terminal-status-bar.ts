@@ -1,4 +1,5 @@
 import { setStatusText } from "@revim/lib"
+import { log } from "../log"
 import type { IStatusBar, ModeChangeEvent, StatusBarInputOptions, StatusBarKeyEvent } from "./statusbar"
 
 function modeLabelFor(event: ModeChangeEvent | undefined): string {
@@ -72,35 +73,54 @@ export class TerminalStatusBar implements IStatusBar {
   }
 
   handlePromptKey(encodedKey: string): void {
-    if (!this.promptState) return
+    log(`[search-prompt] 1 START encodedKey: ${encodedKey} promptState: ${!!this.promptState}`)
+    if (!this.promptState) {
+      log(`[search-prompt] 1b no promptState, returning`)
+      return
+    }
     const state = this.promptState
 
     const evt = this.decodeKey(encodedKey)
+    log(`[search-prompt] 2 evt: ${evt?.key}`)
     if (!evt) return
 
+    log(`[search-prompt] 3 key: ${encodedKey} evt.key: ${evt.key} query: "${state.query}"`)
+
     const close = (value?: string) => {
+      log(`[search-prompt] close called with value: ${value}`)
       if (value !== undefined) {
+      log(`[search-prompt] 1 close called with value: ${value}`)
         state.query = value
         setStatusText(state.prefix + value)
+      log(`[search-prompt] 2 close called with value: ${value}`)
       } else {
+      log(`[search-prompt] 3 close called with value: ${value}`)
         this.promptState = null
         this.update()
+      log(`[search-prompt] 4 close called with value: ${value}`)
       }
     }
 
     try {
+      log(`[search-prompt] 4 calling onKeyDown`)
       state.options.onKeyDown?.(evt, state.query, close)
+      log(`[search-prompt] 5 onKeyDown returned`)
     } catch (_e) {
+      log(`[search-prompt] onKeyDown error: ${_e}`)
       // ignore onKeyDown errors to prevent freezing
     }
 
     // For Escape, ensure prompt closes even if onKeyDown threw before calling close()
     if (evt.key === "Escape" && this.promptState !== null) {
+      log(`[search-prompt] Escape pressed, closing prompt`)
       close()
       return
     }
 
-    if (this.promptState === null) return
+    if (this.promptState === null) {
+      log(`[search-prompt] 6 promptState is null after onKeyDown, returning`)
+      return
+    }
 
     if (evt.key === "Backspace" && state.query.length > 0) {
       state.query = state.query.slice(0, -1)
@@ -108,9 +128,10 @@ export class TerminalStatusBar implements IStatusBar {
       state.query += evt.key
     }
 
+    log(`[search-prompt] 7 setting status text: ${state.prefix + state.query}`)
     setStatusText(state.prefix + state.query)
 
-    // Note: onKeyUp temporarily disabled to isolate typing issue
+    // Note: onKeyUp disabled - it was causing issues with findNext moving cursor during typing
     // try {
     //   state.options.onKeyUp?.(evt, state.query, close)
     // } catch (_e) {
@@ -118,11 +139,15 @@ export class TerminalStatusBar implements IStatusBar {
     // }
 
     if (evt.key === "Enter") {
+      log(`[search-prompt] 8 Enter pressed, calling onClose with query: "${state.query}"`)
       // Set promptState = null FIRST to prevent state leak if onClose throws
       this.promptState = null
       this.update()
+      log(`[search-prompt] 9 calling onClose`)
       state.options.onClose?.(state.query)
+      log(`[search-prompt] 10 onClose returned`)
     }
+    log(`[search-prompt] 11 handlePromptKey ending`)
   }
 
   private decodeKey(encodedKey: string): StatusBarKeyEvent | null {
@@ -163,9 +188,11 @@ export class TerminalStatusBar implements IStatusBar {
   }
 
   startPrompt(prefix: string, _desc: string, options: StatusBarInputOptions) {
+    log(`[statusbar] startPrompt called with prefix: ${prefix}`)
     this.promptState = { prefix, query: "", options }
     setStatusText(prefix)
     return () => {
+      log(`[statusbar] startPrompt closer called`)
       this.promptState = null
       this.update()
     }

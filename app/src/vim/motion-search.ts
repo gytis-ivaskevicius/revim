@@ -4,19 +4,25 @@ import type { InputState } from "./input-state"
 import { getSearchState } from "./search"
 import { findNext, highlightSearchMatches } from "./search-utils"
 import type { MotionArgs, VimState } from "./types"
+import { log } from "../log"
 
 export function motionFindNext(adapter: EditorAdapter, _head: Pos, motionArgs: MotionArgs): Pos | undefined {
   const state = getSearchState(adapter)
   if (!state) return
   const query = state.getQuery()
   if (!query) {
+    log(`[motionFindNext] no query found`)
     return
   }
   let prev = !motionArgs.forward
+  log(`[motionFindNext] motionArgs.forward: ${motionArgs.forward} initial prev: ${prev}`)
   // If search is initiated with ? instead of /, negate direction.
   prev = state.isReversed() ? !prev : prev
+  log(`[motionFindNext] isReversed: ${state.isReversed()} final prev: ${prev} query: ${query}`)
   highlightSearchMatches(adapter, query)
-  return findNext(adapter, prev /** prev */, query, motionArgs.repeat)
+  const result = findNext(adapter, prev /** prev */, query, motionArgs.repeat)
+  log(`[motionFindNext] result: ${JSON.stringify(result)}`)
+  return result
 }
 
 /**

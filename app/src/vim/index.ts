@@ -1,5 +1,6 @@
 import EditorAdapter from "./adapter"
 import { initVimAdapter, vimApi } from "./keymap_vim"
+import { log } from "../log"
 import type * as Registers from "./register-controller"
 import type * as StatusBar from "./statusbar"
 
@@ -53,17 +54,25 @@ export class VimMode implements EventTarget {
   }
 
   handleKey(key: string) {
+    log(`[vim-handleKey] 1 key: ${key} isPrompting: ${this.statusBar_?.isPrompting()}`)
     if (this.statusBar_?.isPrompting()) {
+      log(`[vim-handleKey] 2 delegating to handlePromptKey`)
       this.statusBar_.handlePromptKey(key)
+      log(`[vim-handleKey] 3 handlePromptKey returned`)
       return
     }
+    log(`[vim-handleKey] 4 keyMapState: ${this.adapter_.state.keyMap}`)
     const keyMapState = this.adapter_.state.keyMap as string
     const keymap = EditorAdapter.keyMap[keyMapState]
+    log(`[vim-handleKey] 5 keymap found: ${!!keymap}`)
     const command = keymap?.call?.(key, this.adapter_)
+    log(`[vim-handleKey] 6 command: ${typeof command}`)
 
     if (typeof command === "function") {
+      log(`[vim-handleKey] 7 calling command`)
       return command()
     }
+    log(`[vim-handleKey] 8 no command found, returning`)
   }
 
   private initListeners() {

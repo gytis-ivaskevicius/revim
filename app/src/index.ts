@@ -1,8 +1,13 @@
-import { initTui, shutdownTui, startKeyboardListener } from "@revim/lib"
+import { initTui, shutdownTui, startKeyboardListener, waitForKeyboardEvent } from "@revim/lib"
 import { initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
 import { VimMode } from "./vim"
 import TerminalStatusBar from "./vim/terminal-status-bar"
+
+interface KeyboardEvent {
+  key: string
+  modifiers: string[]
+}
 
 function parseLogPath(args: string[]): string | undefined {
   for (let i = 0; i < args.length - 1; i++) {
@@ -13,11 +18,22 @@ function parseLogPath(args: string[]): string | undefined {
   return undefined
 }
 
-function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: string[] }) {
-  const insertMode = Boolean(vimMode.adapter.state.vim?.insertMode)
-  const encodedKey = encodeTerminalKey(event, insertMode)
-  log(`key: ${encodedKey}`)
-  vimMode.handleKey(encodedKey)
+function processKeyEvent(vimMode: VimMode, event: KeyboardEvent) {
+  log(`[processKeyEvent] 1 START key: ${event.key}`)
+  try {
+    const insertMode = Boolean(vimMode.adapter.state.vim?.insertMode)
+    log(`[processKeyEvent] 2 insertMode: ${insertMode}`)
+    const encodedKey = encodeTerminalKey(event, insertMode)
+    log(`[processKeyEvent] 3 encodedKey: ${encodedKey}`)
+    log(`[processKeyEvent] 4 keyMap: ${vimMode.adapter.state.keyMap}`)
+    log(`[processKeyEvent] 5 calling vimMode.handleKey`)
+    vimMode.handleKey(encodedKey)
+    log(`[processKeyEvent] 6 handleKey returned successfully`)
+  } catch (e) {
+    log(`[processKeyEvent] EXCEPTION in handleKey: ${e}`)
+    throw e
+  }
+  log(`[processKeyEvent] 7 after handleKey, ${JSON.stringify(event)} processed`)
 }
 
 async function main() {
@@ -31,7 +47,9 @@ async function main() {
 
   const vimMode = new VimMode(new TerminalStatusBar())
   vimMode.enable()
-  const keepAlive = setInterval(() => {}, 1_000)
+  const keepAlive = setInterval(() => {
+    log(`[keepAlive] event loop alive`)
+  }, 2_000)
   let cleanedUp = false
 
   const cleanup = () => {
@@ -55,27 +73,32 @@ async function main() {
   const handleSigint = () => shutdown(0)
   process.on("SIGINT", handleSigint)
 
+  startKeyboardListener()
+
   try {
-    startKeyboardListener((err, event) => {
+    while (!cleanedUp) {
+      log(`[main loop] waiting for keyboard event...`)
       try {
-        if (err) {
-          throw err
-        }
+        const event = (await waitForKeyboardEvent()) as KeyboardEvent
+        log(`[keyboard] key: ${event.key} modifiers: ${event.modifiers}`)
 
         if (event.modifiers.includes("Ctrl") && normalizeCtrlCharacter(event.key) === "c") {
+          log(`[keyboard] Ctrl+C detected, shutting down`)
           shutdown(0)
           return
         }
 
         processKeyEvent(vimMode, event)
-      } catch (error) {
-        console.error("Fatal error:", error)
-        shutdown(1)
+        log(`[keyboard] event processed successfully ${JSON.stringify(event)}`)
+      } catch (e) {
+        console.error(`[keyboard] error processing key event: ${e}`)
+        log(`[keyboard] error waiting for key: ${e}`)
+        if (cleanedUp) break
       }
-    })
-
-    await new Promise<never>(() => {})
+      log(`[main loop] iteration complete, waiting for next event...`)
+    }
   } finally {
+    console.error(`[main] exiting main loop, performing cleanup`)
     cleanup()
   }
 }
