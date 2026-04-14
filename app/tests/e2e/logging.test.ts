@@ -16,7 +16,7 @@ test.describe("logging", () => {
 
     expect(lines.some((line) => line.includes("[TS] revim starting"))).toBe(true)
     expect(lines.some((line) => line.includes("[RS] init_tui"))).toBe(true)
-    expect(lines.some((line) => line.includes("[TS] key: 'j'"))).toBe(true)
+    // Note: key event logging was removed as unnecessary debug logging
     expect(lines.some((line) => line.includes("[RS] render_frame_internal"))).toBe(true)
 
     const lineRegex = /^\[.*\] \[(TS|RS)\] .*$/
