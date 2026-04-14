@@ -27,10 +27,7 @@ test("status bar shows mode and key buffer", async ({ terminal }) => {
   terminal.keyEscape()
 
   // pending keys: 2d shows in status
-  keyPress(terminal, "2")
-  await Keys.delay()
-  keyPress(terminal, "d")
-  await Keys.delay()
+  await Keys.pressKeys(terminal, ["2", "d"])
   await expect(terminal.getByText("2d")).toBeVisible()
 
   // complete command 2dd
