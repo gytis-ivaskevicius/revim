@@ -62,3 +62,10 @@
 **Recommendation**: Any Rust NAPI function that acquires `TUI_CONTEXT.lock()` or `state.lock()` must drop those locks BEFORE calling `render_frame_internal()`. Use `{ ... }` blocks to scope the lock. Audit all `render_frame_internal()` call sites for this pattern. When debugging "keyboard stops working" or "NAPI calls hang", check for mutex deadlocks in synchronous NAPI functions before investigating async/callback issues.
 
 ---
+
+## Story demo buffer mismatch with actual buffer content
+**Date**: 2026-04-14
+**What happened**: Story 010 vim-search ACs describe a 7-line demo buffer with "cursor" at lines 3, 4, 6. But `lib/src/tui/state.rs` actually has a 46-line buffer with "cursor" at lines 21, 22, 39. Tests written based on the story's buffer expectations failed until corrected.
+**Recommendation**: When writing or fixing tests for search functionality, always verify the actual demo buffer content in `lib/src/tui/state.rs` rather than relying on story documentation. The story buffer description may be outdated or incorrect.
+
+---
