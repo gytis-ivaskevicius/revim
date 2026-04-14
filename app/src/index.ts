@@ -1,8 +1,13 @@
-import { initTui, shutdownTui, startKeyboardListener } from "@revim/lib"
+import { initTui, shutdownTui, startKeyboardListener, waitForKeyboardEvent } from "@revim/lib"
 import { initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
 import { VimMode } from "./vim"
 import TerminalStatusBar from "./vim/terminal-status-bar"
+
+interface KeyboardEvent {
+  key: string
+  modifiers: string[]
+}
 
 function parseLogPath(args: string[]): string | undefined {
   for (let i = 0; i < args.length - 1; i++) {
@@ -13,10 +18,9 @@ function parseLogPath(args: string[]): string | undefined {
   return undefined
 }
 
-function processKeyEvent(vimMode: VimMode, event: { key: string; modifiers: string[] }) {
+function processKeyEvent(vimMode: VimMode, event: KeyboardEvent) {
   const insertMode = Boolean(vimMode.adapter.state.vim?.insertMode)
   const encodedKey = encodeTerminalKey(event, insertMode)
-  log(`key: ${encodedKey}`)
   vimMode.handleKey(encodedKey)
 }
 
@@ -31,7 +35,6 @@ async function main() {
 
   const vimMode = new VimMode(new TerminalStatusBar())
   vimMode.enable()
-  const keepAlive = setInterval(() => {}, 1_000)
   let cleanedUp = false
 
   const cleanup = () => {
@@ -40,8 +43,6 @@ async function main() {
     }
 
     cleanedUp = true
-    clearInterval(keepAlive)
-    process.removeListener("SIGINT", handleSigint)
     vimMode.disable()
     shutdownTui()
     log("revim shutdown")
@@ -55,12 +56,12 @@ async function main() {
   const handleSigint = () => shutdown(0)
   process.on("SIGINT", handleSigint)
 
+  startKeyboardListener()
+
   try {
-    startKeyboardListener((err, event) => {
+    while (!cleanedUp) {
       try {
-        if (err) {
-          throw err
-        }
+        const event = (await waitForKeyboardEvent()) as KeyboardEvent
 
         if (event.modifiers.includes("Ctrl") && normalizeCtrlCharacter(event.key) === "c") {
           shutdown(0)
@@ -68,13 +69,11 @@ async function main() {
         }
 
         processKeyEvent(vimMode, event)
-      } catch (error) {
-        console.error("Fatal error:", error)
-        shutdown(1)
+      } catch (_e) {
+        log(`key processing error: ${_e}`)
+        if (cleanedUp) break
       }
-    })
-
-    await new Promise<never>(() => {})
+    }
   } finally {
     cleanup()
   }

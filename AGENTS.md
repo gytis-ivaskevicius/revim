@@ -1,7 +1,7 @@
 # AGENTS
 
 ## Code map
-- `app/src/index.ts` — app entry, keyboard listener, shutdown path
+- `app/src/index.ts` — app entry, async keyboard event loop, shutdown path
 - `app/src/terminal-key.ts` — terminal key normalization/encoding boundary
 - `app/src/vim/` — Vim layer port; start with:
   - `keymap_vim.ts` — adapter bootstrap, key translation, selection syncing
@@ -11,7 +11,7 @@
   - `default-key-map.ts` — Vim keybinding table
 - `app/src/log.ts` — logging API (initLog, log); wire `--log <path>` in index.ts
 - `lib/src/tui/log.rs` — Rust logging (setLogFd, appendLog, revim_log! macro)
-- `lib/src/tui/api.rs` — N-API boundary for cursor, buffer, keyboard listener
+- `lib/src/tui/api.rs` — N-API boundary for cursor, buffer, keyboard listener (queue + condvar)
 - `lib/src/tui/state.rs` — demo buffer, cursor state, clipping rules
 - `lib/src/tui/render.rs` — terminal rendering and cursor placement
 - `app/tests/e2e/` — terminal E2E suite; `test-utils.ts` sets shared config
@@ -20,3 +20,5 @@
 - For visual/block selection bugs, inspect TS selection shaping and Rust application together.
 - `@microsoft/tui-test` can fail on transient Cargo dirs under `lib/target` during cache copy.
 - `@microsoft/tui-test` can also flake when worker reuse is too aggressive; if the suite starts from a blank `>` prompt or tests contaminate each other, inspect `tui-test.config.ts` worker count before assuming an app regression.
+- **Mutex deadlock in NAPI functions**: `render_frame_internal()` acquires `TUI_CONTEXT.lock()`. Any NAPI function that holds `TUI_CONTEXT.lock()` or `state.lock()` must drop those locks with a `{ }` block BEFORE calling `render_frame_internal()`. `std::sync::Mutex` is not reentrant — calling it while already held deadlocks the JS thread, freezing all keyboard input. Audit all `render_frame_internal()` call sites for this pattern.
+- **Keyboard input uses queue + async pull**: The keyboard listener pushes events to a `Mutex<VecDeque>` + `Condvar` from a Rust thread. TypeScript calls `await waitForKeyboardEvent()` in a loop to pull events. Do NOT revert to `ThreadsafeFunction` callback approach — it was the original mechanism but was replaced due to the deadlock issue above (the callback appeared to stop working when the JS thread deadlocked).

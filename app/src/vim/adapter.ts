@@ -676,7 +676,7 @@ export class EditorAdapter {
           } else {
             for (let i = 0; i < allMatches.length; i++) {
               const match = allMatches[i]
-              if (match.line > startPos.line || (match.line === startPos.line && match.ch >= startPos.ch)) {
+              if (match.line > startPos.line || (match.line === startPos.line && match.ch > startPos.ch)) {
                 currentIndex = i
                 break
               }
