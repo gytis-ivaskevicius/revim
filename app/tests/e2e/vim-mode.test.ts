@@ -1,44 +1,4 @@
-import { expect, KEY_PRESS_DELAY_MS, test } from "./test-utils.js"
-
-const delay = () => new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS))
-
-const visibleBuffer = (terminal: { getViewableBuffer: () => string[][] }) =>
-  terminal
-    .getViewableBuffer()
-    .map((row) => row.join(""))
-    .join("\n")
-
-async function pressKeys(
-  terminal: {
-    keyPress: (key: string) => void
-    keyEscape: () => void
-    keyBackspace: () => void
-    keyDelete: () => void
-    keyLeft: () => void
-  },
-  keys: string[],
-) {
-  for (const key of keys) {
-    switch (key) {
-      case "<Esc>":
-        terminal.keyEscape()
-        break
-      case "<BS>":
-        terminal.keyBackspace()
-        break
-      case "<Del>":
-        terminal.keyDelete()
-        break
-      case "<Left>":
-        terminal.keyLeft()
-        break
-      default:
-        terminal.keyPress(key)
-        break
-    }
-    await delay()
-  }
-}
+import { expect, Keys, test } from "./test-utils.js"
 
 const bufferCases = [
   {
@@ -66,9 +26,9 @@ const bufferCases = [
 for (const { name, keys, expected } of bufferCases) {
   test(name, async ({ terminal }) => {
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
-    await pressKeys(terminal, keys)
+    await Keys.pressKeys(terminal, keys)
 
-    const bufferText = visibleBuffer(terminal)
+    const bufferText = Keys.visibleBuffer(terminal)
     if (!bufferText.includes(expected)) {
       throw new Error(`Unexpected buffer for ${name}:\n${bufferText}`)
     }
