@@ -41,3 +41,9 @@
 **When useful**: When testing scroll behavior that requires navigating to specific lines. Pressing ArrowDown 40+ times is slow and timing-sensitive. Using `G` to jump directly to the last line and `gg` to return is faster and more deterministic. For scroll tests, prefer G/gg navigation over repeated ArrowDown presses.
 
 ---
+
+## Comment out NAPI calls to isolate deadlocks
+**Date**: 2026-04-14
+**When useful**: When keyboard input or NAPI callbacks stop working after a specific operation (like search). Instead of investigating async/callback mechanisms, comment out NAPI functions called during that operation one by one. A mutex deadlock in a synchronous NAPI function will freeze the JS event loop, making it look like callbacks stopped working. The fastest way to find it: disable the NAPI calls made during the problematic operation and see if input resumes.
+
+---

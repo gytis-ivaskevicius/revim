@@ -248,6 +248,9 @@ export function updateSearchQuery(
     return
   }
   const state = getSearchState(adapter)
+  if (!state) {
+    return
+  }
   const query = parseQuery(rawQuery, !!ignoreCase, !!smartCase)
   if (!query) {
     return
@@ -267,6 +270,7 @@ export function highlightSearchMatches(adapter: EditorAdapter, query: RegExp) {
   highlightTimeout = setTimeout(() => {
     if (!adapter.state.vim) return
     const searchState = getSearchState(adapter)
+    if (!searchState) return
     let overlay = searchState.getOverlay()
     if (!overlay || query !== overlay.query) {
       if (overlay) {
@@ -316,6 +320,10 @@ export function findNext(adapter: EditorAdapter, prev: boolean, query: RegExp, r
 
 export function clearSearchHighlight(adapter: EditorAdapter) {
   const state = getSearchState(adapter)
+  if (!state) {
+    adapter.removeOverlay()
+    return
+  }
   adapter.removeOverlay()
   state.setOverlay(undefined)
   if (state.getScrollbarAnnotate()) {

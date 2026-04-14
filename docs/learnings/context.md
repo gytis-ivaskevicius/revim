@@ -55,3 +55,17 @@
 **Recommendation**: When extracting a raw fd from a ManuallyDrop-wrapped type, use `IntoRawFd::into_raw_fd()` (consuming the value without Drop) rather than `as_raw_fd()` (which borrows and leaves the value to be dropped). Or simply don't close the fd at all if TS owns the lifetime.
 
 ---
+
+## Rust Mutex deadlock in NAPI functions that call render_frame_internal
+**Date**: 2026-04-14
+**What happened**: After pressing `/movement<Enter>` in the vim search prompt, all subsequent keyboard input stopped being processed. The root cause was a deadlock in `set_highlights()`: it acquired `TUI_CONTEXT.lock()` and `state.lock()`, then called `render_frame_internal()` which also tries to acquire `TUI_CONTEXT.lock()`. Since `std::sync::Mutex` is not reentrant, this deadlocked the JS thread, preventing any further NAPI calls from completing. Other functions like `set_cursor_pos` correctly dropped locks with `{ }` blocks before calling `render_frame_internal()`, but `set_highlights` did not.
+**Recommendation**: Any Rust NAPI function that acquires `TUI_CONTEXT.lock()` or `state.lock()` must drop those locks BEFORE calling `render_frame_internal()`. Use `{ ... }` blocks to scope the lock. Audit all `render_frame_internal()` call sites for this pattern. When debugging "keyboard stops working" or "NAPI calls hang", check for mutex deadlocks in synchronous NAPI functions before investigating async/callback issues.
+
+---
+
+## Story demo buffer mismatch with actual buffer content
+**Date**: 2026-04-14
+**What happened**: Story 010 vim-search ACs describe a 7-line demo buffer with "cursor" at lines 3, 4, 6. But `lib/src/tui/state.rs` actually has a 46-line buffer with "cursor" at lines 21, 22, 39. Tests written based on the story's buffer expectations failed until corrected.
+**Recommendation**: When writing or fixing tests for search functionality, always verify the actual demo buffer content in `lib/src/tui/state.rs` rather than relying on story documentation. The story buffer description may be outdated or incorrect.
+
+---

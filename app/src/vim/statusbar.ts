@@ -38,4 +38,6 @@ export interface IStatusBar {
   startPrompt: (prefix: string, desc: string, options: StatusBarInputOptions) => () => void
   closeInput: () => void
   clear: () => void
+  isPrompting: () => boolean
+  handlePromptKey: (encodedKey: string) => void
 }

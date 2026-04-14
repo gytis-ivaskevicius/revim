@@ -77,6 +77,9 @@ export const searchOverlay = (query: RegExp) => {
 }
 
 export const getSearchState = (adapter: EditorAdapter) => {
-  const vim = adapter.state.vim as VimState
+  const vim = adapter.state.vim as VimState | null
+  if (!vim) {
+    return null
+  }
   return vim.searchState_ || (vim.searchState_ = new SearchState())
 }

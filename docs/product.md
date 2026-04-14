@@ -12,6 +12,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - **Undo/redo** — Delta-based document history in the Rust TUI layer; `u`, `<C-r>`, and `U` perform real undo/redo instead of no-ops ([story](stories/007-add-undo-redo/story.md))
 - **Status bar (MVP)** — Terminal status bar showing current vim mode and pending key-chord buffer; `IStatusBar` interface wired via `TerminalStatusBar` and a new `setStatusText` N-API function ([story](stories/008-add-status-bar/story.md))
 - **Fix cursor visibility and undo regressions** — Eliminate cursor double-inversion (hardware cursor + REVERSED span cancelled each other in normal mode), fix `r<char>` undo missing undo stop, and add targeted E2E regression tests ([story](stories/009-fix-cursor-undo-regressions/story.md))
+- **Vim search** — `/`, `?`, `n`, `N` with status-bar prompt UX, incremental highlights, and wrap-around; `startPrompt` wired in `TerminalStatusBar` so the search query is captured in the terminal ([story](stories/010-vim-search/story.md))
 - **Scroll support** — Expanded demo buffer (~50 lines), `scroll_top` viewport state in Rust, auto-scroll cursor-follows-viewport, `zz`/`zt`/`zb` viewport positioning, and live `get_scroll_info`/`get_visible_lines` API ([story](stories/012-add-scroll-support/story.md))
 
 - **Logging API** — File-based debug logging from both Rust and TypeScript; enabled via `--log /path/to/file` CLI flag; `withLog(path)` helper for E2E tests ([story](stories/013-add-logging-api/story.md))
@@ -25,15 +26,13 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 ## Known Limitations
 
 - No cross-platform binary builds configured
-- Status bar: mode indicator and key buffer wired (story 008); the following are deferred:
+- Status bar: mode indicator and key buffer wired (story 008); search prompt `/`/`?` wired (story 010); the following are deferred:
+  - `startPrompt` / `status-close-prompt` for `:` — interactive command-line prompt for ex commands and confirm replacements
   - `startDisplay` / `status-close-display` — transient ex-command messages (e.g., substitution counts)
-  - `startPrompt` / `status-close-prompt` — interactive command-line prompt for `/`, `?`, `:` searches and confirm replacements
   - `showNotification` — one-shot notification messages from ex commands
   - Cursor position indicator (line:col) in the status bar
   - File name display in the status bar
   - Status bar colors / theming
-- No search and prompt UX coverage
-  - add E2E coverage for /, n, N, search highlight behavior, and prompt scroll restore (tracked for a dedicated follow-up story after 009)
 - No ex command coverage
   - add E2E tests for a small supported subset like :w, :q, :sort, :s
   - explicitly gate/disable unsupported commands
