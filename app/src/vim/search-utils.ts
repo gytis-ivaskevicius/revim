@@ -320,8 +320,11 @@ export function findNext(adapter: EditorAdapter, prev: boolean, query: RegExp, r
 
 export function clearSearchHighlight(adapter: EditorAdapter) {
   const state = getSearchState(adapter)
+  if (!state) {
+    adapter.removeOverlay()
+    return
+  }
   adapter.removeOverlay()
-  if (!state) return
   state.setOverlay(undefined)
   if (state.getScrollbarAnnotate()) {
     state.getScrollbarAnnotate().clear()

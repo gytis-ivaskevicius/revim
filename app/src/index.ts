@@ -70,6 +70,7 @@ async function main() {
 
         processKeyEvent(vimMode, event)
       } catch (_e) {
+        log(`key processing error: ${_e}`)
         if (cleanedUp) break
       }
     }
