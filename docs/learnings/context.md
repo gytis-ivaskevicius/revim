@@ -69,3 +69,10 @@
 **Recommendation**: When writing or fixing tests for search functionality, always verify the actual demo buffer content in `lib/src/tui/state.rs` rather than relying on story documentation. The story buffer description may be outdated or incorrect.
 
 ---
+
+## Partial code review fixes waste cycles
+**Date**: 2026-04-14
+**What happened**: Code reviewer flagged 9 issues. I fixed 3 and re-ran review, but Fail remained because 6 issues were unaddressed. Required additional fix+review cycles.
+**Recommendation**: When a code reviewer reports N issues, fix ALL N issues before re-requesting review. Don't cherry-pick which issues to address based on perceived importance - the reviewer is the authority on correctness.
+
+---
