@@ -1,6 +1,4 @@
-import { expect, Keys, keyPress, RENDER_DELAY_MS, test } from "./test-utils.js"
-
-const KEY_PRESS_DELAY_MS = 50
+import { expect, Keys, keyPress, KEY_PRESS_DELAY_MS, RENDER_DELAY_MS, test } from "./test-utils.js"
 
 async function typeSearch(terminal: any, query: string, delayMs: number, prefix = "/") {
   keyPress(terminal, prefix)

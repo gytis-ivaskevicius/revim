@@ -30,18 +30,6 @@ export function withLog(logPath: string) {
 
 export type KeyInput = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
 
-export const KEY_ALIASES = {
-  "<Esc>": "Escape",
-  "<BS>": "Backspace",
-  "<Del>": "Delete",
-  "<Left>": "Left",
-  "<Right>": "Right",
-  "<Up>": "Up",
-  "<Down>": "Down",
-  "<Enter>": "Enter",
-  "<Space>": " ",
-} as const
-
 export class Keys {
   static delay(ms?: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms ?? KEY_PRESS_DELAY_MS))
@@ -94,6 +82,30 @@ export class Keys {
         return
       }
     }
+    if (key === "<Left>" || key === "Left") {
+      if (typeof terminal.keyLeft === "function") {
+        terminal.keyLeft()
+        return
+      }
+    }
+    if (key === "<Right>" || key === "Right") {
+      if (typeof terminal.keyRight === "function") {
+        terminal.keyRight()
+        return
+      }
+    }
+    if (key === "<Up>" || key === "Up") {
+      if (typeof terminal.keyUp === "function") {
+        terminal.keyUp()
+        return
+      }
+    }
+    if (key === "<Down>" || key === "Down") {
+      if (typeof terminal.keyDown === "function") {
+        terminal.keyDown()
+        return
+      }
+    }
     if (typeof terminal.keyPress === "function") {
       terminal.keyPress(key)
       return
@@ -132,6 +144,10 @@ export class Keys {
       terminal.keyUp()
     } else if (key === "<Down>") {
       terminal.keyDown()
+    } else if (key === "<Enter>") {
+      terminal.keyPress("Enter")
+    } else if (key === "<Space>") {
+      terminal.keyPress(" ")
     } else if (typeof key === "string") {
       terminal.keyPress(key)
     } else {
