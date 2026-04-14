@@ -98,10 +98,11 @@ test.describe("search prompt", () => {
     // Jump to end of buffer using G
     terminal.keyPress("G")
     await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+    const afterG = terminal.getCursor()
     await typeSearch(terminal, "cursor", KEY_PRESS_DELAY_MS, "?")
     const cursor = terminal.getCursor()
-    // Should find a "cursor" searching backwards from end
-    expect(cursor.y).toBeLessThan(45)
+    // Should find a "cursor" searching backwards from end - cursor should move
+    expect(cursor.y).not.toBe(afterG.y)
   })
 
   test("no-match query /zzznomatch<Enter> does not crash and cursor stays put", async ({ terminal }) => {
