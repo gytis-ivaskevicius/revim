@@ -22,7 +22,7 @@ test.describe("search prompt", () => {
 
   test("status bar shows prompt prefix while typing - /cu shows /cu", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
-    await Keys.pressKeys(terminal, ["/", "c", "u"], { delay: RENDER_DELAY_MS })
+    await Keys.pressKeys(terminal, ["/", "c", "u"])
     const statusText = terminal.getByText("/cu")
     await expect(statusText).toBeVisible()
   })
@@ -124,14 +124,7 @@ test.describe("search prompt", () => {
   test("Esc-cancel does not move cursor or leave highlights", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     const before = terminal.getCursor()
-    keyPress(terminal, "/")
-    await Keys.delay(RENDER_DELAY_MS)
-    for (const ch of "cursor") {
-      keyPress(terminal, ch)
-      await Keys.delay(KEY_PRESS_DELAY_MS)
-    }
-    keyPress(terminal, "Escape")
-    await Keys.delay(RENDER_DELAY_MS)
+    await Keys.pressKeys(terminal, ["/", ..."cursor", "<Esc>"])
     // Status bar shows NORMAL
     await expect(terminal.getByText("NORMAL")).toBeVisible()
     // Cursor unchanged
