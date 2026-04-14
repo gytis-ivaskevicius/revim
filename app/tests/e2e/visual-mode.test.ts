@@ -1,12 +1,4 @@
-import { expect, KEY_PRESS_DELAY_MS, test } from "./test-utils.js"
-
-const delay = () => new Promise((resolve) => setTimeout(resolve, KEY_PRESS_DELAY_MS))
-
-const visibleBuffer = (terminal: { getViewableBuffer: () => string[][] }) =>
-  terminal
-    .getViewableBuffer()
-    .map((row) => row.join(""))
-    .join("\n")
+import { expect, Keys, test } from "./test-utils.js"
 
 const cellShift = (
   terminal: { serialize: () => { shifts: Map<string, { inverse?: number }> } },
@@ -14,31 +6,10 @@ const cellShift = (
   y: number,
 ) => terminal.serialize().shifts.get(`${x},${y}`)
 
-type KeyPress = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
-
-async function pressKeys(
-  terminal: {
-    keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void
-    keyEscape: () => void
-  },
-  keys: KeyPress[],
-) {
-  for (const key of keys) {
-    if (key === "<Esc>") {
-      terminal.keyEscape()
-    } else if (typeof key === "string") {
-      terminal.keyPress(key)
-    } else {
-      terminal.keyPress(key.key, key)
-    }
-    await delay()
-  }
-}
-
 const snapshotCases: Array<{
   name: string
   readyText?: string
-  keys: KeyPress[]
+  keys: Keys.KeyInput[]
   assertions?: (terminal: { serialize: () => { shifts: Map<string, { inverse?: number }> } }) => void
 }> = [
   {
@@ -108,7 +79,7 @@ const snapshotCases: Array<{
 for (const { name, readyText = "Welcome to ReVim!", keys, assertions } of snapshotCases) {
   test(name, async ({ terminal }) => {
     await expect(terminal.getByText(readyText)).toBeVisible()
-    await pressKeys(terminal, keys)
+    await Keys.pressKeys(terminal, keys)
     assertions?.(terminal)
     await expect(terminal).toMatchSnapshot({ includeColors: true })
   })
@@ -117,7 +88,7 @@ for (const { name, readyText = "Welcome to ReVim!", keys, assertions } of snapsh
 const deleteCases: Array<{
   name: string
   readyText: string
-  keys: KeyPress[]
+  keys: Keys.KeyInput[]
   absentText?: string
   presentText: string[]
 }> = [
@@ -140,9 +111,9 @@ const deleteCases: Array<{
 for (const { name, readyText, keys, absentText, presentText } of deleteCases) {
   test(name, async ({ terminal }) => {
     await expect(terminal.getByText(readyText)).toBeVisible()
-    await pressKeys(terminal, keys)
+    await Keys.pressKeys(terminal, keys)
 
-    const bufferText = visibleBuffer(terminal)
+    const bufferText = Keys.visibleBuffer(terminal)
     if (absentText && bufferText.includes(absentText)) {
       throw new Error(`Expected selected text to be deleted:\n${bufferText}`)
     }
@@ -155,14 +126,14 @@ for (const { name, readyText, keys, absentText, presentText } of deleteCases) {
 
 test("blockwise x deletes columns without joining lines", async ({ terminal }) => {
   await expect(terminal.getByText("ReVim is a terminal-based text editor.")).toBeVisible()
-  await pressKeys(terminal, ["j", "j", "j", { key: "v", ctrl: true }, "j"])
-  await pressKeys(
+  await Keys.pressKeys(terminal, ["j", "j", "j", { key: "v", ctrl: true }, "j"])
+  await Keys.pressKeys(
     terminal,
     Array.from({ length: 10 }, () => "l"),
   )
-  await pressKeys(terminal, ["x"])
+  await Keys.pressKeys(terminal, ["x"])
 
-  const bufferText = visibleBuffer(terminal)
+  const bufferText = Keys.visibleBuffer(terminal)
   if (bufferText.includes(" Vim is a teBasic mov")) {
     throw new Error(`Expected block delete to preserve line breaks:\n${bufferText}`)
   }
