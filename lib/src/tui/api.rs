@@ -3,11 +3,13 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
-use napi::{bindgen_prelude::*, Env};
+use napi::bindgen_prelude::*;
+use napi::Task;
 use napi_derive::napi;
 use ratatui::{backend::CrosstermBackend, Terminal};
+use std::collections::VecDeque;
 use std::sync::atomic::Ordering;
+use std::sync::{Condvar, Mutex as StdMutex};
 use std::thread;
 use std::time::Duration;
 
@@ -82,47 +84,119 @@ pub fn shutdown_tui() -> Result<()> {
     Ok(())
 }
 
-#[allow(deprecated)]
-#[napi]
-pub fn start_keyboard_listener(
-    env: Env,
-    mut callback: ThreadsafeFunction<KeyboardEvent>,
-) -> Result<()> {
-    callback.unref(&env)?;
-    thread::spawn(move || {
-        while TUI_RUNNING.load(Ordering::SeqCst) {
-            if matches!(event::poll(Duration::from_millis(100)), Ok(true)) {
-                if let Ok(Event::Key(key_event)) = event::read() {
-                    let key = match key_event.code {
-                        KeyCode::Up => "Up".to_string(),
-                        KeyCode::Down => "Down".to_string(),
-                        KeyCode::Left => "Left".to_string(),
-                        KeyCode::Right => "Right".to_string(),
-                        KeyCode::Delete => "Delete".to_string(),
-                        KeyCode::Insert => "Insert".to_string(),
-                        KeyCode::Home => "Home".to_string(),
-                        KeyCode::End => "End".to_string(),
-                        KeyCode::PageUp => "PageUp".to_string(),
-                        KeyCode::PageDown => "PageDown".to_string(),
-                        KeyCode::Char(c) => c.to_string(),
-                        KeyCode::Enter => "Enter".to_string(),
-                        KeyCode::Backspace => "Backspace".to_string(),
-                        KeyCode::Tab => "Tab".to_string(),
-                        KeyCode::Esc => "Esc".to_string(),
-                        _ => continue,
-                    };
+struct KeyboardQueue {
+    queue: StdMutex<VecDeque<KeyboardEvent>>,
+    condvar: Condvar,
+}
 
-                    let modifiers = extract_modifiers(key_event.modifiers);
-                    callback.call(
-                        Ok(KeyboardEvent { key, modifiers }),
-                        ThreadsafeFunctionCallMode::NonBlocking,
-                    );
+static KEYBOARD_QUEUE: KeyboardQueue = KeyboardQueue {
+    queue: StdMutex::new(VecDeque::new()),
+    condvar: Condvar::new(),
+};
+
+#[napi]
+pub fn start_keyboard_listener() -> Result<()> {
+    thread::spawn(move || {
+        revim_log!("keyboard_listener: thread started");
+        while TUI_RUNNING.load(Ordering::SeqCst) {
+            let poll_result = event::poll(Duration::from_millis(100));
+            match poll_result {
+                Ok(true) => {
+                    let read_result = event::read();
+                    if let Ok(Event::Key(key_event)) = read_result {
+                        let key = match key_event.code {
+                            KeyCode::Up => "Up".to_string(),
+                            KeyCode::Down => "Down".to_string(),
+                            KeyCode::Left => "Left".to_string(),
+                            KeyCode::Right => "Right".to_string(),
+                            KeyCode::Delete => "Delete".to_string(),
+                            KeyCode::Insert => "Insert".to_string(),
+                            KeyCode::Home => "Home".to_string(),
+                            KeyCode::End => "End".to_string(),
+                            KeyCode::PageUp => "PageUp".to_string(),
+                            KeyCode::PageDown => "PageDown".to_string(),
+                            KeyCode::Char(c) => c.to_string(),
+                            KeyCode::Enter => "Enter".to_string(),
+                            KeyCode::Backspace => "Backspace".to_string(),
+                            KeyCode::Tab => "Tab".to_string(),
+                            KeyCode::Esc => "Esc".to_string(),
+                            _ => continue,
+                        };
+
+                        let modifiers = extract_modifiers(key_event.modifiers);
+                        revim_log!(
+                            "keyboard_listener: pushing key={} modifiers={:?}",
+                            key,
+                            modifiers
+                        );
+                        {
+                            let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap();
+                            queue.push_back(KeyboardEvent { key, modifiers });
+                        }
+                        KEYBOARD_QUEUE.condvar.notify_one();
+                    }
+                }
+                Ok(false) => {}
+                Err(e) => {
+                    revim_log!("keyboard_listener: poll error: {:?}", e);
                 }
             }
         }
+        revim_log!("keyboard_listener: thread exiting");
     });
 
     Ok(())
+}
+
+pub struct WaitForKeyEvent;
+
+impl Task for WaitForKeyEvent {
+    type Output = KeyboardEvent;
+    type JsValue = KeyboardEvent;
+
+    fn compute(&mut self) -> Result<Self::Output> {
+        revim_log!("wait_for_keyboard_event: compute() called, waiting for event...");
+        let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap();
+        loop {
+            if let Some(event) = queue.pop_front() {
+                revim_log!("wait_for_keyboard_event: got event key={}", event.key);
+                return Ok(event);
+            }
+            // Wait for signal, but check TUI_RUNNING periodically
+            let result = KEYBOARD_QUEUE
+                .condvar
+                .wait_timeout(queue, Duration::from_millis(100));
+            match result {
+                Ok((q, timeout)) => {
+                    queue = q;
+                    if timeout.timed_out() && !TUI_RUNNING.load(Ordering::SeqCst) {
+                        return Err(Error::from_reason("TUI shutting down"));
+                    }
+                }
+                Err(e) => {
+                    // Poisoned mutex, should not happen
+                    queue = e.into_inner().0;
+                    if !TUI_RUNNING.load(Ordering::SeqCst) {
+                        return Err(Error::from_reason("TUI shutting down"));
+                    }
+                }
+            }
+        }
+    }
+
+    fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+        revim_log!(
+            "wait_for_keyboard_event: resolve() called, key={}",
+            output.key
+        );
+        Ok(output)
+    }
+}
+
+#[napi]
+pub fn wait_for_keyboard_event() -> AsyncTask<WaitForKeyEvent> {
+    revim_log!("wait_for_keyboard_event: called, returning AsyncTask");
+    AsyncTask::new(WaitForKeyEvent)
 }
 
 #[napi]

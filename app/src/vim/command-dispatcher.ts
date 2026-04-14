@@ -28,6 +28,7 @@ import {
   updateCmSelection,
   updateMark,
 } from "./keymap_vim"
+import { log } from "../log"
 import { motions } from "./motions"
 import { operators } from "./operators"
 import { getSearchState } from "./search"
@@ -196,6 +197,7 @@ export class CommandDispatcher {
     const originalQuery = searchState.getQuery()
     const originalScrollPos = adapter.getScrollInfo()
     const handleQuery = (query: string, ignoreCase: boolean, smartCase: boolean) => {
+      log(`[search-handleQuery] query: "${query}" forward: ${forward}`)
       vimGlobalState.searchHistoryController.pushInput(query)
       vimGlobalState.searchHistoryController.reset()
       try {
@@ -205,23 +207,27 @@ export class CommandDispatcher {
         clearInputState(adapter)
         return
       }
+      log(`[search-handleQuery] calling processMotion with forward: ${forward}`)
       commandDispatcher.processMotion(adapter, vim, {
         keys: "",
         type: "motion",
         motion: "findNext",
         motionArgs: {
-          forward: true,
+          forward: forward,
           toJumplist: command.searchArgs?.toJumplist,
         },
       })
     }
     const onPromptClose = (query: string) => {
+      log(`[search-onPromptClose] query: "${query}"`)
       // Note: scrollTo removed - it moves cursor, not viewport
       try {
         handleQuery(query, true /** ignoreCase */, true /** smartCase */)
       } catch (_e) {
+        log(`[search-onPromptClose] error: ${_e}`)
         // Handle errors in query execution
       }
+      log(`[search-onPromptClose2] query: "${query}"`)
       const macroModeState = vimGlobalState.macroModeState
       if (macroModeState.isRecording) {
         logSearchQuery(macroModeState, query)
@@ -251,8 +257,10 @@ export class CommandDispatcher {
         // Swallow bad regexes for incremental search.
       }
       if (parsedQuery) {
-        const nextPos = findNext(adapter, !forward, parsedQuery)
-        adapter.scrollIntoView(nextPos)
+        // Don't call findNext here - it uses the current cursor position which may have
+        // been moved by a previous onKeyUp call. Just update highlights. The actual
+        // search and cursor movement happens in onClose when Enter is pressed.
+        // scrollIntoView(nextPos)
       } else {
         clearSearchHighlight(adapter)
         // Note: scrollTo removed - it moves cursor, not viewport
