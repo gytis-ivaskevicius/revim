@@ -91,12 +91,6 @@ export class TerminalStatusBar implements IStatusBar {
       // ignore onKeyDown errors to prevent freezing
     }
 
-    // For Escape, ensure prompt closes even if onKeyDown threw before calling close()
-    if (evt.key === "Escape" && this.promptState !== null) {
-      close()
-      return
-    }
-
     if (this.promptState === null) {
       return
     }
@@ -108,6 +102,16 @@ export class TerminalStatusBar implements IStatusBar {
     }
 
     setStatusText(state.prefix + state.query)
+
+    try {
+      state.options.onKeyUp?.(evt, state.query, close)
+    } catch (_e) {
+      // ignore onKeyUp errors to prevent freezing
+    }
+
+    if (this.promptState === null) {
+      return
+    }
 
     if (evt.key === "Enter") {
       // Set promptState = null FIRST to prevent state leak if onClose throws
