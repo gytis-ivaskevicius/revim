@@ -1,7 +1,7 @@
 import { expect, KEY_PRESS_DELAY_MS, keyPress, RENDER_DELAY_MS, test } from "./test-utils.js"
 
-async function typeSearch(terminal: any, query: string, delay: number) {
-  keyPress(terminal, "/")
+async function typeSearch(terminal: any, query: string, delay: number, prefix = "/") {
+  keyPress(terminal, prefix)
   await new Promise((r) => setTimeout(r, delay))
   for (const ch of query) {
     keyPress(terminal, ch)
@@ -95,19 +95,10 @@ test.describe("search prompt", () => {
 
   test("backward search ?cursor moves cursor in reverse from end", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
-    // Move to end of buffer
-    for (let i = 0; i < 45; i++) {
-      terminal.keyDown()
-      await new Promise((r) => setTimeout(r, KEY_PRESS_DELAY_MS))
-    }
-    keyPress(terminal, "?")
+    // Jump to end of buffer using G
+    terminal.keyPress("G")
     await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
-    for (const ch of "cursor") {
-      keyPress(terminal, ch)
-      await new Promise((r) => setTimeout(r, KEY_PRESS_DELAY_MS))
-    }
-    keyPress(terminal, "Enter")
-    await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+    await typeSearch(terminal, "cursor", KEY_PRESS_DELAY_MS, "?")
     const cursor = terminal.getCursor()
     // Should find a "cursor" searching backwards from end
     expect(cursor.y).toBeLessThan(45)
