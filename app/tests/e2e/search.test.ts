@@ -79,6 +79,20 @@ test.describe("search prompt", () => {
     expect(cursor.y).toBe(22)
   })
 
+  test("n twice advances to third cursor - /cursor then n n lands on y=27", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible()
+    await typeSearch(terminal, "cursor", KEY_PRESS_DELAY_MS)
+    await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+    keyPress(terminal, "n")
+    await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+    keyPress(terminal, "n")
+    await new Promise((r) => setTimeout(r, RENDER_DELAY_MS))
+    const cursor = terminal.getCursor()
+    // Third "cursor" is at line 39 (0-indexed). With viewport height 27:
+    // scroll_top = 39 - 27 + 1 = 13, visual position = 39 - 13 + 1 = y=27
+    expect(cursor.y).toBe(27)
+  })
+
   test("backward search ?cursor moves cursor in reverse from end", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     // Move to end of buffer
