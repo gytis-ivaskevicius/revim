@@ -255,6 +255,9 @@ async function typeSearch(terminal: any, query: string, delay: number) {
 - start + `/cursor<Enter>` (lands on y=22) + `n`
   - → `terminal.getCursor()` y-coordinate is y=23 (second occurrence at line 22)
 
+- start + `/cursor<Enter>` + `n` + `n` (third occurrence at line 39)
+  - → `terminal.getCursor()` y-coordinate is y=27 (viewport scrolls to show line 39)
+
 **`N` moves to previous occurrence**
 
 - start + `/cursor<Enter>` (y=22) + `n` (y=23) + `N`
@@ -282,11 +285,10 @@ async function typeSearch(terminal: any, query: string, delay: number) {
   - → cursor stays at initial position (no movement)
   - → status bar shows `"NORMAL"`
 
-#### Known Implementation Limitations
+**Search wrap-around** (known limitation)
 
-The following ACs are not currently achievable due to vim search implementation issues:
-- Third occurrence navigation (`/cursor<Enter>` + `n` + `n`) — subsequent `n` presses after the second match do not find further matches
-- Search wrap-around — after reaching the last match, `n` does not wrap to the first match
+- start (line 0) + `/cursor<Enter>` + `n` + `n` (lands on last match) + `n`
+  - → Note: wrap-around is not yet implemented; `n` stops at the last match
 
 #### Non-Automatable
 
