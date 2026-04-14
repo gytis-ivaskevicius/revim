@@ -69,7 +69,7 @@ async function main() {
         }
 
         processKeyEvent(vimMode, event)
-      } catch (e) {
+      } catch (_e) {
         if (cleanedUp) break
       }
     }
