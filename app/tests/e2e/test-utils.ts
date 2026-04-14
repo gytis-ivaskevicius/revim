@@ -30,19 +30,60 @@ export function withLog(logPath: string) {
 
 export type KeyInput = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
 
-export class Keys {
-  static delay(ms?: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms ?? KEY_PRESS_DELAY_MS))
+// Unified key dispatch helper - handles special keys and delegates to terminal methods
+function dispatchKey(terminal: any, key: string): boolean {
+  if (key === "<Esc>" || key === "Escape") {
+    terminal.keyEscape()
+    return true
   }
+  if (key === "<BS>" || key === "Backspace") {
+    terminal.keyBackspace()
+    return true
+  }
+  if (key === "<Del>" || key === "Delete") {
+    terminal.keyDelete()
+    return true
+  }
+  if (key === "<Left>" || key === "Left") {
+    terminal.keyLeft()
+    return true
+  }
+  if (key === "<Right>" || key === "Right") {
+    terminal.keyRight()
+    return true
+  }
+  if (key === "<Up>" || key === "Up") {
+    terminal.keyUp()
+    return true
+  }
+  if (key === "<Down>" || key === "Down") {
+    terminal.keyDown()
+    return true
+  }
+  if (key === "<Enter>") {
+    terminal.keyPress("Enter")
+    return true
+  }
+  if (key === "<Space>") {
+    terminal.keyPress(" ")
+    return true
+  }
+  return false
+}
 
-  static visibleBuffer(terminal: { getViewableBuffer: () => string[][] }): string {
+export const Keys = {
+  delay(ms?: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms ?? KEY_PRESS_DELAY_MS))
+  },
+
+  visibleBuffer(terminal: { getViewableBuffer: () => string[][] }): string {
     return terminal
       .getViewableBuffer()
       .map((row) => row.join(""))
       .join("\n")
-  }
+  },
 
-  static async pressKeys(
+  async pressKeys(
     terminal: {
       keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void
       keyEscape: () => void
@@ -61,63 +102,21 @@ export class Keys {
       await this.pressKey(terminal, key)
       await this.delay(delayMs)
     }
-  }
+  },
 
-  static keyPress(terminal: any, key: string): void {
-    if (key === "<Esc>" || key === "Escape") {
-      if (typeof terminal.keyEscape === "function") {
-        terminal.keyEscape()
-        return
+  keyPress(terminal: any, key: string): void {
+    if (!dispatchKey(terminal, key)) {
+      if (typeof terminal.keyPress === "function") {
+        terminal.keyPress(key)
+      } else if (typeof terminal.key === "function") {
+        terminal.key(key)
+      } else {
+        throw new Error("Terminal does not support keyPress/key")
       }
     }
-    if (key === "<BS>" || key === "Backspace") {
-      if (typeof terminal.keyBackspace === "function") {
-        terminal.keyBackspace()
-        return
-      }
-    }
-    if (key === "<Del>" || key === "Delete") {
-      if (typeof terminal.keyDelete === "function") {
-        terminal.keyDelete()
-        return
-      }
-    }
-    if (key === "<Left>" || key === "Left") {
-      if (typeof terminal.keyLeft === "function") {
-        terminal.keyLeft()
-        return
-      }
-    }
-    if (key === "<Right>" || key === "Right") {
-      if (typeof terminal.keyRight === "function") {
-        terminal.keyRight()
-        return
-      }
-    }
-    if (key === "<Up>" || key === "Up") {
-      if (typeof terminal.keyUp === "function") {
-        terminal.keyUp()
-        return
-      }
-    }
-    if (key === "<Down>" || key === "Down") {
-      if (typeof terminal.keyDown === "function") {
-        terminal.keyDown()
-        return
-      }
-    }
-    if (typeof terminal.keyPress === "function") {
-      terminal.keyPress(key)
-      return
-    }
-    if (typeof terminal.key === "function") {
-      terminal.key(key)
-      return
-    }
-    throw new Error("Terminal does not support keyPress/key")
-  }
+  },
 
-  private static async pressKey(
+  async pressKey(
     terminal: {
       keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void
       keyEscape: () => void
@@ -130,28 +129,12 @@ export class Keys {
     },
     key: KeyInput,
   ): Promise<void> {
-    if (key === "<Esc>") {
-      terminal.keyEscape()
-    } else if (key === "<BS>") {
-      terminal.keyBackspace()
-    } else if (key === "<Del>") {
-      terminal.keyDelete()
-    } else if (key === "<Left>") {
-      terminal.keyLeft()
-    } else if (key === "<Right>") {
-      terminal.keyRight()
-    } else if (key === "<Up>") {
-      terminal.keyUp()
-    } else if (key === "<Down>") {
-      terminal.keyDown()
-    } else if (key === "<Enter>") {
-      terminal.keyPress("Enter")
-    } else if (key === "<Space>") {
-      terminal.keyPress(" ")
-    } else if (typeof key === "string") {
-      terminal.keyPress(key)
+    if (typeof key === "string") {
+      if (!dispatchKey(terminal, key)) {
+        terminal.keyPress(key)
+      }
     } else {
       terminal.keyPress(key.key, key)
     }
-  }
+  },
 }
