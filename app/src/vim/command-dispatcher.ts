@@ -266,7 +266,7 @@ export class CommandDispatcher {
       close: (text?: string) => void,
     ): boolean => {
       const keyName = getEventKeyName(e)
-      if (keyName === "Esc" || (keyName === "Backspace" && query === "")) {
+      if (keyName === "Esc" || keyName === "Ctrl-[" || (keyName === "Backspace" && query === "")) {
         // Close prompt FIRST before any cleanup that might throw
         close()
         try {
