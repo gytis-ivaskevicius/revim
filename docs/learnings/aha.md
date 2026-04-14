@@ -47,3 +47,11 @@
 **When useful**: When keyboard input or NAPI callbacks stop working after a specific operation (like search). Instead of investigating async/callback mechanisms, comment out NAPI functions called during that operation one by one. A mutex deadlock in a synchronous NAPI function will freeze the JS event loop, making it look like callbacks stopped working. The fastest way to find it: disable the NAPI calls made during the problematic operation and see if input resumes.
 
 ---
+
+## Search cursor off-by-one breaks 'n' navigation
+**Date**: 2026-04-14
+**When useful**: When vim search 'n' to find next match doesn't find subsequent matches.
+**What happened**: `getSearchCursor.find()` for forward search used `match.ch >= startPos.ch` when starting from a position. This found the SAME match again instead of the NEXT match when cursor was already on a match. Fix: use `>` instead of `>=`.
+**Recommendation**: For forward search starting from current position, use `>` not `>=` to find the next match, not the current one.
+
+---
