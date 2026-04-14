@@ -32,7 +32,7 @@ import {
 import { motions } from "./motions"
 import { operators } from "./operators"
 import { getSearchState } from "./search"
-import { clearSearchHighlight, escapeRegex, findNext, showConfirm, showPrompt, updateSearchQuery } from "./search-utils"
+import { clearSearchHighlight, escapeRegex, showConfirm, showPrompt, updateSearchQuery } from "./search-utils"
 import type {
   Context,
   KeyMapping,
@@ -195,7 +195,6 @@ export class CommandDispatcher {
     searchState.setReversed(!forward)
     const promptPrefix = forward ? "/" : "?"
     const originalQuery = searchState.getQuery()
-    const originalScrollPos = adapter.getScrollInfo()
     const handleQuery = (query: string, ignoreCase: boolean, smartCase: boolean) => {
       vimGlobalState.searchHistoryController.pushInput(query)
       vimGlobalState.searchHistoryController.reset()

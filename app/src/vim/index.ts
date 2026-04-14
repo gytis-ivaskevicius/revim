@@ -1,6 +1,5 @@
 import EditorAdapter from "./adapter"
 import { initVimAdapter, vimApi } from "./keymap_vim"
-import { log } from "../log"
 import type * as Registers from "./register-controller"
 import type * as StatusBar from "./statusbar"
 
