@@ -124,11 +124,6 @@ pub fn start_keyboard_listener() -> Result<()> {
                         };
 
                         let modifiers = extract_modifiers(key_event.modifiers);
-                        revim_log!(
-                            "keyboard_listener: pushing key={} modifiers={:?}",
-                            key,
-                            modifiers
-                        );
                         {
                             let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap();
                             queue.push_back(KeyboardEvent { key, modifiers });
@@ -155,11 +150,9 @@ impl Task for WaitForKeyEvent {
     type JsValue = KeyboardEvent;
 
     fn compute(&mut self) -> Result<Self::Output> {
-        revim_log!("wait_for_keyboard_event: compute() called, waiting for event...");
         let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap();
         loop {
             if let Some(event) = queue.pop_front() {
-                revim_log!("wait_for_keyboard_event: got event key={}", event.key);
                 return Ok(event);
             }
             // Wait for signal, but check TUI_RUNNING periodically
@@ -174,7 +167,6 @@ impl Task for WaitForKeyEvent {
                     }
                 }
                 Err(e) => {
-                    // Poisoned mutex, should not happen
                     queue = e.into_inner().0;
                     if !TUI_RUNNING.load(Ordering::SeqCst) {
                         return Err(Error::from_reason("TUI shutting down"));
@@ -185,17 +177,12 @@ impl Task for WaitForKeyEvent {
     }
 
     fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
-        revim_log!(
-            "wait_for_keyboard_event: resolve() called, key={}",
-            output.key
-        );
         Ok(output)
     }
 }
 
 #[napi]
 pub fn wait_for_keyboard_event() -> AsyncTask<WaitForKeyEvent> {
-    revim_log!("wait_for_keyboard_event: called, returning AsyncTask");
     AsyncTask::new(WaitForKeyEvent)
 }
 
@@ -839,15 +826,17 @@ pub fn set_replace_mode(_active: bool) -> Result<()> {
 
 #[napi]
 pub fn set_highlights(_ranges: Vec<HighlightRange>) -> Result<()> {
-    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let state = &mut ctx
-        .as_mut()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?
-        .state
-        .lock()
-        .map_err(to_napi_error)?;
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .map_err(to_napi_error)?;
 
-    state.highlights = _ranges;
+        state.highlights = _ranges;
+    }
     render_frame_internal()
 }
 

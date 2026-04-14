@@ -71,7 +71,6 @@ pub(crate) fn append_log(msg: &str) {
     if let Ok(mut guard) = LOG_FILE.lock() {
         if let Some(ref mut file) = *guard {
             let _ = file.write_all(line.as_bytes());
-            let _ = file.flush();
         }
     }
 }

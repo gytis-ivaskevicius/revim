@@ -729,9 +729,6 @@ export class EditorAdapter {
   }
 
   addOverlay(query: string | RegExp) {
-    // TEMPORARILY DISABLED: testing if setHighlights NAPI call breaks async task
-    return
-    /*
     const pattern = typeof query === "string" ? new RegExp(this.escapeRegex(query), "g") : query
     const ranges: Array<{ startLine: number; startCh: number; endLine: number; endCh: number }> = []
 
@@ -755,13 +752,10 @@ export class EditorAdapter {
     }
 
     setHighlights(ranges)
-    */
   }
 
   removeOverlay() {
-    // TEMPORARILY DISABLED
-    return
-    // setHighlights([])
+    setHighlights([])
   }
 
   scrollIntoView(pos?: Pos, _margin?: number) {
