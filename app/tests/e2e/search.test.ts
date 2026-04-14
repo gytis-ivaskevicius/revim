@@ -1,21 +1,13 @@
-import { expect, KEY_PRESS_DELAY_MS, Keys, keyPress, RENDER_DELAY_MS, test } from "./test-utils.js"
+import { expect, KEY_PRESS_DELAY_MS, Keys, RENDER_DELAY_MS, test } from "./test-utils.js"
 
 async function typeSearch(terminal: any, query: string, delayMs: number, prefix = "/") {
-  keyPress(terminal, prefix)
-  await Keys.delay(delayMs)
-  for (const ch of query) {
-    keyPress(terminal, ch)
-    await Keys.delay(delayMs)
-  }
-  keyPress(terminal, "Enter")
-  await Keys.delay(delayMs)
+  await Keys.pressKeys(terminal, [prefix, ...query.split(""), "Enter"], { delay: delayMs })
 }
 
 test.describe("search prompt", () => {
   test("status bar shows prompt prefix while typing - press / shows /", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
-    keyPress(terminal, "/")
-    await Keys.delay(RENDER_DELAY_MS)
+    await Keys.pressKeys(terminal, ["/"])
     const statusText = terminal.getByText("/")
     await expect(statusText).toBeVisible()
   })
@@ -30,10 +22,7 @@ test.describe("search prompt", () => {
   test("status bar shows prompt prefix while typing - Esc cancels and restores NORMAL", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     const before = terminal.getCursor()
-    keyPress(terminal, "/")
-    await Keys.delay(RENDER_DELAY_MS)
-    keyPress(terminal, "Escape")
-    await Keys.delay(RENDER_DELAY_MS)
+    await Keys.pressKeys(terminal, ["/", "<Esc>"])
     const normalLabel = terminal.getByText("NORMAL")
     await expect(normalLabel).toBeVisible()
     const after = terminal.getCursor()
@@ -53,9 +42,7 @@ test.describe("search prompt", () => {
   test("n advances to next occurrence - /cursor then n lands on y=23", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     await typeSearch(terminal, "cursor", KEY_PRESS_DELAY_MS)
-    await Keys.delay(RENDER_DELAY_MS)
-    keyPress(terminal, "n")
-    await Keys.delay(RENDER_DELAY_MS)
+    await Keys.pressKeys(terminal, ["n"])
     const cursor = terminal.getCursor()
     // Second "cursor" is at line 22 (0-indexed) = y=23 with border offset
     expect(cursor.y).toBe(23)
@@ -64,11 +51,7 @@ test.describe("search prompt", () => {
   test("N moves to previous occurrence - /cursor then n then N back to y=22", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     await typeSearch(terminal, "cursor", KEY_PRESS_DELAY_MS)
-    await Keys.delay(RENDER_DELAY_MS)
-    keyPress(terminal, "n")
-    await Keys.delay(RENDER_DELAY_MS)
-    keyPress(terminal, "N")
-    await Keys.delay(RENDER_DELAY_MS)
+    await Keys.pressKeys(terminal, ["n", "N"])
     const cursor = terminal.getCursor()
     // Should be back at first "cursor" = y=22
     expect(cursor.y).toBe(22)
@@ -77,11 +60,7 @@ test.describe("search prompt", () => {
   test("n twice advances to third cursor - /cursor then n n lands on y=27", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     await typeSearch(terminal, "cursor", KEY_PRESS_DELAY_MS)
-    await Keys.delay(RENDER_DELAY_MS)
-    keyPress(terminal, "n")
-    await Keys.delay(RENDER_DELAY_MS)
-    keyPress(terminal, "n")
-    await Keys.delay(RENDER_DELAY_MS)
+    await Keys.pressKeys(terminal, ["n", "n"])
     const cursor = terminal.getCursor()
     // Third "cursor" is at line 39 (0-indexed). With viewport height 27:
     // scroll_top = 39 - 27 + 1 = 13, visual position = 39 - 13 + 1 = y=27
@@ -91,8 +70,7 @@ test.describe("search prompt", () => {
   test("backward search ?cursor moves cursor in reverse from end", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     // Jump to end of buffer using G
-    terminal.keyPress("G")
-    await Keys.delay(RENDER_DELAY_MS)
+    await Keys.pressKeys(terminal, ["G"])
     const afterG = terminal.getCursor()
     await typeSearch(terminal, "cursor", KEY_PRESS_DELAY_MS, "?")
     const cursor = terminal.getCursor()
