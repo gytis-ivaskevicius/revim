@@ -22,12 +22,7 @@ test.describe("search prompt", () => {
 
   test("status bar shows prompt prefix while typing - /cu shows /cu", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
-    keyPress(terminal, "/")
-    await Keys.delay(RENDER_DELAY_MS)
-    keyPress(terminal, "c")
-    await Keys.delay(RENDER_DELAY_MS)
-    keyPress(terminal, "u")
-    await Keys.delay(RENDER_DELAY_MS)
+    await Keys.pressKeys(terminal, ["/", "c", "u"], { delay: RENDER_DELAY_MS })
     const statusText = terminal.getByText("/cu")
     await expect(statusText).toBeVisible()
   })
