@@ -16,6 +16,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - **Scroll support** — Expanded demo buffer (~50 lines), `scroll_top` viewport state in Rust, auto-scroll cursor-follows-viewport, `zz`/`zt`/`zb` viewport positioning, and live `get_scroll_info`/`get_visible_lines` API ([story](stories/012-add-scroll-support/story.md))
 
 - **Logging API** — File-based debug logging from both Rust and TypeScript; enabled via `--log /path/to/file` CLI flag; `withLog(path)` helper for E2E tests ([story](stories/013-add-logging-api/story.md))
+- **Improve testing infrastructure DRY** — Centralize `pressKeys`, `visibleBuffer`, `delay` helpers in `test-utils.ts` via a unified `Keys` utility class; eliminate duplicated key-handling code across 7+ test files ([story](stories/014-improve-testing-dry-keys/story.md))
 
 ## Non-Goals
 
