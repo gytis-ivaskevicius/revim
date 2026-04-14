@@ -7,25 +7,17 @@ test("initial state: first viewport lines visible, content beyond viewport not v
 
 test("moving cursor down past viewport scrolls content up", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
-  await Keys.pressKeys(terminal, ["<Esc>"])
-  for (let i = 0; i < 40; i++) {
-    await Keys.pressKeys(terminal, ["j"])
-  }
+  await Keys.pressKeys(terminal, ["<Esc>", "4", "0", "j"])
   await Keys.delay(RENDER_DELAY_MS)
   await expect(terminal.getByText("Welcome to ReVim!")).not.toBeVisible()
   await expect(terminal.getByText("Scrolling is now supported!")).toBeVisible()
 })
 
 test("moving cursor back up from scrolled position scrolls content back down", async ({ terminal }) => {
-  await Keys.pressKeys(terminal, ["<Esc>"])
-  for (let i = 0; i < 30; i++) {
-    await Keys.pressKeys(terminal, ["j"])
-  }
+  await Keys.pressKeys(terminal, ["<Esc>", "3", "0", "j"])
   await Keys.delay(RENDER_DELAY_MS)
   await expect(terminal.getByText("Welcome to ReVim!")).not.toBeVisible()
-  for (let i = 0; i < 30; i++) {
-    await Keys.pressKeys(terminal, ["k"])
-  }
+  await Keys.pressKeys(terminal, ["3", "0", "k"])
   await Keys.delay(RENDER_DELAY_MS)
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
 })
