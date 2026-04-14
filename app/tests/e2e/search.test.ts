@@ -1,4 +1,4 @@
-import { expect, Keys, keyPress, KEY_PRESS_DELAY_MS, RENDER_DELAY_MS, test } from "./test-utils.js"
+import { expect, keyPress, Keys, KEY_PRESS_DELAY_MS, RENDER_DELAY_MS, test } from "./test-utils.js"
 
 async function typeSearch(terminal: any, query: string, delayMs: number, prefix = "/") {
   keyPress(terminal, prefix)
