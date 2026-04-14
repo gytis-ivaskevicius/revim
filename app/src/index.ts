@@ -19,21 +19,9 @@ function parseLogPath(args: string[]): string | undefined {
 }
 
 function processKeyEvent(vimMode: VimMode, event: KeyboardEvent) {
-  log(`[processKeyEvent] 1 START key: ${event.key}`)
-  try {
-    const insertMode = Boolean(vimMode.adapter.state.vim?.insertMode)
-    log(`[processKeyEvent] 2 insertMode: ${insertMode}`)
-    const encodedKey = encodeTerminalKey(event, insertMode)
-    log(`[processKeyEvent] 3 encodedKey: ${encodedKey}`)
-    log(`[processKeyEvent] 4 keyMap: ${vimMode.adapter.state.keyMap}`)
-    log(`[processKeyEvent] 5 calling vimMode.handleKey`)
-    vimMode.handleKey(encodedKey)
-    log(`[processKeyEvent] 6 handleKey returned successfully`)
-  } catch (e) {
-    log(`[processKeyEvent] EXCEPTION in handleKey: ${e}`)
-    throw e
-  }
-  log(`[processKeyEvent] 7 after handleKey, ${JSON.stringify(event)} processed`)
+  const insertMode = Boolean(vimMode.adapter.state.vim?.insertMode)
+  const encodedKey = encodeTerminalKey(event, insertMode)
+  vimMode.handleKey(encodedKey)
 }
 
 async function main() {
@@ -47,9 +35,6 @@ async function main() {
 
   const vimMode = new VimMode(new TerminalStatusBar())
   vimMode.enable()
-  const keepAlive = setInterval(() => {
-    log(`[keepAlive] event loop alive`)
-  }, 2_000)
   let cleanedUp = false
 
   const cleanup = () => {
@@ -58,8 +43,6 @@ async function main() {
     }
 
     cleanedUp = true
-    clearInterval(keepAlive)
-    process.removeListener("SIGINT", handleSigint)
     vimMode.disable()
     shutdownTui()
     log("revim shutdown")
@@ -77,28 +60,20 @@ async function main() {
 
   try {
     while (!cleanedUp) {
-      log(`[main loop] waiting for keyboard event...`)
       try {
         const event = (await waitForKeyboardEvent()) as KeyboardEvent
-        log(`[keyboard] key: ${event.key} modifiers: ${event.modifiers}`)
 
         if (event.modifiers.includes("Ctrl") && normalizeCtrlCharacter(event.key) === "c") {
-          log(`[keyboard] Ctrl+C detected, shutting down`)
           shutdown(0)
           return
         }
 
         processKeyEvent(vimMode, event)
-        log(`[keyboard] event processed successfully ${JSON.stringify(event)}`)
       } catch (e) {
-        console.error(`[keyboard] error processing key event: ${e}`)
-        log(`[keyboard] error waiting for key: ${e}`)
         if (cleanedUp) break
       }
-      log(`[main loop] iteration complete, waiting for next event...`)
     }
   } finally {
-    console.error(`[main] exiting main loop, performing cleanup`)
     cleanup()
   }
 }
