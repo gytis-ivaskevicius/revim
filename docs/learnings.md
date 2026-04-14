@@ -111,3 +111,19 @@
 **Takeaway**: When modifying N-API boundary code, add tests asserting `Err` when context is uninitialized. Catches `unwrap()` regressions.
 
 ---
+
+## Unified key dispatch avoids repeated review cycles
+**Date**: 2026-04-14
+**Area**: testing
+**What happened**: When creating a `Keys` utility with key dispatch methods, having separate if/else chains for `keyPress` and `pressKey` caused gaps (missing `<Enter>`/`<Space>` in one but not the other). Code reviewer caught this twice across multiple review cycles.
+**Takeaway**: When creating shared utility functions with similar key-dispatch logic, extract a single dispatch function from the start rather than duplicating the if/else chains. Use a map or shared helper to ensure all aliases are handled consistently in one place.
+
+---
+
+## TUI Test cache corruption causes ENOENT errors
+**Date**: 2026-04-14
+**Area**: testing
+**What happened**: Running multiple test files in parallel caused ENOENT errors when tui-test tried to copy files to its cache (`.tui-test/cache/`).
+**Takeaway**: If you see ENOENT errors related to incremental Rust build scripts during E2E test runs, the cache may be corrupted. Running tests with `workers: 1` or sequentially can help. This is a known tui-test issue with aggressive parallelization.
+
+---
