@@ -1,5 +1,4 @@
 import { setStatusText } from "@revim/lib"
-import { log } from "../log"
 import type { IStatusBar, ModeChangeEvent, StatusBarInputOptions, StatusBarKeyEvent } from "./statusbar"
 
 function modeLabelFor(event: ModeChangeEvent | undefined): string {
