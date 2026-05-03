@@ -75,6 +75,7 @@ npx tsc --noEmit
 
 ## Gotchas
 
+- `@microsoft/tui-test` `getByText()` only accepts `string` and `RegExp` — never pass a function (gets `.toString()`'d and never matches). Regex patterns must include the `g` flag or `matchAll` throws a TypeError. If a short string like `":"` matches too many elements on screen, type more characters and match a longer combined string like `getByText(":a")`.
 - For visual/block selection bugs, inspect TS selection shaping and Rust application together.
 - `@microsoft/tui-test` can fail on transient Cargo dirs under `lib/target` during cache copy.
 - `@microsoft/tui-test` can also flake when worker reuse is too aggressive; if the suite starts from a blank `>` prompt or tests contaminate each other, inspect `tui-test.config.ts` worker count before assuming an app regression.

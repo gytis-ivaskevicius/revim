@@ -1,5 +1,13 @@
 # Learnings
 
+## tui-test getByText only accepts string and RegExp (not functions), requires `g` flag on regex
+**Date**: 2026-05-03
+**Area**: testing
+**What happened**: E2E test failures traced to passing function predicates to `terminal.getByText(fn)`. tui-test internally uses `String.prototype.includes` for string args and `String.prototype.matchAll` for RegExp args. Functions are `.toString()`'d, producing non-matching source code. Additionally, regex patterns must have the `g` (global) flag or `matchAll` throws a TypeError.
+**Takeaway**: Always use `terminal.getByText("exact string")` or `terminal.getByText(/pattern/g)` — never pass a function. If a short string like `":"` matches too many elements on screen (strict mode violation), type additional characters and check a longer combined string like `getByText(":a")`.
+
+---
+
 ## Terminal cursor position requires explicit set
 **Date**: 2026-03-28
 **Area**: testing
