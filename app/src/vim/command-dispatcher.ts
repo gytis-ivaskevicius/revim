@@ -219,8 +219,8 @@ export class CommandDispatcher {
       // Note: scrollTo removed - it moves cursor, not viewport
       try {
         handleQuery(query, true /** ignoreCase */, true /** smartCase */)
-      } catch (_e) {
-        log("search prompt error:", _e)
+      } catch (e) {
+        log("search prompt error:", e)
       }
       const macroModeState = vimGlobalState.macroModeState
       if (macroModeState.isRecording) {

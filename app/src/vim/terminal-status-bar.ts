@@ -21,7 +21,7 @@ export function applyKeyToQuery(evt: StatusBarKeyEvent, query: string): string {
   if (evt.key === "Backspace" && query.length > 0) {
     return query.slice(0, -1)
   }
-  if (evt.key.length === 1 && !evt.ctrlKey && !evt.altKey && !evt.metaKey) {
+  if (evt.key.length === 1 && !evt.ctrlKey && !evt.altKey && !evt.metaKey && !evt.shiftKey) {
     return query + evt.key
   }
   return query
