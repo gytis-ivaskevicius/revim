@@ -4,6 +4,12 @@ import { clearLogFd, setLogFd } from "@revim/lib"
 let logFd: number | null = null
 
 export function initLog(path: string): void {
+  if (!path.endsWith(".log")) {
+    throw new Error(`Log path must end with .log extension: ${path}`)
+  }
+  if (path.includes("..")) {
+    throw new Error(`Log path must not contain path traversal (..): ${path}`)
+  }
   logFd = openSync(path, "w")
   setLogFd(logFd)
 }

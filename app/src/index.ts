@@ -59,6 +59,8 @@ async function main() {
 
   startKeyboardListener()
 
+  let consecutiveErrors = 0
+
   try {
     while (!cleanedUp) {
       try {
@@ -70,8 +72,15 @@ async function main() {
         }
 
         processKeyEvent(vimMode, event)
+        consecutiveErrors = 0
       } catch (_e) {
         log(`key processing error: ${_e}`)
+        consecutiveErrors++
+        if (consecutiveErrors >= 10) {
+          log("too many consecutive errors, shutting down")
+          shutdown(1)
+          return
+        }
         if (cleanedUp) break
       }
     }

@@ -31,7 +31,7 @@ export function withLog(logPath: string) {
 export type KeyInput = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
 
 // Unified key dispatch helper - handles special keys and delegates to terminal methods
-export function dispatchKey(terminal: any, key: string): boolean {
+function dispatchKey(terminal: any, key: string): boolean {
   if (key === "<Esc>" || key === "Escape") {
     terminal.keyEscape()
     return true

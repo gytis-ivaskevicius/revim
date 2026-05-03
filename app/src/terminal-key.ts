@@ -3,6 +3,28 @@ export interface RawTerminalKeyEvent {
   modifiers: string[]
 }
 
+// Canonical mapping of terminal key names to their display values.
+// Single source of truth for key name mapping shared between encoding and decoding.
+// Adding a new named key to api.rs requires updating this map.
+export const TERMINAL_KEY_MAP: Record<string, string> = {
+  Space: " ",
+  Enter: "Enter",
+  Escape: "Escape",
+  Esc: "Escape",
+  Backspace: "Backspace",
+  Tab: "Tab",
+  Delete: "Delete",
+  Insert: "Insert",
+  Home: "Home",
+  End: "End",
+  PageUp: "PageUp",
+  PageDown: "PageDown",
+  Up: "Up",
+  Down: "Down",
+  Left: "Left",
+  Right: "Right",
+}
+
 export function normalizeCtrlCharacter(key: string): string {
   if (key.length !== 1) {
     return key
