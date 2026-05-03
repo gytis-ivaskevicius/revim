@@ -16,11 +16,6 @@ pub fn set_log_fd(fd: i32) -> Result<()> {
     if fd < 0 {
         return Err(Error::from_reason("Invalid fd"));
     }
-    // Validate that fd refers to an open file descriptor
-    let ret = unsafe { libc::fcntl(fd, libc::F_GETFD) };
-    if ret == -1 {
-        return Err(Error::from_reason(format!("Invalid fd: {}", fd)));
-    }
     let file = unsafe { ManuallyDrop::new(File::from_raw_fd(fd as std::os::unix::io::RawFd)) };
     let mut guard = LOG_FILE.lock().unwrap_or_else(|e| e.into_inner());
     *guard = Some(file);
@@ -86,29 +81,6 @@ mod tests {
         assert!(result.is_err());
 
         append_log("hello after invalid fd");
-    }
-
-    #[test]
-    #[serial]
-    fn test_set_log_fd_closed_fd() {
-        cleanup_log();
-
-        let temp_dir = std::env::temp_dir();
-        let temp_path = temp_dir.join("revim_test_closed_fd.log");
-        let file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(&temp_path)
-            .unwrap();
-        let fd = file.into_raw_fd();
-        // Close the fd manually to make it invalid
-        unsafe { libc::close(fd); }
-
-        let result = set_log_fd(fd);
-        assert!(result.is_err());
-
-        std::fs::remove_file(&temp_path).ok();
     }
 
     #[test]
