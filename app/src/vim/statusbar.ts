@@ -20,8 +20,8 @@ export interface StatusBarKeyEvent {
 }
 
 export interface StatusBarInputOptions {
-  onKeyDown?: (evt: StatusBarKeyEvent, text: string, close: (value?: string) => void) => boolean
-  onKeyUp?: (evt: StatusBarKeyEvent, text: string, close: (value?: string) => void) => void
+  onKeyDown?: (evt: StatusBarKeyEvent, text: string, closePrompt: () => void, setQuery: (value: string) => void) => boolean
+  onKeyUp?: (evt: StatusBarKeyEvent, text: string, closePrompt: () => void, setQuery: (value: string) => void) => void
   onClose?: (value: string) => void
   selectValueOnOpen?: boolean
   value?: string

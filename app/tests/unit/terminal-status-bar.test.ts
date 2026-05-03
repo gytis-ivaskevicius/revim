@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { TERMINAL_KEY_MAP } from "../../src/terminal-key"
 import { applyKeyToQuery, TerminalStatusBar } from "../../src/vim/terminal-status-bar"
 
 describe("applyKeyToQuery", () => {
@@ -101,6 +102,13 @@ describe("decodeKey", () => {
     expect(result!.key).toBe("PageDown")
   })
 
+  test("decodeKey('Insert') returns { key: 'Insert' }", () => {
+    const tsb = newTerminalStatusBar()
+    const result = decodeKey(tsb, "Insert")
+    expect(result).not.toBeNull()
+    expect(result!.key).toBe("Insert")
+  })
+
   test("decodeKey('Shift-Left') returns { key: 'Left', shiftKey: true }", () => {
     const tsb = newTerminalStatusBar()
     const result = decodeKey(tsb, "Shift-Left")
@@ -131,6 +139,33 @@ describe("decodeKey", () => {
     expect(result).not.toBeNull()
     expect(result!.key).toBe("Down")
     expect(result!.shiftKey).toBe(true)
+  })
+
+  test("decodeKey('Shift-Ctrl-A') returns { key: 'A', ctrlKey: true, shiftKey: true }", () => {
+    const tsb = newTerminalStatusBar()
+    const result = decodeKey(tsb, "Shift-Ctrl-A")
+    expect(result).not.toBeNull()
+    expect(result!.key).toBe("A")
+    expect(result!.ctrlKey).toBe(true)
+    expect(result!.shiftKey).toBe(true)
+  })
+
+  test("decodeKey('Ctrl-Shift-A') returns { key: 'A', ctrlKey: true, shiftKey: true } (order-independent)", () => {
+    const tsb = newTerminalStatusBar()
+    const result = decodeKey(tsb, "Ctrl-Shift-A")
+    expect(result).not.toBeNull()
+    expect(result!.key).toBe("A")
+    expect(result!.ctrlKey).toBe(true)
+    expect(result!.shiftKey).toBe(true)
+  })
+
+  test("decodeKey('Alt-Ctrl-a') returns { key: 'a', altKey: true, ctrlKey: true }", () => {
+    const tsb = newTerminalStatusBar()
+    const result = decodeKey(tsb, "Alt-Ctrl-a")
+    expect(result).not.toBeNull()
+    expect(result!.key).toBe("a")
+    expect(result!.altKey).toBe(true)
+    expect(result!.ctrlKey).toBe(true)
   })
 
   test("decodeKey('Enter') returns { key: 'Enter' }", () => {
@@ -223,5 +258,17 @@ describe("decodeKey", () => {
     const tsb = newTerminalStatusBar()
     const result = decodeKey(tsb, "nonexistent")
     expect(result).toBeNull()
+  })
+
+  test("decodeKey round-trips all keys in TERMINAL_KEY_MAP", () => {
+    const tsb = newTerminalStatusBar()
+    for (const [encoded, expected] of Object.entries(TERMINAL_KEY_MAP)) {
+      const result = decodeKey(tsb, encoded)
+      expect(result).not.toBeNull()
+      expect(result!.key).toBe(expected)
+      expect(result!.ctrlKey).toBeUndefined()
+      expect(result!.altKey).toBeUndefined()
+      expect(result!.shiftKey).toBeUndefined()
+    }
   })
 })

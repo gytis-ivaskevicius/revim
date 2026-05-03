@@ -1,4 +1,5 @@
 import { setStatusText } from "@revim/lib"
+import { TERMINAL_KEY_MAP } from "../terminal-key"
 import type { IStatusBar, ModeChangeEvent, StatusBarInputOptions, StatusBarKeyEvent } from "./statusbar"
 
 function modeLabelFor(event: ModeChangeEvent | undefined): string {
@@ -85,18 +86,18 @@ export class TerminalStatusBar implements IStatusBar {
     const evt = this.decodeKey(encodedKey)
     if (!evt) return
 
-    const close = (value?: string) => {
-      if (value !== undefined) {
-        state.query = value
-        setStatusText(state.prefix + value)
-      } else {
-        this.promptState = null
-        this.update()
-      }
+    const closePrompt = () => {
+      this.promptState = null
+      this.update()
+    }
+
+    const setQuery = (value: string) => {
+      state.query = value
+      setStatusText(state.prefix + value)
     }
 
     try {
-      state.options.onKeyDown?.(evt, state.query, close)
+      state.options.onKeyDown?.(evt, state.query, closePrompt, setQuery)
     } catch (_e) {
       // ignore onKeyDown errors to prevent freezing
     }
@@ -110,7 +111,7 @@ export class TerminalStatusBar implements IStatusBar {
     setStatusText(state.prefix + state.query)
 
     try {
-      state.options.onKeyUp?.(evt, state.query, close)
+      state.options.onKeyUp?.(evt, state.query, closePrompt, setQuery)
     } catch (_e) {
       // ignore onKeyUp errors to prevent freezing
     }
@@ -135,41 +136,30 @@ export class TerminalStatusBar implements IStatusBar {
       return { key: encodedKey[1], stopPropagation, preventDefault }
     }
 
-    const singleKeyMap: Record<string, string> = {
-      Space: " ",
-      Enter: "Enter",
-      Escape: "Escape",
-      Esc: "Escape",
-      Backspace: "Backspace",
-      Tab: "Tab",
-      Delete: "Delete",
-      Home: "Home",
-      End: "End",
-      PageUp: "PageUp",
-      PageDown: "PageDown",
-      Up: "Up",
-      Down: "Down",
-      Left: "Left",
-      Right: "Right",
+    // Check exact match in TERMINAL_KEY_MAP first (handles named keys like Enter, Space, Insert, etc.)
+    const mappedKey = TERMINAL_KEY_MAP[encodedKey]
+    if (mappedKey !== undefined) {
+      return { key: mappedKey, stopPropagation, preventDefault }
     }
 
-    if (singleKeyMap[encodedKey]) {
-      return { key: singleKeyMap[encodedKey], stopPropagation, preventDefault }
+    // Strip modifier prefixes compound-aware: supports Shift-Ctrl-A, Ctrl-Shift-A, Alt-Ctrl-a, etc.
+    let key = encodedKey
+    let ctrlKey = false
+    let altKey = false
+    let shiftKey = false
+
+    const modifierPattern = /^(Ctrl|Alt|Shift)-(.+)$/
+    let match: RegExpMatchArray | null
+    while ((match = key.match(modifierPattern))) {
+      const prefix = match[1]
+      key = match[2]
+      if (prefix === "Ctrl") ctrlKey = true
+      else if (prefix === "Alt") altKey = true
+      else if (prefix === "Shift") shiftKey = true
     }
 
-    const ctrlMatch = encodedKey.match(/^Ctrl-(.+)$/)
-    if (ctrlMatch) {
-      return { key: ctrlMatch[1], ctrlKey: true, stopPropagation, preventDefault }
-    }
-
-    const altMatch = encodedKey.match(/^Alt-(.+)$/)
-    if (altMatch) {
-      return { key: altMatch[1], altKey: true, stopPropagation, preventDefault }
-    }
-
-    const shiftMatch = encodedKey.match(/^Shift-(.+)$/)
-    if (shiftMatch) {
-      return { key: shiftMatch[1], shiftKey: true, stopPropagation, preventDefault }
+    if (ctrlKey || altKey || shiftKey) {
+      return { key, ctrlKey, altKey, shiftKey, stopPropagation, preventDefault }
     }
 
     return null

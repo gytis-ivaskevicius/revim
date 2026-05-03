@@ -230,7 +230,8 @@ export class CommandDispatcher {
     const onPromptKeyUp = (
       e: import("./statusbar").StatusBarKeyEvent,
       query: string,
-      close: (input?: string) => void,
+      _closePrompt: () => void,
+      setQuery: (input: string) => void,
     ) => {
       const keyName = getEventKeyName(e)
       let up: boolean
@@ -239,7 +240,7 @@ export class CommandDispatcher {
         up = keyName === "Up"
         _offset = e.selectionEnd || 0
         query = vimGlobalState.searchHistoryController.nextMatch(query, up) || ""
-        close(query)
+        setQuery(query)
       } else {
         if (keyName !== "Left" && keyName !== "Right" && keyName !== "Ctrl" && keyName !== "Alt" && keyName !== "Shift")
           vimGlobalState.searchHistoryController.reset()
@@ -263,12 +264,13 @@ export class CommandDispatcher {
     const onPromptKeyDown = (
       e: import("./statusbar").StatusBarKeyEvent,
       query: string,
-      close: (text?: string) => void,
+      closePrompt: () => void,
+      setQuery: (text: string) => void,
     ): boolean => {
       const keyName = getEventKeyName(e)
       if (keyName === "Esc" || keyName === "Ctrl-[" || (keyName === "Backspace" && query === "")) {
         // Close prompt FIRST before any cleanup that might throw
-        close()
+        closePrompt()
         try {
           vimGlobalState.searchHistoryController.pushInput(query)
           vimGlobalState.searchHistoryController.reset()
@@ -285,7 +287,7 @@ export class CommandDispatcher {
       } else if (keyName === "Ctrl-u") {
         // Ctrl-u clears input.
         stopEvent(e)
-        close("")
+        setQuery("")
       }
       return false
     }
@@ -358,34 +360,37 @@ export class CommandDispatcher {
     const onPromptKeyDown = (
       e: import("./statusbar").StatusBarKeyEvent,
       input: string,
-      close: (value?: string) => void,
+      closePrompt: () => void,
+      setQuery: (value: string) => void,
     ): boolean => {
       const keyName = getEventKeyName(e)
-      let up: boolean
-      let _offset: number | undefined
       if (
         keyName === "Esc" ||
         keyName === "Ctrl-C" ||
         keyName === "Ctrl-[" ||
         (keyName === "Backspace" && input === "")
       ) {
-        vimGlobalState.exCommandHistoryController.pushInput(input)
-        vimGlobalState.exCommandHistoryController.reset()
+        // Close prompt FIRST before any cleanup that might throw
+        closePrompt()
+        try {
+          vimGlobalState.exCommandHistoryController.pushInput(input)
+          vimGlobalState.exCommandHistoryController.reset()
+          stopEvent(e)
+          clearInputState(adapter)
+          adapter.focus()
+        } catch (_e) {
+          // Best effort cleanup - prompt already closed
+        }
+      } else if (keyName === "Up" || keyName === "Down") {
         stopEvent(e)
-        clearInputState(adapter)
-        close()
-        adapter.focus()
-      }
-      if (keyName === "Up" || keyName === "Down") {
-        stopEvent(e)
-        up = keyName === "Up"
-        _offset = e.selectionEnd || 0
+        const up = keyName === "Up"
+        const _offset = e.selectionEnd || 0
         input = vimGlobalState.exCommandHistoryController.nextMatch(input, up) || ""
-        close(input)
-      } else if (keyName === "Ctrl-U") {
-        // Ctrl-U clears input.
+        setQuery(input)
+      } else if (keyName === "Ctrl-u") {
+        // Ctrl-u clears input.
         stopEvent(e)
-        close("")
+        setQuery("")
       } else {
         if (keyName !== "Left" && keyName !== "Right" && keyName !== "Ctrl" && keyName !== "Alt" && keyName !== "Shift")
           vimGlobalState.exCommandHistoryController.reset()

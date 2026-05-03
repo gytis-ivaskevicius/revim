@@ -125,7 +125,7 @@ pub fn start_keyboard_listener() -> Result<()> {
 
                         let modifiers = extract_modifiers(key_event.modifiers);
                         {
-                            let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap();
+                            let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap_or_else(|e| e.into_inner());
                             queue.push_back(KeyboardEvent { key, modifiers });
                         }
                         KEYBOARD_QUEUE.condvar.notify_one();
@@ -150,7 +150,7 @@ impl Task for WaitForKeyEvent {
     type JsValue = KeyboardEvent;
 
     fn compute(&mut self) -> Result<Self::Output> {
-        let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap();
+        let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap_or_else(|e| e.into_inner());
         loop {
             if let Some(event) = queue.pop_front() {
                 return Ok(event);
