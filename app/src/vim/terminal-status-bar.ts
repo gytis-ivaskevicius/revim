@@ -86,18 +86,17 @@ export class TerminalStatusBar implements IStatusBar {
     const evt = this.decodeKey(encodedKey)
     if (!evt) return
 
-    const closePrompt = () => {
-      this.promptState = null
-      this.update()
-    }
-
     const setQuery = (value: string) => {
       state.query = value
       setStatusText(state.prefix + value)
     }
 
     try {
-      state.options.onKeyDown?.(evt, state.query, closePrompt, setQuery)
+      const shouldClose = state.options.onKeyDown?.(evt, state.query, setQuery) ?? false
+      if (shouldClose) {
+        this.promptState = null
+        this.update()
+      }
     } catch (_e) {
       // ignore onKeyDown errors to prevent freezing
     }
@@ -111,7 +110,7 @@ export class TerminalStatusBar implements IStatusBar {
     setStatusText(state.prefix + state.query)
 
     try {
-      state.options.onKeyUp?.(evt, state.query, closePrompt, setQuery)
+      state.options.onKeyUp?.(evt, state.query, setQuery)
     } catch (_e) {
       // ignore onKeyUp errors to prevent freezing
     }
