@@ -1,7 +1,6 @@
 import type { Plugin } from "@opencode-ai/plugin"
 
 export const SubagentCompletion: Plugin = async ({ client, $, directory }) => {
-
   return {
     "tool.execute.after": async (input, output) => {
       if (input.tool !== "task") return
@@ -28,6 +27,6 @@ export const SubagentCompletion: Plugin = async ({ client, $, directory }) => {
         const detail = stderr ? `: ${stderr}` : ""
         output.output = `[subagent-completion] on_complete hook "${command}" failed (exit ${exitCode})${detail}\n\n${output.output}`
       }
-    }
+    },
   }
 }
