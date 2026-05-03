@@ -33,6 +33,7 @@ import { motions } from "./motions"
 import { operators } from "./operators"
 import { getSearchState } from "./search"
 import { clearSearchHighlight, escapeRegex, showConfirm, showPrompt, updateSearchQuery } from "./search-utils"
+import type { StatusBarKeyEvent } from "./statusbar"
 import type {
   Context,
   KeyMapping,
@@ -44,6 +45,56 @@ import type {
   VimState,
 } from "./types"
 import { clipCursorToContent, copyArgs, lineLength } from "./vim-utils"
+
+interface HistoryController {
+  pushInput(input: string): void
+  reset(): void
+  nextMatch(input: string, up: boolean): string | undefined
+}
+
+interface PromptKeyDownOptions {
+  /** Extra cleanup to run inside the Esc/Ctrl-[ catch block (e.g. clearing search highlights) */
+  onEsc?: () => void
+  /** Called on Up/Down to navigate history and update the query text */
+  onHistoryKey?: (input: string, up: boolean, setQuery: (value: string) => void) => void
+}
+
+/** Shared onKeyDown handler for prompt inputs (search, ex-command, etc.) */
+function makePromptKeyDown(
+  adapter: EditorAdapter,
+  historyController: HistoryController,
+  options?: PromptKeyDownOptions,
+): (e: StatusBarKeyEvent, input: string, setQuery: (value: string) => void) => boolean {
+  return (e, input, setQuery) => {
+    const keyName = getEventKeyName(e)
+    if (keyName === "Esc" || keyName === "Ctrl-[" || (keyName === "Backspace" && input === "")) {
+      try {
+        historyController.pushInput(input)
+        historyController.reset()
+        options?.onEsc?.()
+        stopEvent(e)
+        clearInputState(adapter)
+        adapter.focus()
+      } catch (_e) {
+        // Best effort cleanup - prompt will close regardless
+      }
+      return true
+    } else if (keyName === "Up" || keyName === "Down") {
+      stopEvent(e)
+      options?.onHistoryKey?.(input, keyName === "Up", setQuery)
+      return false
+    } else if (keyName === "Ctrl-u") {
+      stopEvent(e)
+      setQuery("")
+      return false
+    } else {
+      if (!["Left", "Right", "Ctrl", "Alt", "Shift"].includes(keyName)) {
+        historyController.reset()
+      }
+      return false
+    }
+  }
+}
 
 export class CommandDispatcher {
   matchCommand(keys: string, keyMap: KeyMapping[], inputState: InputState, context: Context) {
@@ -257,36 +308,12 @@ export class CommandDispatcher {
         // Note: scrollTo removed - it moves cursor, not viewport
       }
     }
-    const onPromptKeyDown = (
-      e: import("./statusbar").StatusBarKeyEvent,
-      query: string,
-      setQuery: (text: string) => void,
-    ): boolean => {
-      const keyName = getEventKeyName(e)
-      if (keyName === "Esc" || keyName === "Ctrl-[" || (keyName === "Backspace" && query === "")) {
-        try {
-          vimGlobalState.searchHistoryController.pushInput(query)
-          vimGlobalState.searchHistoryController.reset()
-          updateSearchQuery(adapter, originalQuery?.source)
-          clearSearchHighlight(adapter)
-          stopEvent(e)
-          clearInputState(adapter)
-          adapter.focus()
-        } catch (_e) {
-          // Best effort cleanup - prompt will close regardless
-        }
-        return true // Close the prompt
-      } else if (keyName === "Up" || keyName === "Down") {
-        stopEvent(e)
-        return false
-      } else if (keyName === "Ctrl-u") {
-        // Ctrl-u clears input.
-        stopEvent(e)
-        setQuery("")
-        return false
-      }
-      return false
-    }
+    const onPromptKeyDown = makePromptKeyDown(adapter, vimGlobalState.searchHistoryController, {
+      onEsc: () => {
+        updateSearchQuery(adapter, originalQuery?.source)
+        clearSearchHighlight(adapter)
+      },
+    })
     switch (command.searchArgs?.querySrc) {
       case "prompt": {
         const macroModeState = vimGlobalState.macroModeState
@@ -353,45 +380,12 @@ export class CommandDispatcher {
       vimGlobalState.exCommandHistoryController.reset()
       exCommandDispatcher.processCommand(adapter, input)
     }
-    const onPromptKeyDown = (
-      e: import("./statusbar").StatusBarKeyEvent,
-      input: string,
-      setQuery: (value: string) => void,
-    ): boolean => {
-      const keyName = getEventKeyName(e)
-      if (
-        keyName === "Esc" ||
-        keyName === "Ctrl-C" ||
-        keyName === "Ctrl-[" ||
-        (keyName === "Backspace" && input === "")
-      ) {
-        try {
-          vimGlobalState.exCommandHistoryController.pushInput(input)
-          vimGlobalState.exCommandHistoryController.reset()
-          stopEvent(e)
-          clearInputState(adapter)
-          adapter.focus()
-        } catch (_e) {
-          // Best effort cleanup - prompt will close regardless
-        }
-        return true // Close the prompt
-      } else if (keyName === "Up" || keyName === "Down") {
-        stopEvent(e)
-        const up = keyName === "Up"
-        input = vimGlobalState.exCommandHistoryController.nextMatch(input, up) || ""
-        setQuery(input)
-        return false
-      } else if (keyName === "Ctrl-u") {
-        // Ctrl-u clears input.
-        stopEvent(e)
-        setQuery("")
-        return false
-      } else {
-        if (keyName !== "Left" && keyName !== "Right" && keyName !== "Ctrl" && keyName !== "Alt" && keyName !== "Shift")
-          vimGlobalState.exCommandHistoryController.reset()
-        return false
-      }
-    }
+    const onPromptKeyDown = makePromptKeyDown(adapter, vimGlobalState.exCommandHistoryController, {
+      onHistoryKey: (input, up, setQuery) => {
+        const match = vimGlobalState.exCommandHistoryController.nextMatch(input, up) || ""
+        setQuery(match)
+      },
+    })
     if (command.type === "keyToEx") {
       // Handle user defined Ex to Ex mappings
       exCommandDispatcher.processCommand(adapter, command.exArgs!.input)
