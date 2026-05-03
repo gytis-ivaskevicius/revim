@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { TERMINAL_KEY_MAP } from "../../src/terminal-key"
+import { getEventKeyName } from "../../src/vim/common"
 import { applyKeyToQuery, TerminalStatusBar } from "../../src/vim/terminal-status-bar"
 
 describe("applyKeyToQuery", () => {
@@ -14,7 +15,7 @@ describe("applyKeyToQuery", () => {
     ["Ctrl modifier returns unchanged", { key: "a", ctrlKey: true }, "hello", "hello"],
     ["Alt modifier returns unchanged", { key: "a", altKey: true }, "hello", "hello"],
     ["Meta modifier returns unchanged", { key: "a", metaKey: true }, "hello", "hello"],
-    ["Shift modifier returns unchanged", { key: "A", shiftKey: true }, "hello", "hello"],
+    ["shiftKey does not block printable char", { key: "A", shiftKey: true }, "hello", "helloA"],
     ["non-printable key returns unchanged", { key: "Escape" }, "hello", "hello"],
   ]
   for (const [label, evtOverrides, query, expected] of applyCases) {
@@ -22,6 +23,10 @@ describe("applyKeyToQuery", () => {
       expect(applyKeyToQuery(keyEvt(evtOverrides), query)).toBe(expected)
     })
   }
+
+  test("applyKeyToQuery with shiftKey true appends char", () => {
+    expect(applyKeyToQuery(keyEvt({ key: "A", shiftKey: true }), "hello")).toBe("helloA")
+  })
 })
 
 describe("decodeKey", () => {
@@ -99,5 +104,13 @@ describe("decodeKey", () => {
     expect(result).toBeNull()
   })
 
-  // Round-trip verification is covered by the named keys loop above
+  // Round-trip verification: decodeKey -> getEventKeyName for all named keys
+  for (const [encoded] of Object.entries(TERMINAL_KEY_MAP)) {
+    test(`getEventKeyName(decodeKey('${encoded}')) round-trips to '${TERMINAL_KEY_MAP[encoded]}'`, () => {
+      const decoded = decodeKey(encoded)
+      expect(decoded).not.toBeNull()
+      const name = getEventKeyName(decoded!)
+      expect(name).toBe(TERMINAL_KEY_MAP[encoded])
+    })
+  }
 })

@@ -263,11 +263,11 @@ export function updateSearchQuery(
   return query
 }
 
-let _highlightTimeout: ReturnType<typeof setTimeout> | undefined
+let pendingHighlightTimeoutId: ReturnType<typeof setTimeout> | undefined
 
 export function highlightSearchMatches(adapter: EditorAdapter, query: RegExp) {
-  clearTimeout(_highlightTimeout)
-  _highlightTimeout = setTimeout(() => {
+  clearTimeout(pendingHighlightTimeoutId)
+  pendingHighlightTimeoutId = setTimeout(() => {
     if (!adapter.state.vim) return
     const searchState = getSearchState(adapter)
     if (!searchState) return
@@ -284,8 +284,8 @@ export function highlightSearchMatches(adapter: EditorAdapter, query: RegExp) {
 }
 
 export function cancelPendingHighlight() {
-  clearTimeout(_highlightTimeout)
-  _highlightTimeout = undefined
+  clearTimeout(pendingHighlightTimeoutId)
+  pendingHighlightTimeoutId = undefined
 }
 
 export function findNext(adapter: EditorAdapter, prev: boolean, query: RegExp, repeat?: number) {

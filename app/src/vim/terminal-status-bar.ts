@@ -22,7 +22,7 @@ export function applyKeyToQuery(evt: StatusBarKeyEvent, query: string): string {
   if (evt.key === "Backspace" && query.length > 0) {
     return query.slice(0, -1)
   }
-  if (evt.key.length === 1 && !evt.ctrlKey && !evt.altKey && !evt.metaKey && !evt.shiftKey) {
+  if (evt.key.length === 1 && !evt.ctrlKey && !evt.altKey && !evt.metaKey) {
     return query + evt.key
   }
   return query
@@ -96,13 +96,13 @@ export class TerminalStatusBar implements IStatusBar {
       if (shouldClose) {
         this.promptState = null
         this.update()
+        if (evt.key === "Enter") {
+          state.options.onClose?.(state.query)
+        }
+        return
       }
     } catch (_e) {
       // ignore onKeyDown errors to prevent freezing
-    }
-
-    if (this.promptState === null) {
-      return
     }
 
     state.query = applyKeyToQuery(evt, state.query)
@@ -113,17 +113,6 @@ export class TerminalStatusBar implements IStatusBar {
       state.options.onKeyUp?.(evt, state.query, setQuery)
     } catch (_e) {
       // ignore onKeyUp errors to prevent freezing
-    }
-
-    if (this.promptState === null) {
-      return
-    }
-
-    if (evt.key === "Enter") {
-      // Set promptState = null FIRST to prevent state leak if onClose throws
-      this.promptState = null
-      this.update()
-      state.options.onClose?.(state.query)
     }
   }
 

@@ -161,6 +161,9 @@ function doReplace(
     stopEvent(e)
     const keyName = getEventKeyName(e)
     switch (keyName) {
+      case "Enter":
+        // Keep confirm prompt open on Enter — handled by makePromptKeyDown
+        return false
       case "Y":
         replace()
         next()

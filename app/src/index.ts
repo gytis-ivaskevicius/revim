@@ -1,4 +1,5 @@
 import { initTui, shutdownTui, startKeyboardListener, waitForKeyboardEvent } from "@revim/lib"
+import { createErrorWindow } from "./error-window"
 import { closeLog, initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
 import { VimMode } from "./vim"
@@ -59,7 +60,7 @@ async function main() {
 
   startKeyboardListener()
 
-  let consecutiveErrors = 0
+  const errorWindow = createErrorWindow(10, 30000)
 
   try {
     while (!cleanedUp) {
@@ -72,12 +73,11 @@ async function main() {
         }
 
         processKeyEvent(vimMode, event)
-        consecutiveErrors = 0
+        // Note: success does NOT reset the error window — it slides naturally by time
       } catch (_e) {
         log(`key processing error: ${_e}`)
-        consecutiveErrors++
-        if (consecutiveErrors >= 10) {
-          log("too many consecutive errors, shutting down")
+        if (errorWindow.record()) {
+          log("too many errors in sliding window, shutting down")
           shutdown(1)
           return
         }
