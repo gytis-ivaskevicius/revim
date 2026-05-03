@@ -45,13 +45,8 @@ describe("applyKeyToQuery", () => {
 })
 
 describe("decodeKey", () => {
-  function newTerminalStatusBar(): TerminalStatusBar {
-    return new TerminalStatusBar()
-  }
-
-  function decodeKey(tsb: TerminalStatusBar, encodedKey: string) {
-    // Access private method via bracket notation for testing
-    return (tsb as any).decodeKey(encodedKey)
+  function decodeKey(encodedKey: string) {
+    return (new TerminalStatusBar() as any).decodeKey(encodedKey)
   }
 
   const defaultMethods = {
@@ -59,201 +54,92 @@ describe("decodeKey", () => {
     preventDefault: expect.any(Function),
   }
 
-  test("decodeKey('Tab') returns { key: 'Tab' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Tab")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Tab")
-    expect(result).toMatchObject(defaultMethods)
-  })
-
-  test("decodeKey('Delete') returns { key: 'Delete' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Delete")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Delete")
-  })
-
-  test("decodeKey('Home') returns { key: 'Home' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Home")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Home")
-  })
-
-  test("decodeKey('End') returns { key: 'End' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "End")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("End")
-  })
-
-  test("decodeKey('PageUp') returns { key: 'PageUp' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "PageUp")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("PageUp")
-  })
-
-  test("decodeKey('PageDown') returns { key: 'PageDown' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "PageDown")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("PageDown")
-  })
-
-  test("decodeKey('Insert') returns { key: 'Insert' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Insert")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Insert")
-  })
-
-  test("decodeKey('Shift-Left') returns { key: 'Left', shiftKey: true }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Shift-Left")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Left")
-    expect(result!.shiftKey).toBe(true)
-  })
-
-  test("decodeKey('Shift-Right') returns { key: 'Right', shiftKey: true }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Shift-Right")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Right")
-    expect(result!.shiftKey).toBe(true)
-  })
-
-  test("decodeKey('Shift-Up') returns { key: 'Up', shiftKey: true }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Shift-Up")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Up")
-    expect(result!.shiftKey).toBe(true)
-  })
-
-  test("decodeKey('Shift-Down') returns { key: 'Down', shiftKey: true }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Shift-Down")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Down")
-    expect(result!.shiftKey).toBe(true)
-  })
-
-  const compoundModifierCases: Array<[string, string, Partial<Record<string, boolean>>]> = [
-    ["Shift-Ctrl-A", "A", { ctrlKey: true, shiftKey: true }],
-    ["Ctrl-Shift-A", "A", { ctrlKey: true, shiftKey: true }],
-    ["Alt-Ctrl-a", "a", { altKey: true, ctrlKey: true }],
+  // Named keys — all map 1:1 to themselves (or remap like Space→" " and Esc→"Escape")
+  const namedKeyCases: Array<[string, string]> = [
+    ["Tab", "Tab"],
+    ["Delete", "Delete"],
+    ["Home", "Home"],
+    ["End", "End"],
+    ["PageUp", "PageUp"],
+    ["PageDown", "PageDown"],
+    ["Insert", "Insert"],
+    ["Enter", "Enter"],
+    ["Escape", "Escape"],
+    ["Esc", "Escape"],
+    ["Backspace", "Backspace"],
+    ["Space", " "],
+    ["Up", "Up"],
+    ["Down", "Down"],
+    ["Left", "Left"],
+    ["Right", "Right"],
   ]
-  for (const [encoded, expectedKey, expectedModifiers] of compoundModifierCases) {
+  for (const [encoded, expected] of namedKeyCases) {
+    test(`decodeKey('${encoded}') returns { key: '${expected}' }`, () => {
+      const result = decodeKey(encoded)
+      expect(result).not.toBeNull()
+      expect(result!.key).toBe(expected)
+      expect(result).toMatchObject(defaultMethods)
+    })
+  }
+
+  // Shift + arrow keys
+  const shiftArrowCases = ["Left", "Right", "Up", "Down"]
+  for (const dir of shiftArrowCases) {
+    test(`decodeKey('Shift-${dir}') returns { key: '${dir}', shiftKey: true }`, () => {
+      const result = decodeKey(`Shift-${dir}`)
+      expect(result).not.toBeNull()
+      expect(result!.key).toBe(dir)
+      expect(result!.shiftKey).toBe(true)
+    })
+  }
+
+  // Single modifier + letter
+  const singleModifierCases: Array<[string, string, Record<string, boolean>]> = [
+    ["Ctrl-a", "a", { ctrlKey: true }],
+    ["Alt-a", "a", { altKey: true }],
+  ]
+  for (const [encoded, expectedKey, mods] of singleModifierCases) {
     test(`decodeKey('${encoded}') returns { key: '${expectedKey}', ... }`, () => {
-      const tsb = newTerminalStatusBar()
-      const result = decodeKey(tsb, encoded)
+      const result = decodeKey(encoded)
       expect(result).not.toBeNull()
       expect(result!.key).toBe(expectedKey)
-      for (const [mod, val] of Object.entries(expectedModifiers)) {
+      for (const [mod, val] of Object.entries(mods)) {
         expect((result as any)[mod]).toBe(val)
       }
     })
   }
 
-  test("decodeKey('Enter') returns { key: 'Enter' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Enter")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Enter")
-  })
-
-  test("decodeKey('Escape') returns { key: 'Escape' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Escape")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Escape")
-  })
-
-  test("decodeKey('Esc') returns { key: 'Escape' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Esc")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Escape")
-  })
-
-  test("decodeKey('Backspace') returns { key: 'Backspace' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Backspace")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Backspace")
-  })
-
-  test("decodeKey('Space') returns { key: ' ' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Space")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe(" ")
-  })
-
-  test("decodeKey('Up') returns { key: 'Up' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Up")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Up")
-  })
-
-  test("decodeKey('Down') returns { key: 'Down' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Down")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Down")
-  })
-
-  test("decodeKey('Left') returns { key: 'Left' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Left")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Left")
-  })
-
-  test("decodeKey('Right') returns { key: 'Right' }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Right")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("Right")
-  })
-
-  test("decodeKey('Ctrl-a') returns { key: 'a', ctrlKey: true }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Ctrl-a")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("a")
-    expect(result!.ctrlKey).toBe(true)
-  })
-
-  test("decodeKey('Alt-a') returns { key: 'a', altKey: true }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Alt-a")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("a")
-    expect(result!.altKey).toBe(true)
-  })
+  // Compound modifiers — multiple modifiers stacked
+  const compoundModifierCases: Array<[string, string, Record<string, boolean>]> = [
+    ["Shift-Ctrl-A", "A", { ctrlKey: true, shiftKey: true }],
+    ["Ctrl-Shift-A", "A", { ctrlKey: true, shiftKey: true }],
+    ["Alt-Ctrl-a", "a", { altKey: true, ctrlKey: true }],
+  ]
+  for (const [encoded, expectedKey, mods] of compoundModifierCases) {
+    test(`decodeKey('${encoded}') returns { key: '${expectedKey}', ... }`, () => {
+      const result = decodeKey(encoded)
+      expect(result).not.toBeNull()
+      expect(result!.key).toBe(expectedKey)
+      for (const [mod, val] of Object.entries(mods)) {
+        expect((result as any)[mod]).toBe(val)
+      }
+    })
+  }
 
   test("decodeKey(\"'a'\") returns { key: 'a' } for printable char", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "'a'")
+    const result = decodeKey("'a'")
     expect(result).not.toBeNull()
     expect(result!.key).toBe("a")
   })
 
   test("decodeKey('nonexistent') returns null", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "nonexistent")
+    const result = decodeKey("nonexistent")
     expect(result).toBeNull()
   })
 
   test("decodeKey round-trips all keys in TERMINAL_KEY_MAP", () => {
-    const tsb = newTerminalStatusBar()
     for (const [encoded, expected] of Object.entries(TERMINAL_KEY_MAP)) {
-      const result = decodeKey(tsb, encoded)
+      const result = decodeKey(encoded)
       expect(result).not.toBeNull()
       expect(result!.key).toBe(expected)
       expect(result!.ctrlKey).toBeUndefined()

@@ -155,7 +155,11 @@ function doReplace(
       callback()
     }
   }
-  const onPromptKeyDown = (e: import("./statusbar").StatusBarKeyEvent, _value: string, close: () => void) => {
+  const onPromptKeyDown = (
+    e: import("./statusbar").StatusBarKeyEvent,
+    _value: string,
+    _setQuery: (value: string) => void,
+  ) => {
     // Swallow all keys.
     stopEvent(e)
     const keyName = getEventKeyName(e)
