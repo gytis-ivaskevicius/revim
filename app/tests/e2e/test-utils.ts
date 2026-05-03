@@ -13,22 +13,22 @@ export { expect, test }
 export const RENDER_DELAY_MS = 100
 export const KEY_PRESS_DELAY_MS = 50
 
-// Re-export commonly used terminal key helpers to keep tests uniform
-export function keyPress(terminal: any, key: string) {
-  return Keys.keyPress(terminal, key)
-}
-
-export function keyEscape(terminal: any) {
-  if (typeof terminal.keyEscape === "function") return terminal.keyEscape()
-  if (typeof terminal.key === "function") return terminal.key("Escape")
-  throw new Error("Terminal does not support keyEscape/key")
-}
-
 export function withLog(logPath: string) {
   return { program: { file: "bun", args: ["run", "app/src/index.ts", "--log", logPath] } }
 }
 
 export type KeyInput = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
+
+type TerminalKeyApi = {
+  keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void
+  keyEscape: () => void
+  keyBackspace: () => void
+  keyDelete: () => void
+  keyLeft: () => void
+  keyRight: () => void
+  keyUp: () => void
+  keyDown: () => void
+}
 
 // Unified key dispatch helper - handles special keys and delegates to terminal methods
 function dispatchKey(terminal: any, key: string): boolean {
@@ -83,20 +83,7 @@ export const Keys = {
       .join("\n")
   },
 
-  async pressKeys(
-    terminal: {
-      keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void
-      keyEscape: () => void
-      keyBackspace: () => void
-      keyDelete: () => void
-      keyLeft: () => void
-      keyRight: () => void
-      keyUp: () => void
-      keyDown: () => void
-    },
-    keys: KeyInput[],
-    options?: { delay?: number },
-  ): Promise<void> {
+  async pressKeys(terminal: TerminalKeyApi, keys: KeyInput[], options?: { delay?: number }): Promise<void> {
     const delayMs = options?.delay ?? KEY_PRESS_DELAY_MS
     for (const key of keys) {
       await this.pressKey(terminal, key)
@@ -116,19 +103,7 @@ export const Keys = {
     }
   },
 
-  async pressKey(
-    terminal: {
-      keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void
-      keyEscape: () => void
-      keyBackspace: () => void
-      keyDelete: () => void
-      keyLeft: () => void
-      keyRight: () => void
-      keyUp: () => void
-      keyDown: () => void
-    },
-    key: KeyInput,
-  ): Promise<void> {
+  async pressKey(terminal: TerminalKeyApi, key: KeyInput): Promise<void> {
     if (typeof key === "string") {
       if (!dispatchKey(terminal, key)) {
         terminal.keyPress(key)

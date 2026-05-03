@@ -183,7 +183,6 @@ function doReplace(
       // fall through and exit.
       case "Q":
       case "Esc":
-      case "Ctrl-C":
       case "Ctrl-[":
         stop()
         return true // User explicitly wants to quit — close prompt
