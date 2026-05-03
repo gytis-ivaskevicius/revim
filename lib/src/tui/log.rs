@@ -22,6 +22,13 @@ pub fn set_log_fd(fd: i32) -> Result<()> {
     Ok(())
 }
 
+#[napi]
+pub fn clear_log_fd() {
+    if let Ok(mut guard) = LOG_FILE.lock() {
+        guard.take();
+    }
+}
+
 pub(crate) fn is_logging_enabled() -> bool {
     if let Ok(guard) = LOG_FILE.lock() {
         return guard.is_some();
