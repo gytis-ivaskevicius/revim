@@ -186,12 +186,13 @@ function doReplace(
       case "Ctrl-C":
       case "Ctrl-[":
         stop()
-        break
+        return true // User explicitly wants to quit — close prompt
     }
     if (done) {
       stop()
+      return true // All matches processed — close prompt
     }
-    return true
+    return false // Still processing matches — keep prompt open
   }
 
   // Actually do replace.
