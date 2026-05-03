@@ -1,5 +1,5 @@
 import { initTui, shutdownTui, startKeyboardListener, waitForKeyboardEvent } from "@revim/lib"
-import { initLog, log } from "./log"
+import { closeLog, initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
 import { VimMode } from "./vim"
 import TerminalStatusBar from "./vim/terminal-status-bar"
@@ -44,8 +44,9 @@ async function main() {
 
     cleanedUp = true
     vimMode.disable()
-    shutdownTui()
     log("revim shutdown")
+    closeLog()
+    shutdownTui()
   }
 
   const shutdown = (exitCode: number) => {

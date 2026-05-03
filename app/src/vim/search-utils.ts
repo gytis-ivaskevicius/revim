@@ -263,28 +263,38 @@ export function updateSearchQuery(
   return query
 }
 
-let highlightTimeout: ReturnType<typeof setTimeout>
+let _highlightTimeout: ReturnType<typeof setTimeout> | undefined
+
+export function getHighlightTimer(): ReturnType<typeof setTimeout> | undefined {
+  return _highlightTimeout
+}
+
+export function setHighlightTimer(timer: ReturnType<typeof setTimeout> | undefined) {
+  _highlightTimeout = timer
+}
 
 export function highlightSearchMatches(adapter: EditorAdapter, query: RegExp) {
-  clearTimeout(highlightTimeout)
-  highlightTimeout = setTimeout(() => {
-    if (!adapter.state.vim) return
-    const searchState = getSearchState(adapter)
-    if (!searchState) return
-    let overlay = searchState.getOverlay()
-    if (!overlay || query !== overlay.query) {
-      if (overlay) {
-        adapter.removeOverlay()
+  clearTimeout(getHighlightTimer())
+  setHighlightTimer(
+    setTimeout(() => {
+      if (!adapter.state.vim) return
+      const searchState = getSearchState(adapter)
+      if (!searchState) return
+      let overlay = searchState.getOverlay()
+      if (!overlay || query !== overlay.query) {
+        if (overlay) {
+          adapter.removeOverlay()
+        }
+        overlay = searchOverlay(query)
+        adapter.addOverlay(overlay.query)
+        searchState.setOverlay(overlay)
       }
-      overlay = searchOverlay(query)
-      adapter.addOverlay(overlay.query)
-      searchState.setOverlay(overlay)
-    }
-  }, 50)
+    }, 50),
+  )
 }
 
 export function cancelPendingHighlight() {
-  clearTimeout(highlightTimeout)
+  clearTimeout(getHighlightTimer())
 }
 
 export function findNext(adapter: EditorAdapter, prev: boolean, query: RegExp, repeat?: number) {
