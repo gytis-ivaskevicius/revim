@@ -7,7 +7,7 @@
   "private": true,
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
-    "@microsoft/tui-test": "0.0.3",
+    "@microsoft/tui-test": "0.0.4",
     "typescript": "^6.0.3"
   }
 }
