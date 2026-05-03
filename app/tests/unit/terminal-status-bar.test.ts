@@ -7,37 +7,21 @@ describe("applyKeyToQuery", () => {
     return { stopPropagation: () => {}, preventDefault: () => {}, ...overrides }
   }
 
-  test("Backspace with non-empty query removes last character", () => {
-    expect(applyKeyToQuery(keyEvt({ key: "Backspace" }), "hello")).toBe("hell")
-  })
-
-  test("Backspace with empty query returns empty string", () => {
-    expect(applyKeyToQuery(keyEvt({ key: "Backspace" }), "")).toBe("")
-  })
-
-  test("printable character is appended to query", () => {
-    expect(applyKeyToQuery(keyEvt({ key: "a" }), "hello")).toBe("helloa")
-  })
-
-  test("modifier key (Ctrl-a) returns query unchanged", () => {
-    expect(applyKeyToQuery(keyEvt({ key: "a", ctrlKey: true }), "hello")).toBe("hello")
-  })
-
-  test("Alt modifier key returns query unchanged", () => {
-    expect(applyKeyToQuery(keyEvt({ key: "a", altKey: true }), "hello")).toBe("hello")
-  })
-
-  test("Meta modifier key returns query unchanged", () => {
-    expect(applyKeyToQuery(keyEvt({ key: "a", metaKey: true }), "hello")).toBe("hello")
-  })
-
-  test("Shift modifier key returns query unchanged", () => {
-    expect(applyKeyToQuery(keyEvt({ key: "A", shiftKey: true }), "hello")).toBe("hello")
-  })
-
-  test("non-printable key (Escape) returns query unchanged", () => {
-    expect(applyKeyToQuery(keyEvt({ key: "Escape" }), "hello")).toBe("hello")
-  })
+  const applyCases: Array<[string, Record<string, unknown>, string, string]> = [
+    ["Backspace removes last char", { key: "Backspace" }, "hello", "hell"],
+    ["Backspace on empty query no-ops", { key: "Backspace" }, "", ""],
+    ["printable char is appended", { key: "a" }, "hello", "helloa"],
+    ["Ctrl modifier returns unchanged", { key: "a", ctrlKey: true }, "hello", "hello"],
+    ["Alt modifier returns unchanged", { key: "a", altKey: true }, "hello", "hello"],
+    ["Meta modifier returns unchanged", { key: "a", metaKey: true }, "hello", "hello"],
+    ["Shift modifier returns unchanged", { key: "A", shiftKey: true }, "hello", "hello"],
+    ["non-printable key returns unchanged", { key: "Escape" }, "hello", "hello"],
+  ]
+  for (const [label, evtOverrides, query, expected] of applyCases) {
+    test(label, () => {
+      expect(applyKeyToQuery(keyEvt(evtOverrides), query)).toBe(expected)
+    })
+  }
 })
 
 describe("decodeKey", () => {
