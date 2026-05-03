@@ -140,10 +140,7 @@ function doReplace(
     }
     done = true
   }
-  const stop = (close?: () => void) => {
-    if (close) {
-      close()
-    }
+  const stop = () => {
     adapter.focus()
     if (lastPos) {
       adapter.setCursor(lastPos)
@@ -172,15 +169,15 @@ function doReplace(
         next()
         break
       case "A": {
-        // replaceAll contains a call to close of its own. We don't want it
-        // to fire too early or multiple times.
+        // replaceAll performs all replacements at once. Save/restore callback
+        // to prevent it from firing early during batch replacement.
         const savedCallback = callback
         callback = undefined
         replaceAll()
         callback = savedCallback
         break
       }
-      // biome-ignore lint/suspicious/noFallthroughSwitchClause: intentional fallthrough to call stop(close)
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: intentional fallthrough to finalize
       case "L":
         replace()
       // fall through and exit.
@@ -188,11 +185,11 @@ function doReplace(
       case "Esc":
       case "Ctrl-C":
       case "Ctrl-[":
-        stop(close)
+        stop()
         break
     }
     if (done) {
-      stop(close)
+      stop()
     }
     return true
   }
