@@ -110,4 +110,34 @@ test.describe("search prompt", () => {
     expect(after.x).toBe(before.x)
     expect(after.y).toBe(before.y)
   })
+
+  test("Up in / prompt recalls previous search from history", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible()
+    // Execute a search to populate history
+    await typeSearch(terminal, "cursor")
+    await Keys.delay(RENDER_DELAY_MS)
+    await expect(terminal.getByText("NORMAL")).toBeVisible()
+    // Open search prompt again and press Up to recall previous query
+    await Keys.pressKeys(terminal, ["/", "<Up>"])
+    await Keys.delay(RENDER_DELAY_MS)
+    // Status bar should show the recalled query
+    const statusText = terminal.getByText("/cursor")
+    await expect(statusText).toBeVisible()
+  })
+
+  test("Down in / prompt navigates forward in history", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible()
+    // Execute a search to populate history
+    await typeSearch(terminal, "cursor")
+    await Keys.delay(RENDER_DELAY_MS)
+    // Open search prompt, type new text, press Up to recall, then Down to go forward
+    await Keys.pressKeys(terminal, ["/", "a", "<Up>"])
+    await Keys.delay(RENDER_DELAY_MS)
+    // After Up, should show /cursor
+    await expect(terminal.getByText("/cursor")).toBeVisible()
+    // Press Down to go forward — should show /a (the current input before Up)
+    await Keys.pressKeys(terminal, ["<Down>"])
+    await Keys.delay(RENDER_DELAY_MS)
+    await expect(terminal.getByText("/a")).toBeVisible()
+  })
 })

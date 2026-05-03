@@ -79,6 +79,9 @@ function makePromptKeyDown(
         // Best effort cleanup - prompt will close regardless
       }
       return true
+    } else if (keyName === "Enter") {
+      stopEvent(e)
+      return true
     } else if (keyName === "Up" || keyName === "Down") {
       stopEvent(e)
       options?.onHistoryKey?.(input, keyName === "Up", setQuery)
@@ -279,19 +282,12 @@ export class CommandDispatcher {
       }
     }
     const onPromptKeyUp = (
-      e: import("./statusbar").StatusBarKeyEvent,
+      _e: import("./statusbar").StatusBarKeyEvent,
       query: string,
-      setQuery: (input: string) => void,
+      _setQuery: (input: string) => void,
     ) => {
-      const keyName = getEventKeyName(e)
-      if (keyName === "Up" || keyName === "Down") {
-        const up = keyName === "Up"
-        query = vimGlobalState.searchHistoryController.nextMatch(query, up) || ""
-        setQuery(query)
-      } else {
-        if (keyName !== "Left" && keyName !== "Right" && keyName !== "Ctrl" && keyName !== "Alt" && keyName !== "Shift")
-          vimGlobalState.searchHistoryController.reset()
-      }
+      // History navigation (Up/Down) is handled by makePromptKeyDown via onHistoryKey
+      // Only incremental search updates happen here
       let parsedQuery: RegExp | undefined
       try {
         parsedQuery = updateSearchQuery(adapter, query, true /** ignoreCase */, true /** smartCase */)
@@ -312,6 +308,10 @@ export class CommandDispatcher {
       onEsc: () => {
         updateSearchQuery(adapter, originalQuery?.source)
         clearSearchHighlight(adapter)
+      },
+      onHistoryKey: (input, up, setQuery) => {
+        const match = vimGlobalState.searchHistoryController.nextMatch(input, up) || ""
+        setQuery(match)
       },
     })
     switch (command.searchArgs?.querySrc) {

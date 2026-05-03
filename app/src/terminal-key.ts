@@ -9,8 +9,8 @@ export interface RawTerminalKeyEvent {
 export const TERMINAL_KEY_MAP: Record<string, string> = {
   Space: " ",
   Enter: "Enter",
-  Escape: "Escape",
-  Esc: "Escape",
+  Escape: "Esc",
+  Esc: "Esc",
   Backspace: "Backspace",
   Tab: "Tab",
   Delete: "Delete",
