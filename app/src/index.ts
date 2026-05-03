@@ -45,8 +45,8 @@ async function main() {
     cleanedUp = true
     vimMode.disable()
     log("revim shutdown")
-    closeLog()
     shutdownTui()
+    closeLog()
   }
 
   const shutdown = (exitCode: number) => {

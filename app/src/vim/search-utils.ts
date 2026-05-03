@@ -295,6 +295,7 @@ export function highlightSearchMatches(adapter: EditorAdapter, query: RegExp) {
 
 export function cancelPendingHighlight() {
   clearTimeout(getHighlightTimer())
+  setHighlightTimer(undefined)
 }
 
 export function findNext(adapter: EditorAdapter, prev: boolean, query: RegExp, repeat?: number) {

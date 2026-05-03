@@ -32,6 +32,11 @@ describe("applyKeyToQuery", () => {
     expect(applyKeyToQuery(evt, "hello")).toBe("hello")
   })
 
+  test("Shift modifier key returns query unchanged", () => {
+    const evt = { key: "A", shiftKey: true, stopPropagation: () => {}, preventDefault: () => {} }
+    expect(applyKeyToQuery(evt, "hello")).toBe("hello")
+  })
+
   test("non-printable key (Escape) returns query unchanged", () => {
     const evt = { key: "Escape", stopPropagation: () => {}, preventDefault: () => {} }
     expect(applyKeyToQuery(evt, "hello")).toBe("hello")
