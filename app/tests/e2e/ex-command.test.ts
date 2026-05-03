@@ -5,8 +5,8 @@ test.describe("ex command prompt", () => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     await Keys.pressKeys(terminal, [":"])
     await Keys.delay(RENDER_DELAY_MS)
-    // Match status bar text containing colon
-    const statusText = terminal.getByText(":")
+    // Match status bar text starting with colon
+    const statusText = terminal.getByText(/^:/)
     await expect(statusText).toBeVisible()
   })
 
