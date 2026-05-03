@@ -130,14 +130,14 @@ test.describe("search prompt", () => {
     // Execute a search to populate history
     await typeSearch(terminal, "cursor")
     await Keys.delay(RENDER_DELAY_MS)
-    // Open search prompt, type new text, press Up to recall, then Down to go forward
-    await Keys.pressKeys(terminal, ["/", "a", "<Up>"])
+    // Open search prompt, type matching prefix, press Up to recall, then Down to go forward
+    await Keys.pressKeys(terminal, ["/", "c", "<Up>"])
     await Keys.delay(RENDER_DELAY_MS)
-    // After Up, should show /cursor
+    // After Up, should show /cursor (HistoryController uses prefix matching)
     await expect(terminal.getByText("/cursor")).toBeVisible()
-    // Press Down to go forward — should show /a (the current input before Up)
+    // Press Down to go forward — should show /c (the current input before Up)
     await Keys.pressKeys(terminal, ["<Down>"])
     await Keys.delay(RENDER_DELAY_MS)
-    await expect(terminal.getByText("/a")).toBeVisible()
+    await expect(terminal.getByText("/c")).toBeVisible()
   })
 })

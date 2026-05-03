@@ -135,3 +135,10 @@
 **Takeaway**: If you see ENOENT errors related to incremental Rust build scripts during E2E test runs, the cache may be corrupted. Running tests with `workers: 1` or sequentially can help. This is a known tui-test issue with aggressive parallelization.
 
 ---
+
+## Testable utilities must go in side-effect-free modules
+**Date**: 2026-05-04
+**Area**: testing
+**What happened**: `createErrorWindow` was initially placed in `index.ts` (which has top-level side effects like `initTui()`). Unit tests importing it crashed because `index.ts` tried to initialize the terminal outside the TUI test environment.
+**Takeaway**: Any function that needs unit testing must live in a dedicated module with no top-level side effects. Do not put testable utilities in `index.ts` or any module that calls `initTui`, `startKeyboardListener`, or other terminal APIs at import time. Create a separate `*.ts` file even for small utilities.
+---
