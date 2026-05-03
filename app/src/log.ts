@@ -1,5 +1,5 @@
 import { closeSync, openSync, writeSync } from "node:fs"
-import { setLogFd } from "@revim/lib"
+import { clearLogFd, setLogFd } from "@revim/lib"
 
 let logFd: number | null = null
 
@@ -13,6 +13,7 @@ export function closeLog(): void {
     return
   }
   closeSync(logFd)
+  clearLogFd()
   logFd = null
 }
 

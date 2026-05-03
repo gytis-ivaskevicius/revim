@@ -129,13 +129,12 @@ export const Keys = {
     },
     key: KeyInput,
   ): Promise<void> {
-    const keyStr = typeof key === "string" ? key : key.key
-    if (!dispatchKey(terminal, keyStr)) {
-      if (typeof key === "string") {
+    if (typeof key === "string") {
+      if (!dispatchKey(terminal, key)) {
         terminal.keyPress(key)
-      } else {
-        terminal.keyPress(key.key, key)
       }
+    } else {
+      terminal.keyPress(key.key, key)
     }
   },
 }
