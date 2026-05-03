@@ -4,9 +4,9 @@ description: "Implementation agent. Use proactively once a task is scoped and re
 mode: all
 temperature: 0.2
 model: opencode-go/deepseek-v4-flash
-permissions:
-  task: allow
-  question: deny
+tools:
+  question: false
+  task: true
 ---
 
 <role>
