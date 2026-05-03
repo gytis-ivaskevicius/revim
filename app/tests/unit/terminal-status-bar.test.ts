@@ -141,32 +141,22 @@ describe("decodeKey", () => {
     expect(result!.shiftKey).toBe(true)
   })
 
-  test("decodeKey('Shift-Ctrl-A') returns { key: 'A', ctrlKey: true, shiftKey: true }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Shift-Ctrl-A")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("A")
-    expect(result!.ctrlKey).toBe(true)
-    expect(result!.shiftKey).toBe(true)
-  })
-
-  test("decodeKey('Ctrl-Shift-A') returns { key: 'A', ctrlKey: true, shiftKey: true } (order-independent)", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Ctrl-Shift-A")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("A")
-    expect(result!.ctrlKey).toBe(true)
-    expect(result!.shiftKey).toBe(true)
-  })
-
-  test("decodeKey('Alt-Ctrl-a') returns { key: 'a', altKey: true, ctrlKey: true }", () => {
-    const tsb = newTerminalStatusBar()
-    const result = decodeKey(tsb, "Alt-Ctrl-a")
-    expect(result).not.toBeNull()
-    expect(result!.key).toBe("a")
-    expect(result!.altKey).toBe(true)
-    expect(result!.ctrlKey).toBe(true)
-  })
+  const compoundModifierCases: Array<[string, string, Partial<Record<string, boolean>>]> = [
+    ["Shift-Ctrl-A", "A", { ctrlKey: true, shiftKey: true }],
+    ["Ctrl-Shift-A", "A", { ctrlKey: true, shiftKey: true }],
+    ["Alt-Ctrl-a", "a", { altKey: true, ctrlKey: true }],
+  ]
+  for (const [encoded, expectedKey, expectedModifiers] of compoundModifierCases) {
+    test(`decodeKey('${encoded}') returns { key: '${expectedKey}', ... }`, () => {
+      const tsb = newTerminalStatusBar()
+      const result = decodeKey(tsb, encoded)
+      expect(result).not.toBeNull()
+      expect(result!.key).toBe(expectedKey)
+      for (const [mod, val] of Object.entries(expectedModifiers)) {
+        expect((result as any)[mod]).toBe(val)
+      }
+    })
+  }
 
   test("decodeKey('Enter') returns { key: 'Enter' }", () => {
     const tsb = newTerminalStatusBar()
