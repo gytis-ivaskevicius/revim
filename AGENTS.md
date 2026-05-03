@@ -26,44 +26,50 @@
 
 ## How to run
 
+All commands use `just` (see [Justfile](./Justfile)):
+
 ```sh
-# Development (requires built native addon)
-bun run app/src/index.ts
+# Build native addon (Rust N-API)
+just build
 
-# Run with logging
-bun run app/src/index.ts --log /tmp/revim.log
+# Development (builds then runs app)
+just dev
 
-# Build native addon
-cd lib && bun run build
+# Development with logging
+just dev -- --log /tmp/revim.log
 ```
 
 ## How to test
 
 ```sh
 # TypeScript unit tests
-bun test app/tests/unit/
+just test-unit
 
-# E2E tests (requires @microsoft/tui-test)
-bun test app/tests/e2e/
+# E2E tests (requires @microsoft/tui-test; also builds native addon)
+just test-e2e
 
 # Rust unit tests
-cd lib && cargo test
+just test-rust
 
-# Rust linter
-cd lib && cargo clippy -- -D warnings
+# All tests
+just test
 ```
 
 ## How to lint
 
 ```sh
-# Biome (TypeScript)
-npx biome check app/
-npx biome format --write app/
+# Lint everything (tsc + clippy + biome)
+just lint
+
+# Auto-fix lint issues
+just lint-fix
 ```
 
 ## How to typecheck
 
 ```sh
+just lint       # includes tsc --noEmit
+# Or directly:
 npx tsc --noEmit
 ```
 

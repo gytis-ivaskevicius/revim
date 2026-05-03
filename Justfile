@@ -10,6 +10,10 @@ build:
 dev *args: build
 	cd app && bun run src/index.ts {{args}}
 
+# Run TypeScript unit tests
+test-unit:
+	bun test app/tests/unit/
+
 # Run Rust unit tests
 test-rust:
 	cd lib && cargo test
@@ -19,7 +23,7 @@ test-e2e: build
 	bunx @microsoft/tui-test app/tests/e2e/*.test.ts
 
 # Run all tests
-test: test-rust test-e2e
+test: test-rust test-unit test-e2e
 
 # Run linter
 lint:
