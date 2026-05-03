@@ -16,6 +16,7 @@
   - `motions.ts`, `operators.ts` — core motion/operator behavior
   - `motion-paragraph.ts` — paragraph/sentence motions for `{`, `}`, `(`, `)`
   - `default-key-map.ts` — Vim keybinding table
+  - `ex-commands.ts` — Ex command parsing, execution, and `:s///c` confirm prompt handler
 - `app/src/log.ts` — logging API (initLog, log); wire `--log <path>` in index.ts
 - `lib/src/tui/log.rs` — Rust logging (setLogFd, appendLog, revim_log! macro)
 - `lib/src/tui/api.rs` — N-API boundary for cursor, buffer, keyboard listener (queue + condvar)
@@ -83,3 +84,6 @@ npx tsc --noEmit
 - **Mutex deadlock in NAPI functions**: `render_frame_internal()` acquires `TUI_CONTEXT.lock()`. Any NAPI function that holds `TUI_CONTEXT.lock()` or `state.lock()` must drop those locks with a `{ }` block BEFORE calling `render_frame_internal()`. `std::sync::Mutex` is not reentrant — calling it while already held deadlocks the JS thread, freezing all keyboard input. Audit all `render_frame_internal()` call sites for this pattern. To isolate, comment out NAPI calls in the suspect operation one by one until input resumes.
 - **Keyboard input uses queue + async pull**: The keyboard listener pushes events to a `Mutex<VecDeque>` + `Condvar` from a Rust thread. TypeScript calls `await waitForKeyboardEvent()` in a loop to pull events. Do NOT revert to `ThreadsafeFunction` callback approach — it was the original mechanism but was replaced due to the deadlock issue above (the callback appeared to stop working when the JS thread deadlocked).
 - **Prompt closing uses return-value pattern**: `onKeyDown` receives `(evt, text, setQuery)` where `setQuery` updates the query text. The prompt is closed when `onKeyDown` returns `true`. This replaced the old `close(value?)` callback to avoid ambiguous overloading (`close()` vs `close("")`).
+- **`ex-commands.ts` has its own `onPromptKeyDown`**: The `doReplace` function in `ex-commands.ts` uses the status bar prompt for `:s///c` confirm/reject. If you change the `StatusBarInputOptions.onKeyDown` callback signature, update this handler too. It's the only prompt caller outside `command-dispatcher.ts`.
+- **Ctrl-C is intercepted at the event loop, not prompt handlers**: `app/src/index.ts:69-72` catches Ctrl-C at the main event loop and calls `shutdown(0)`. Ctrl-C never reaches prompt handlers or the Vim key handler. Do not write E2E tests expecting Ctrl-C to close a prompt — use Esc instead. Also, `encodeTerminalKey` normalizes Ctrl characters to lowercase, so checks like `keyName === "Ctrl-C"` (uppercase) in prompt handlers are dead code — they never match.
+- **`@microsoft/tui-test` `testMatch` must be scoped to e2e/**: `testIgnore` in `tui-test.config.ts` prevents unit tests from *running* but does not prevent the framework from *transpiling* them (which can crash on ESM resolution). Always scope `testMatch` to `app/tests/e2e/**/*.test.ts` — do not rely on `testIgnore` alone.
