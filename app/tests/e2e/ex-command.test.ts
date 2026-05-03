@@ -32,4 +32,35 @@ test.describe("ex command prompt", () => {
     const normalLabel = terminal.getByText("NORMAL")
     await expect(normalLabel).toBeVisible()
   })
+
+  test("pressing Up in : prompt navigates history without closing", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible()
+    // First execute an ex command to populate history
+    await Keys.pressKeys(terminal, [":", "!", " ", "1"])
+    await Keys.pressKeys(terminal, ["<Enter>"])
+    await Keys.delay(RENDER_DELAY_MS)
+    // Open : prompt again and press Up to recall previous command
+    await Keys.pressKeys(terminal, [":", "<Up>"])
+    await Keys.delay(RENDER_DELAY_MS)
+    // Prompt should still be visible with text
+    const statusText = terminal.getByText(":! 1")
+    await expect(statusText).toBeVisible()
+  })
+
+  test("pressing Down in : prompt navigates history without closing", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible()
+    // Execute two commands to populate history
+    await Keys.pressKeys(terminal, [":", "!", " ", "1"])
+    await Keys.pressKeys(terminal, ["<Enter>"])
+    await Keys.delay(RENDER_DELAY_MS)
+    await Keys.pressKeys(terminal, [":", "!", " ", "2"])
+    await Keys.pressKeys(terminal, ["<Enter>"])
+    await Keys.delay(RENDER_DELAY_MS)
+    // Open prompt, press Up twice (to go to oldest), then Down (to go to newer)
+    await Keys.pressKeys(terminal, [":", "<Up>", "<Up>", "<Down>"])
+    await Keys.delay(RENDER_DELAY_MS)
+    // After Up-Up-Down, we should be at ":! 1" (middle entry)
+    const statusText = terminal.getByText(":! 1")
+    await expect(statusText).toBeVisible()
+  })
 })
