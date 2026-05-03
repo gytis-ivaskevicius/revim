@@ -1,13 +1,14 @@
 import { expect, Keys, RENDER_DELAY_MS, test } from "./test-utils.js"
 
 test.describe("ex command prompt", () => {
-  test("pressing : shows colon in status bar", async ({ terminal }) => {
+  test("pressing : opens ex command prompt and accepts input", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     await Keys.pressKeys(terminal, [":"])
     await Keys.delay(RENDER_DELAY_MS)
-    // Match status bar text starting with colon
-    const statusText = terminal.getByText(/^:/)
-    await expect(statusText).toBeVisible()
+    // Type a character to verify prompt is open and accepts input
+    await Keys.pressKeys(terminal, ["a"])
+    await Keys.delay(RENDER_DELAY_MS)
+    await expect(terminal.getByText(":a")).toBeVisible()
   })
 
   test("typing :hello shows :hello in status bar", async ({ terminal }) => {
