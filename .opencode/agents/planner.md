@@ -3,7 +3,7 @@ name: planner
 description: "Feature planning specialist. Use at the start of any new feature, fix, or initiative — before implementation begins. Input: a feature request or bug description. Output: a committed story file (path + git commit) with acceptance criteria, implementation approach, and verified dependency versions. Use this agent instead of implementer for all planning work."
 mode: all
 temperature: 0.2
-model: opencode-go/glm-5.1
+model: opencode-go/kimi-k2.6
 tools:
   task: true
   grep: false

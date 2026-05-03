@@ -3,7 +3,7 @@ name: code-reviewer
 description: "Expert code reviewer for correctness, simplicity, and security. Use proactively after any implementation to catch bugs, over-engineering, and security issues before merging. Input: 'uncommitted', a commit SHA, a range (BASE..HEAD), a PR number, or a branch name. Output: structured Pass/Fail report committed to git with file:line findings. For requirement verification, use acceptance-reviewer instead."
 mode: subagent
 temperature: 0
-model: opencode-go/glm-5.1
+model: opencode-go/kimi-k2.6
 variant: low
 tools:
   edit: false
