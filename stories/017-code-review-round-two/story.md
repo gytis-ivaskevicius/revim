@@ -206,14 +206,10 @@ A code review of commits 83b65f5..HEAD (committed at 99c03899) identified issues
 #### Acceptance Criteria
 
 - AGENTS.md documents that the project uses `bun` (not `node`/`npm`)
-- AGENTS.md documents how to run:
-  - Linter: `npx biome check app/`
-  - Formatter: `npx biome format --write app/`
-  - TypeScript typecheck: `npx tsc --noEmit`
-  - Unit tests: `bun test app/tests/unit/`
-  - Rust tests: `cargo test`
-  - Rust linter: `cargo clippy -- -D warnings`
-  - Maybe also mention how to fix common biome issues
+- All commands in AGENTS.md reference the `Justfile` as the repository entrypoint (e.g., `just dev`, `just test`, `just lint`, `just lint-fix`) rather than raw `bun`/`cargo`/`npx` commands
+- Raw commands may be shown as alternatives or for reference, but `just` is the primary interface
+- AGENTS.md includes a link to the Justfile (`./Justfile`) at the start of the "How to run" section
+- Gotchas section documents known infrastructure issues (tui-test flakes, mutex deadlock, return-value prompt closing)
 
 ## Technical Context
 
