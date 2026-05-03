@@ -31,7 +31,7 @@ export function withLog(logPath: string) {
 export type KeyInput = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
 
 // Unified key dispatch helper - handles special keys and delegates to terminal methods
-function dispatchKey(terminal: any, key: string): boolean {
+export function dispatchKey(terminal: any, key: string): boolean {
   if (key === "<Esc>" || key === "Escape") {
     terminal.keyEscape()
     return true
@@ -129,12 +129,13 @@ export const Keys = {
     },
     key: KeyInput,
   ): Promise<void> {
-    if (typeof key === "string") {
-      if (!dispatchKey(terminal, key)) {
+    const keyStr = typeof key === "string" ? key : key.key
+    if (!dispatchKey(terminal, keyStr)) {
+      if (typeof key === "string") {
         terminal.keyPress(key)
+      } else {
+        terminal.keyPress(key.key, key)
       }
-    } else {
-      terminal.keyPress(key.key, key)
     }
   },
 }

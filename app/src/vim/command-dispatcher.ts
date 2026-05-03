@@ -1,3 +1,4 @@
+import { log } from "../log"
 import { actions } from "./actions"
 import type EditorAdapter from "./adapter"
 import { CmSelection } from "./adapter"
@@ -28,7 +29,6 @@ import {
   updateCmSelection,
   updateMark,
 } from "./keymap_vim"
-
 import { motions } from "./motions"
 import { operators } from "./operators"
 import { getSearchState } from "./search"
@@ -220,7 +220,7 @@ export class CommandDispatcher {
       try {
         handleQuery(query, true /** ignoreCase */, true /** smartCase */)
       } catch (_e) {
-        // Handle errors in query execution
+        log("search prompt error:", _e)
       }
       const macroModeState = vimGlobalState.macroModeState
       if (macroModeState.isRecording) {

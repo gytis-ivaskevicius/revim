@@ -17,6 +17,16 @@ function modeLabelFor(event: ModeChangeEvent | undefined): string {
   }
 }
 
+export function applyKeyToQuery(evt: StatusBarKeyEvent, query: string): string {
+  if (evt.key === "Backspace" && query.length > 0) {
+    return query.slice(0, -1)
+  }
+  if (evt.key.length === 1 && !evt.ctrlKey && !evt.altKey && !evt.metaKey) {
+    return query + evt.key
+  }
+  return query
+}
+
 export class TerminalStatusBar implements IStatusBar {
   private mode: ModeChangeEvent | undefined
   private keyBuffer = ""
@@ -95,11 +105,7 @@ export class TerminalStatusBar implements IStatusBar {
       return
     }
 
-    if (evt.key === "Backspace" && state.query.length > 0) {
-      state.query = state.query.slice(0, -1)
-    } else if (evt.key.length === 1 && !evt.ctrlKey && !evt.altKey && !evt.metaKey) {
-      state.query += evt.key
-    }
+    state.query = applyKeyToQuery(evt, state.query)
 
     setStatusText(state.prefix + state.query)
 
@@ -135,6 +141,12 @@ export class TerminalStatusBar implements IStatusBar {
       Escape: "Escape",
       Esc: "Escape",
       Backspace: "Backspace",
+      Tab: "Tab",
+      Delete: "Delete",
+      Home: "Home",
+      End: "End",
+      PageUp: "PageUp",
+      PageDown: "PageDown",
       Up: "Up",
       Down: "Down",
       Left: "Left",
@@ -153,6 +165,11 @@ export class TerminalStatusBar implements IStatusBar {
     const altMatch = encodedKey.match(/^Alt-(.+)$/)
     if (altMatch) {
       return { key: altMatch[1], altKey: true, stopPropagation, preventDefault }
+    }
+
+    const shiftMatch = encodedKey.match(/^Shift-(.+)$/)
+    if (shiftMatch) {
+      return { key: shiftMatch[1], shiftKey: true, stopPropagation, preventDefault }
     }
 
     return null

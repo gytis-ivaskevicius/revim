@@ -1,4 +1,4 @@
-import { openSync, writeSync } from "node:fs"
+import { closeSync, openSync, writeSync } from "node:fs"
 import { setLogFd } from "@revim/lib"
 
 let logFd: number | null = null
@@ -6,6 +6,14 @@ let logFd: number | null = null
 export function initLog(path: string): void {
   logFd = openSync(path, "w")
   setLogFd(logFd)
+}
+
+export function closeLog(): void {
+  if (logFd === null) {
+    return
+  }
+  closeSync(logFd)
+  logFd = null
 }
 
 export function log(...args: unknown[]): void {
