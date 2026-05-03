@@ -234,11 +234,8 @@ export class CommandDispatcher {
       setQuery: (input: string) => void,
     ) => {
       const keyName = getEventKeyName(e)
-      let up: boolean
-      let _offset: number
       if (keyName === "Up" || keyName === "Down") {
-        up = keyName === "Up"
-        _offset = e.selectionEnd || 0
+        const up = keyName === "Up"
         query = vimGlobalState.searchHistoryController.nextMatch(query, up) || ""
         setQuery(query)
       } else {
