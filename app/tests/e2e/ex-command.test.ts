@@ -5,8 +5,8 @@ test.describe("ex command prompt", () => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     await Keys.pressKeys(terminal, [":"])
     await Keys.delay(RENDER_DELAY_MS)
-    // Match status bar text containing colon (use text= selector for more precision)
-    const statusText = terminal.getByText((text: string) => text.includes(":"))
+    // Match status bar text containing colon
+    const statusText = terminal.getByText(":")
     await expect(statusText).toBeVisible()
   })
 
@@ -36,8 +36,8 @@ test.describe("ex command prompt", () => {
     await Keys.pressKeys(terminal, [":", "<Up>"])
     await Keys.delay(RENDER_DELAY_MS)
     // Prompt should still be visible with the recalled text from history
-    // Note: the actual text may contain ":" followed by the recalled command
-    const statusText = terminal.getByText((text: string) => text.startsWith(":") && text.includes("! 1"))
+    // Status bar should show the recalled command from history
+    const statusText = terminal.getByText(":! 1")
     await expect(statusText).toBeVisible()
   })
 
@@ -47,7 +47,7 @@ test.describe("ex command prompt", () => {
     await Keys.pressKeys(terminal, [":", "h", "i", "<Down>"])
     await Keys.delay(RENDER_DELAY_MS)
     // Prompt should still be visible (not closed)
-    const statusText = terminal.getByText((text: string) => text.includes(":hi"))
+    const statusText = terminal.getByText(":hi")
     await expect(statusText).toBeVisible()
   })
 })
