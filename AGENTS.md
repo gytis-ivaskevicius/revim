@@ -74,6 +74,10 @@ just lint       # includes tsc --noEmit
 npx tsc --noEmit
 ```
 
+## Workspace packages
+
+- **New workspace packages require explicit dependency in `app/package.json`**: When you add a new package under `packages/` and add `"packages/*"` to the root workspace array, Bun creates the workspace content in `node_modules/@revim/` only for packages listed as dependencies. For `tsc --noEmit` (and thus `just lint`) to resolve `@revim/<name>`, add `"@revim/<name>": "workspace:*"` to `app/package.json` dependencies and run `bun install`. This mirrors how `@revim/lib` is already listed.
+
 ## Gotchas
 
 - `@microsoft/tui-test` `getByText()` only accepts `string` and `RegExp` — never pass a function (gets `.toString()`'d and never matches). Regex patterns must include the `g` flag or `matchAll` throws a TypeError. If a short string like `":"` matches too many elements on screen, type more characters and match a longer combined string like `getByText(":a")`.
