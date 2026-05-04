@@ -76,6 +76,7 @@ impl TuiState {
         self.anchor_row = 0;
         self.anchor_col = 0;
         self.scroll_top = 0;
+        self.visual_mode = VisualMode::None;
         self.sync_primary_selection();
     }
 

@@ -81,10 +81,7 @@ pub fn load_file(path: String) -> Result<()> {
 
         match std::fs::read_to_string(&path) {
             Ok(content) => {
-                let mut lines: Vec<String> = content.split('\n').map(|s| s.to_string()).collect();
-                if lines.last().map(|s| s.is_empty()).unwrap_or(false) {
-                    lines.pop();
-                }
+                let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
                 state.set_lines(lines);
             }
             Err(err) => {
