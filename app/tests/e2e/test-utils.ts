@@ -17,6 +17,10 @@ export function withLog(logPath: string) {
   return { program: { file: "bun", args: ["run", "app/src/index.ts", "--log", logPath] } }
 }
 
+export function withFile(filePath: string) {
+  return { program: { file: "bun", args: ["run", "app/src/index.ts", filePath] } }
+}
+
 export type KeyInput = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
 
 type TerminalKeyApi = {

@@ -1,4 +1,6 @@
-import { initTui, shutdownTui, startKeyboardListener, waitForKeyboardEvent } from "@revim/lib"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+import { initTui, loadFile, shutdownTui, startKeyboardListener, waitForKeyboardEvent } from "@revim/lib"
 import { createErrorWindow } from "./error-window"
 import { closeLog, initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
@@ -19,6 +21,20 @@ function parseLogPath(args: string[]): string | undefined {
   return undefined
 }
 
+function parseFilePath(args: string[]): string | undefined {
+  for (let i = 1; i < args.length; i++) {
+    const arg = args[i]
+    if (arg === "--log") {
+      i++ // skip the next arg (log path)
+      continue
+    }
+    if (arg === "run") continue
+    if (arg.endsWith("index.ts")) continue
+    return arg
+  }
+  return undefined
+}
+
 function processKeyEvent(vimMode: VimMode, event: KeyboardEvent) {
   const insertMode = Boolean(vimMode.adapter.state.vim?.insertMode)
   const encodedKey = encodeTerminalKey(event, insertMode)
@@ -33,6 +49,10 @@ async function main() {
   }
 
   initTui()
+
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url))
+  const targetPath = parseFilePath(process.argv) ?? path.join(moduleDir, "../tests/fixtures/demo-content.md")
+  loadFile(targetPath)
 
   const vimMode = new VimMode(new TerminalStatusBar())
   vimMode.enable()
