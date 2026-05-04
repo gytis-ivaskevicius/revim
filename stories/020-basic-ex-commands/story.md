@@ -1,8 +1,8 @@
-# Basic ex commands: :w and :q
+# Basic ex commands: :w, :q, and :wq
 
 ## Context
 
-The editor currently supports Vim motions, search, and a subset of ex commands, but lacks the fundamental file operations `:w` (write) and `:q` (quit). Without these, users cannot save changes or exit the editor from within the editing session. Adding `:w`, `:q`, and `:wq` enables the most basic editing workflow.
+The TypeScript ex-command infrastructure is already wired for `:w` and `:e` — `defaultExCommandMap` registers `write`/`save`/`edit`, `ex-commands.ts` delegates to `EditorAdapter.commands.save`/`open`, and `VimMode` dispatches `save-file`/`open-file` events. What is missing is the Rust side (actually saving to disk and tracking the current file path) and the quit path (`:q`, `:wq`). This story connects the existing TypeScript plumbing to real file I/O in Rust.
 
 ## Out of Scope
 
@@ -13,32 +13,36 @@ The editor currently supports Vim motions, search, and a subset of ex commands, 
 
 ## Implementation approach
 
-1. **Rust: Track current file path in `TuiState`**  
-   Add `current_path: Option<String>` to `TuiState` in `lib/src/tui/state.rs`. Initialize to `None`. Update `load_file` in `lib/src/tui/api.rs` to store the loaded path in `current_path`.
+1. **Rust: Track current file path**  
+   Add `current_path: Option<String>` to `TuiState` in `lib/src/tui/state.rs`. Initialize to `None`. Update `load_file` in `lib/src/tui/api.rs` to always set `current_path` to the provided path, regardless of whether the file read succeeds (matching Vim's behavior where `:e newfile` sets the buffer name even before the file exists).
 
-2. **Rust: Add N-API surface for path and save**  
+2. **Rust: Add N-API functions**  
    In `lib/src/tui/api.rs`, add three `#[napi]` functions:
-   - `get_current_path() -> Result<Option<String>>` — returns the stored path.
-   - `set_current_path(path: String) -> Result<()>` — stores the path.
-   - `save_file(path: String) -> Result<()>` — acquires the state lock, clones `demo_text`, drops the lock, then writes the lines to disk joined by `\n` with a trailing newline. On I/O error, returns `Err(to_napi_error(err))`. Do not hold locks during file I/O and do not overwrite the editor buffer with an error message.
+   - `get_current_path() -> Result<Option<String>>`
+   - `set_current_path(path: String) -> Result<()>`
+   - `save_file(path: String) -> Result<()>` — acquires state lock, clones `demo_text`, drops the lock, writes lines joined by `\n` with a trailing newline. On I/O error returns `Err(to_napi_error(err))`. Never modifies the editor buffer on failure.
 
-3. **TypeScript: Expose shutdown without circular imports**  
-   In `app/src/index.ts`, import `EditorAdapter` from `./vim` and, after defining `shutdown`, register `EditorAdapter.commands.quit = () => shutdown(0)`. The existing `EditorAdapter.commands` pattern is already used for `open`/`save` event dispatch in `VimMode`, so this keeps `ex-commands.ts` decoupled from `index.ts`.
+3. **TypeScript: Register `quit` command**  
+   In `app/src/index.ts`, import `EditorAdapter` from `./vim` and register `EditorAdapter.commands.quit = () => shutdown(0)` after `shutdown` is defined.
 
-4. **TypeScript: Register new ex commands**  
+4. **TypeScript: Add `quit` and `wq` to the command map**  
    In `app/src/vim/ex-command-dispatcher.ts`, add to `defaultExCommandMap`:
    - `{ name: "quit", shortName: "q" }`
    - `{ name: "wq", shortName: "wq" }`
 
-5. **TypeScript: Implement handlers in `ex-commands.ts`**  
-   Import `getCurrentPath`, `setCurrentPath`, `saveFile`, `setStatusText` from `@revim/lib`.  
-   Add/replace handlers in `exCommands`:
-   - **`quit`** — call `EditorAdapter.commands.quit?.()`. The `!` suffix is parsed as `argString` starting with `!`; accept it but treat it the same as `:q` (no dirty-state checks yet).
-   - **`write`** — replace the existing no-op delegation. Parse force flag: `const force = params.args?.[0] === "!"`. Resolve target path: if a non-`!` arg exists, use it and call `setCurrentPath(path)`. Otherwise call `getCurrentPath()`. If no path is returned, call `setStatusText("No file name")` and return. Otherwise call `saveFile(path)`. On success, call `setStatusText('"' + path + '" written')`. On error (catch block), call `setStatusText(error.message)`.
-   - **`wq`** — execute the same path-resolution and save logic as `write`, then call `quit`.
+5. **TypeScript: Add handlers in `ex-commands.ts`**  
+   - `quit`: call `EditorAdapter.commands.quit?.()`. The `!` suffix appears in `argString` / `args`; accept it but treat it the same as `:q` (no dirty-state checks yet).
+   - `wq`: call the existing `write` handler, then call the new `quit` handler.
 
-6. **Regenerate N-API declarations**  
-   Run `just build` so that `lib/index.d.ts` is regenerated with the new functions.
+6. **TypeScript: Wire `save-file` event in `index.ts`**  
+   Listen on `vimMode` for `"save-file"` events:
+   - `const path = event.filename || getCurrentPath()`
+   - If no path, call `setStatusText("No file name")` and return.
+   - If `event.filename` is present, call `setCurrentPath(event.filename)`.
+   - Call `saveFile(path)`. On success call `setStatusText('"' + path + '" written')`. On error call `setStatusText(error.message)`.
+
+7. **Regenerate N-API declarations**  
+   Run `just build` so `lib/index.d.ts` is updated.
 
 ## Tasks
 
@@ -55,17 +59,17 @@ The editor currently supports Vim motions, search, and a subset of ex commands, 
 #### Non-Automatable
 None
 
-### Task 2 - TypeScript: Add quit, write, and wq ex command handlers
+### Task 2 - TypeScript: Add quit and wq ex commands, wire save-file event
 
 #### Acceptance Criteria
 
 - `:q` calls `EditorAdapter.commands.quit` and exits the program with code 0
-- `:q!` is parsed as `quit` with a force flag and also exits with code 0
-- `:w` with no known current path shows `No file name` in the status bar
-- `:w /tmp/file.txt` writes buffer content to `/tmp/file.txt`, stores it as current path, and shows a confirmation in the status bar
+- `:q!` is parsed as `quit` with `argString === "!"` and also exits with code 0
 - `:wq` with known path writes file and exits with code 0
 - `:wq /tmp/file.txt` writes to path and exits with code 0
-- `:w!` is parsed as `write` with force flag and behaves identically to `:w`
+- `:w` with no known current path shows `No file name` in the status bar
+- `:w /tmp/file.txt` writes buffer content to `/tmp/file.txt`, stores it as current path, and shows a confirmation in the status bar
+- `:w!` is parsed as `write` with `args[0] === "!"` and behaves identically to `:w`
 
 #### Non-Automatable
 None
@@ -79,7 +83,7 @@ None
 - Open editor with a temp file, modify the first line, run `:w<Enter>` → the temp file on disk reflects the modification
 - Open editor, run `:w /tmp/revim-e2e-write-<uuid><Enter>` → the specified file is created with the current buffer content
 - Open editor with a temp file, modify the first line, run `:wq<Enter>` → the temp file reflects the modification and the program exits with code 0
-- Status bar shows `No file name` when `:w` is executed while `current_path` is unset (verified by unit test or E2E)
+- Status bar shows `No file name` when `:w` is executed while `current_path` is unset
 
 #### Non-Automatable
 None
@@ -90,9 +94,12 @@ None
 - NAPI-RS 3.8.3 and `napi-derive` 3.5.2 are already locked in `lib/Cargo.toml`.
 - `setStatusText` is an existing N-API function that updates the bottom status bar immediately.
 - `TerminalStatusBar.showNotification` is currently a no-op for MVP, so `setStatusText` must be used directly for user-visible ex-command feedback.
+- The existing `write` and `save` handlers in `ex-commands.ts` already delegate to `EditorAdapter.commands.save`, which `VimMode` wires to dispatch a `"save-file"` event.
 
 ## Notes
 
 - The ex-command dispatcher's `matchCommand_` algorithm requires the input command name to be a prefix of the registered `command.name`. Therefore `wq` must be registered with `name: "wq"` (not `name: "writequit"`) so that `:wq` resolves correctly.
 - `showConfirm` dispatches `status-notify`, which `TerminalStatusBar` ignores in the current MVP. Do not rely on `showConfirm` for user-visible `:w`/`:q` feedback.
 - After an ex command handler calls `setStatusText`, the text remains visible until the user presses their next key, at which point `TerminalStatusBar.setKeyBuffer` will overwrite it with the mode label. This is acceptable transient-message behavior.
+- The `save-file` event listener in `index.ts` should be registered before `vimMode.enable()` so that the event handler is ready when the first command is executed.
+- When `:w!` is typed, `argString` is `"!"` and the `save-file` event carries `filename = "!"`. The listener in `index.ts` must treat `filename === "!"` the same as an empty filename (fall back to `getCurrentPath()`), so that `:w!` behaves identically to `:w` as required by the acceptance criteria.
