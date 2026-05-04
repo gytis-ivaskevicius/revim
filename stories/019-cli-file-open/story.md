@@ -22,9 +22,28 @@ Move every line from the `demo_text` vector in `TuiState::new()` (`lib/src/tui/s
 
 Change `TuiState::new()` to initialize `demo_text` with `vec![String::new()]` (a single empty line) instead of the hardcoded vector. This removes the last Rust-side default content. The `Default` implementation delegates to `new()`, so it also becomes empty. All Rust unit tests in `state.rs` use `create_state_with_text` or explicitly override `demo_text`, so they are unaffected.
 
-### 3. CLI arg parsing and file loading in `index.ts`
+### 3. Add `loadFile` N-API function in Rust
 
-Add two helpers to `app/src/index.ts`:
+In `lib/src/tui/api.rs`, add a new `#[napi]` function `load_file(path: String) -> Result<()>`:
+- Acquire the `TUI_CONTEXT` lock and the inner `state` lock.
+- Call `std::fs::read_to_string(&path)`.
+- On success, split the string on `\n`. If the last element is empty (trailing newline), pop it.
+- Call a new `state.set_lines(lines)` method to replace `demo_text`.
+- Drop all locks before calling `render_frame_internal()`.
+- Return `Ok(())`.
+- On error (file not found, permission denied, etc.):
+  - Call `state.set_lines(vec![String::new()])`.
+  - Log the error via `revim_log!`.
+  - Drop locks, call `render_frame_internal()`, and return the error via `to_napi_error`.
+
+In `lib/src/tui/state.rs`, add `pub fn set_lines(&mut self, lines: Vec<String>)`:
+- Replace `self.demo_text` with the provided lines.
+- Reset `cursor_row`, `cursor_col`, `anchor_row`, `anchor_col`, and `scroll_top` to `0`.
+- Call `self.sync_primary_selection()`.
+
+### 4. CLI arg parsing and calling `loadFile` in `index.ts`
+
+Add a `parseFilePath` helper to `app/src/index.ts`:
 
 **`parseFilePath(args: string[]): string | undefined`**
 - Start scanning from index `1` (skip the runtime binary).
@@ -33,21 +52,15 @@ Add two helpers to `app/src/index.ts`:
 - Skip any arg ending in `index.ts` (the script path).
 - Return the first remaining arg, or `undefined` if none.
 
-**`loadBuffer(filePath: string)`**
-- Read the file with `Bun.file(filePath).text()`.
-- Split on `\n`.
-- If the last element is an empty string (common trailing newline), pop it.
-- Call `setAllLines(lines)` from `@revim/lib`.
-- On error, call `setAllLines([""])` and log the error.
-
 In `main()`, after `initTui()` and before `startKeyboardListener()`:
 1. Resolve the target path:
    - If `parseFilePath(process.argv)` returns a value, use it directly.
    - Otherwise default to `path.join(import.meta.dir, "../tests/fixtures/demo-content.md")`.
-2. Call `loadBuffer(targetPath)`.
+2. Call `loadFile(targetPath)` from `@revim/lib`.
 3. For the default fixture, do not swallow errors — a missing fixture is a setup bug and should bubble up.
+4. For an explicit user-supplied path, if `loadFile` throws, the error propagates to the main `try/catch` and triggers the error window / shutdown path (the same as any other startup failure).
 
-### 4. Test utilities
+### 5. Test utilities
 
 In `app/tests/e2e/test-utils.ts`, add:
 
@@ -57,7 +70,7 @@ export function withFile(filePath: string) {
 }
 ```
 
-### 5. E2E regression and feature tests
+### 6. E2E regression and feature tests
 
 Create `app/tests/e2e/cli-file-open.test.ts` with:
 - A test that uses the default config (no file arg) and asserts `"Welcome to ReVim!"` is visible.
@@ -81,18 +94,22 @@ Existing E2E tests (`initial-render.test.ts`, `vim-mode.test.ts`, `scroll.test.t
 
 - Visual inspection that the initial render no longer flashes hardcoded content before TypeScript loads
 
-### Task 2 — Wire CLI file loading in `index.ts`
+### Task 2 — Add `loadFile` N-API function and wire CLI loading in `index.ts`
 
 #### Acceptance Criteria
 
+- [ ] `lib/src/tui/api.rs` contains `#[napi] pub fn load_file(path: String) -> Result<()>`
+- [ ] `load_file` reads the file with `std::fs::read_to_string`, splits on `\n`, pops trailing empty element, and calls `state.set_lines(lines)`
+- [ ] `load_file` drops all mutex locks before calling `render_frame_internal()`
+- [ ] `load_file` on error sets content to `vec![String::new()]`, logs via `revim_log!`, renders, and returns the error
+- [ ] `lib/src/tui/state.rs` contains `pub fn set_lines(&mut self, lines: Vec<String>)` that replaces `demo_text`, resets cursor/anchor/scroll to `0`, and calls `sync_primary_selection()`
 - [ ] `parseFilePath(["bun", "run", "app/src/index.ts", "--log", "/tmp/log", "myfile.txt"])` returns `"myfile.txt"`
 - [ ] `parseFilePath(["bun", "run", "app/src/index.ts"])` returns `undefined`
 - [ ] `parseFilePath(["bun", "src/index.ts", "other.md"])` returns `"other.md"`
 - [ ] When `parseFilePath` returns `undefined`, `main()` loads `../tests/fixtures/demo-content.md` relative to `import.meta.dir`
 - [ ] When `parseFilePath` returns a path, `main()` loads that path
-- [ ] `setAllLines` is called after `initTui()` and before `startKeyboardListener()`
-- [ ] If an explicit file cannot be read, `setAllLines([""])` is called and the error is logged via `log()`
-- [ ] `import { setAllLines } from "@revim/lib"` is added to `index.ts`
+- [ ] `loadFile` is called after `initTui()` and before `startKeyboardListener()`
+- [ ] `import { loadFile } from "@revim/lib"` is added to `index.ts`
 - [ ] `import path from "node:path"` is added to `index.ts`
 
 #### Non-Automatable
@@ -118,12 +135,12 @@ Existing E2E tests (`initial-render.test.ts`, `vim-mode.test.ts`, `scroll.test.t
 ## Technical Context
 
 - No new npm or cargo dependencies are required.
-- `Bun.file(path).text()` is available in the Bun runtime; `node:path` is used for cross-platform path joining.
-- `setAllLines` already exists in the NAPI-RS surface (`lib/src/tui/api.rs`) and in the TypeScript bindings (`lib/index.d.ts`).
+- `std::fs::read_to_string` is used on the Rust side to read the file; `node:path` is used on the TypeScript side only for cross-platform path joining to locate the default fixture.
+- `loadFile` is a new NAPI-RS function added to `lib/src/tui/api.rs` and exported via the auto-generated `lib/index.d.ts` bindings.
 - `import.meta.dir` is a Bun-specific meta-property that resolves to the directory containing the current module; it is the most robust way to locate the fixture file regardless of the process working directory.
 
 ## Notes
 
 - The existing `--log` parsing in `index.ts` must remain and must not conflict with filepath parsing.
-- Because `initTui()` calls `render_frame_internal()` before TypeScript runs, the very first frame will show a single empty line. `loadBuffer()` then immediately re-renders with the actual content, so the blank flash is imperceptible in practice.
-- If the default fixture file is missing, `loadBuffer()` should throw so the failure is obvious during development or CI.
+- Because `initTui()` calls `render_frame_internal()` before TypeScript runs, the very first frame will show a single empty line. `loadFile()` then immediately re-renders with the actual content, so the blank flash is imperceptible in practice.
+- If the default fixture file is missing, `loadFile()` should throw so the failure is obvious during development or CI.
