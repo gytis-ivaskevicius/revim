@@ -81,17 +81,18 @@ async function main() {
     if (filename === "!") {
       filename = ""
     }
-    const path = filename || getCurrentPath()
-    if (!path) {
+    const filePath = filename || getCurrentPath()
+    if (!filePath) {
       setStatusText("No file name")
       return
     }
-    if (filename) {
-      setCurrentPath(filename)
-    }
     try {
-      saveFile(path)
-      setStatusText(`"${path}" written`)
+      saveFile(filePath)
+      // Only update the stored path after a successful write
+      if (filename) {
+        setCurrentPath(filename)
+      }
+      setStatusText(`"${filePath}" written`)
     } catch (e) {
       setStatusText(e instanceof Error ? e.message : String(e))
     }

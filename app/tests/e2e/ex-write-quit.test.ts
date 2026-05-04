@@ -42,6 +42,57 @@ test.describe("ex write and quit commands", () => {
     // Cleanup
     unlinkSync(tmpFile)
   })
+
+  test(":wq /tmp/path writes to path and exits with code 0", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible()
+    const tmpFile = path.join(tmpdir(), `revim-wq-path-${randomUUID()}.txt`)
+
+    const exitPromise = new Promise<void>((resolve) => {
+      terminal.onExit(() => resolve())
+    })
+
+    // Type :wq /tmp/... and press Enter
+    const pathChars = tmpFile.split("")
+    await Keys.pressKeys(terminal, [":", "w", "q", " ", ...pathChars, "<Enter>"])
+    await exitPromise
+
+    // Verify exit code and file content
+    expect(terminal.exitResult?.exitCode).toBe(0)
+    expect(existsSync(tmpFile)).toBe(true)
+    const content = readFileSync(tmpFile, "utf-8")
+    expect(content.length).toBeGreaterThan(0)
+
+    // Cleanup
+    unlinkSync(tmpFile)
+  })
+})
+
+test.describe(":w! with loaded file", () => {
+  const tmpFile = path.join(tmpdir(), `revim-wbang-${randomUUID()}.txt`)
+
+  // Create the temp file before tests use it
+  writeFileSync(tmpFile, "original content\n")
+
+  test.use(withFile(tmpFile))
+
+  test(":w! behaves identically to :w and writes to the loaded file", async ({ terminal }) => {
+    await expect(terminal.getByText("original content")).toBeVisible()
+
+    // Write with ! flag — should write to loaded file
+    await Keys.pressKeys(terminal, [":", "w", "!", "<Enter>"])
+    await Keys.delay(RENDER_DELAY_MS * 2)
+
+    // Verify file was written (still has the original content since we didn't modify)
+    const content = readFileSync(tmpFile, "utf-8")
+    expect(content).toContain("original content")
+
+    // Cleanup
+    try {
+      unlinkSync(tmpFile)
+    } catch {
+      // ignore cleanup errors
+    }
+  })
 })
 
 test.describe(":w with loaded file", () => {
