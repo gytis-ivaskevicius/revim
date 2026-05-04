@@ -21,6 +21,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - **Code review round-two fixes** — Fix Ctrl-U case mismatch in ex command handler, restructure ex command `onPromptKeyDown` with if/else if and close-first pattern, add Insert key to `decodeKey`, fix compound modifier handling in `decodeKey`, validate log file path, validate fd in `set_log_fd`, consistently recover from Mutex poisoning, remove unnecessary `_highlightTimeout` getter/setter, extract shared `TERMINAL_KEY_MAP` constant, un-export `dispatchKey`, split `close()` into `closePrompt()`/`setQuery()`, add circuit breaker for infinite error loop ([story](stories/017-code-review-round-two/story.md))
 - **Code review cleanup** — Unify prompt closing so Enter is handled by `onKeyDown` (fixing double `onKeyUp`), remove misleading `!evt.shiftKey` check in `applyKeyToQuery`, eliminate `decodeKey` → `getEventKeyName` round-trip, consolidate search prompt history into `makePromptKeyDown`, rename `_highlightTimeout` to `pendingHighlightTimeoutId`, replace consecutive error counter with a time-based sliding window ([story](stories/018-code-review-cleanup/story.md))
 - **CLI file opening** — Allow `revim <filepath>` to open a file for editing; move hardcoded demo content from Rust `state.rs` to `app/tests/fixtures/demo-content.md`; load the fixture by default when no file is passed; read file content in TypeScript and push it to the Rust buffer via the existing `setAllLines` N-API function ([story](stories/019-cli-file-open/story.md))
+- **Basic ex commands** — Add `:w` (write), `:q` (quit), and `:wq` (write-and-quit) ex commands; track the current file path in Rust `TuiState`; expose `save_file`, `get_current_path`, and `set_current_path` N-API functions; display save errors via the status bar ([story](stories/020-basic-ex-commands/story.md))
 
 ## Non-Goals
 
@@ -38,9 +39,9 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
   - Cursor position indicator (line:col) in the status bar
   - File name display in the status bar
   - Status bar colors / theming
-- No ex command coverage
-  - add E2E tests for a small supported subset like :w, :q, :sort, :s
-  - explicitly gate/disable unsupported commands
+- Partial ex command coverage
+  - `:w`, `:q`, `:wq` are implemented and tested (story 020)
+  - `:sort`, `:s`, and other ex commands still need E2E tests or explicit gating
 - **Remove key alias mapping** — Rust `api.rs` now emits canonical key names (`"Up"`, `"Down"`, `"Left"`, `"Right"`, `"Esc"`) directly; the redundant `keyAliases` table in `terminal-key.ts` is deleted ([story](stories/011-remove-key-alias-mapping/story.md))
 - No unicode editing regression coverage
   - add tests for multibyte characters around movement, replace, delete, and range operations
