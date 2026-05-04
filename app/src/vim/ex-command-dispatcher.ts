@@ -25,7 +25,7 @@ const defaultExCommandMap: ExCommandDefault[] = [
   { name: "write", shortName: "w" },
   { name: "save", shortName: "sav" },
   { name: "quit", shortName: "q" },
-  { name: "wq", shortName: "wq" },
+  { name: "wq" },
   { name: "undo", shortName: "u" },
   { name: "redo", shortName: "red" },
   { name: "set", shortName: "se" },
