@@ -1,7 +1,7 @@
 import { type ExCommand, type ExCommandDefault, StringStream } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
 import { defaultKeymap } from "./default-key-map"
-import { type ExCommandOptionalParameters, exCommands } from "./ex-commands"
+import { type ExCommandExtraParams, exCommands } from "./ex-commands"
 import { vimGlobalState } from "./global"
 import { exitVisualMode, getMarkPos, vimApi } from "./keymap_vim"
 import { showConfirm } from "./search-utils"
@@ -49,12 +49,12 @@ export class ExCommandDispatcher {
     this.buildCommandMap_()
   }
 
-  processCommand(adapter: EditorAdapter, input: string, opt_params?: ExCommandOptionalParameters) {
+  processCommand(adapter: EditorAdapter, input: string, opt_params?: ExCommandExtraParams) {
     adapter.curOp.isVimOp = true
     this._processCommand(adapter, input, opt_params)
   }
 
-  private _processCommand(adapter: EditorAdapter, input: string, opt_params?: ExCommandOptionalParameters) {
+  private _processCommand(adapter: EditorAdapter, input: string, opt_params?: ExCommandExtraParams) {
     const vim = adapter.state.vim as VimState
     const commandHistoryRegister = vimGlobalState.registerController.getRegister(":")
     const previousCommand = commandHistoryRegister.toString()
@@ -119,7 +119,7 @@ export class ExCommandDispatcher {
     }
   }
 
-  private parseInput_(adapter: EditorAdapter, inputStream: StringStream, result: ExCommandOptionalParameters) {
+  private parseInput_(adapter: EditorAdapter, inputStream: StringStream, result: ExCommandExtraParams) {
     inputStream.eatWhile(":")
     // Parse range.
     if (inputStream.eat("%")) {
@@ -189,7 +189,7 @@ export class ExCommandDispatcher {
     return line
   }
 
-  private parseCommandArgs_(inputStream: StringStream, params: ExCommandOptionalParameters, _command: ExCommand) {
+  private parseCommandArgs_(inputStream: StringStream, params: ExCommandExtraParams, _command: ExCommand) {
     if (inputStream.eol()) {
       return
     }

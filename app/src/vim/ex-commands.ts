@@ -21,7 +21,7 @@ import {
 import type { Context, VimState } from "./types"
 import { clipCursorToContent, lineLength, trim } from "./vim-utils"
 
-export interface ExCommandOptionalParameters {
+export interface ExCommandExtraParams {
   callback?: () => void
   input?: string
   commandName?: string
@@ -31,7 +31,7 @@ export interface ExCommandOptionalParameters {
   args?: string[]
 }
 
-interface ExCommandParams extends ExCommandOptionalParameters {
+interface ExCommandParams extends ExCommandExtraParams {
   input: string
   setCfg?: OptionConfig
 }

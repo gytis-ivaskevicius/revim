@@ -1,4 +1,12 @@
-import { copyCursor, cursorIsBefore, cursorMax, cursorMin, makePos, type Pos } from "@revim/vim-keybindings"
+import {
+  copyCursor,
+  cursorIsBefore,
+  cursorMax,
+  cursorMin,
+  type MotionArgs,
+  makePos,
+  type Pos,
+} from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
 import { expandWordUnderCursor } from "./keymap_vim"
 import { findParagraph } from "./motion-paragraph"
@@ -180,7 +188,7 @@ export function expandSelection(adapter: EditorAdapter, start: Pos, end: Pos): [
 export function motionTextObjectManipulation(
   adapter: EditorAdapter,
   head: Pos,
-  motionArgs: import("@revim/vim-keybindings").MotionArgs,
+  motionArgs: MotionArgs,
   vim: VimState,
 ): Pos | [Pos, Pos] | undefined {
   // TODO: lots of possible exceptions that can be thrown here. Try da(
