@@ -72,10 +72,10 @@ Existing E2E tests (`initial-render.test.ts`, `vim-mode.test.ts`, `scroll.test.t
 
 #### Acceptance Criteria
 
-- `app/tests/fixtures/demo-content.md` exists and contains the same lines (including blanks) as the old hardcoded `demo_text` vector in `state.rs`
-- `TuiState::new()` initializes `demo_text` to `vec![String::new()]`
-- The hardcoded `demo_text` vector is fully removed from `state.rs`
-- `just test-rust` passes
+- [ ] `app/tests/fixtures/demo-content.md` exists and contains the same lines (including blanks) as the old hardcoded `demo_text` vector in `state.rs`
+- [ ] `TuiState::new()` initializes `demo_text` to `vec![String::new()]`
+- [ ] The hardcoded `demo_text` vector is fully removed from `state.rs`
+- [ ] `just test-rust` passes
 
 #### Non-Automatable
 
@@ -85,15 +85,15 @@ Existing E2E tests (`initial-render.test.ts`, `vim-mode.test.ts`, `scroll.test.t
 
 #### Acceptance Criteria
 
-- `parseFilePath(["bun", "run", "app/src/index.ts", "--log", "/tmp/log", "myfile.txt"])` returns `"myfile.txt"`
-- `parseFilePath(["bun", "run", "app/src/index.ts"])` returns `undefined`
-- `parseFilePath(["bun", "src/index.ts", "other.md"])` returns `"other.md"`
-- When `parseFilePath` returns `undefined`, `main()` loads `../tests/fixtures/demo-content.md` relative to `import.meta.dir`
-- When `parseFilePath` returns a path, `main()` loads that path
-- `setAllLines` is called after `initTui()` and before `startKeyboardListener()`
-- If an explicit file cannot be read, `setAllLines([""])` is called and the error is logged via `log()`
-- `import { setAllLines } from "@revim/lib"` is added to `index.ts`
-- `import path from "node:path"` is added to `index.ts`
+- [ ] `parseFilePath(["bun", "run", "app/src/index.ts", "--log", "/tmp/log", "myfile.txt"])` returns `"myfile.txt"`
+- [ ] `parseFilePath(["bun", "run", "app/src/index.ts"])` returns `undefined`
+- [ ] `parseFilePath(["bun", "src/index.ts", "other.md"])` returns `"other.md"`
+- [ ] When `parseFilePath` returns `undefined`, `main()` loads `../tests/fixtures/demo-content.md` relative to `import.meta.dir`
+- [ ] When `parseFilePath` returns a path, `main()` loads that path
+- [ ] `setAllLines` is called after `initTui()` and before `startKeyboardListener()`
+- [ ] If an explicit file cannot be read, `setAllLines([""])` is called and the error is logged via `log()`
+- [ ] `import { setAllLines } from "@revim/lib"` is added to `index.ts`
+- [ ] `import path from "node:path"` is added to `index.ts`
 
 #### Non-Automatable
 
@@ -104,12 +104,12 @@ Existing E2E tests (`initial-render.test.ts`, `vim-mode.test.ts`, `scroll.test.t
 
 #### Acceptance Criteria
 
-- `withFile(filePath)` helper exists in `test-utils.ts`
-- E2E test: default launch (no file arg) shows `"Welcome to ReVim!"`
-- E2E test: explicit file arg shows the file's first line
-- E2E test: `--log` combined with a file arg works (both flags and file are honored)
-- Existing E2E tests (`initial-render.test.ts`, `vim-mode.test.ts`, `scroll.test.ts`, `search.test.ts`, `visual-mode.test.ts`, `undo-redo.test.ts`, `cursor-movement.test.ts`, `status-bar.test.ts`, `sentence-motion.test.ts`, `exit.test.ts`, `ex-command.test.ts`) still pass without modification
-- `just test-e2e` passes
+- [ ] `withFile(filePath)` helper exists in `test-utils.ts`
+- [ ] E2E test: default launch (no file arg) shows `"Welcome to ReVim!"`
+- [ ] E2E test: explicit file arg shows the file's first line
+- [ ] E2E test: `--log` combined with a file arg works (both flags and file are honored)
+- [ ] Existing E2E tests (`initial-render.test.ts`, `vim-mode.test.ts`, `scroll.test.ts`, `search.test.ts`, `visual-mode.test.ts`, `undo-redo.test.ts`, `cursor-movement.test.ts`, `status-bar.test.ts`, `sentence-motion.test.ts`, `exit.test.ts`, `ex-command.test.ts`) still pass without modification
+- [ ] `just test-e2e` passes
 
 #### Non-Automatable
 
