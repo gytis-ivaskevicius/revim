@@ -1,15 +1,16 @@
-import EditorAdapter, { CmSelection, type KeyMapEntry } from "./adapter"
+import type { MappableCommandType } from "@revim/vim-keybindings"
 import {
+  CmSelection,
   copyCursor,
   cursorEqual,
   cursorIsBefore,
   cursorMax,
   cursorMin,
-  isUpperCase,
-  isWhiteSpaceString,
   makePos,
   type Pos,
-} from "./common"
+} from "@revim/vim-keybindings"
+import EditorAdapter, { type KeyMapEntry } from "./adapter"
+import { isUpperCase, isWhiteSpaceString } from "./common"
 import { defaultKeymap } from "./default-key-map"
 import { vimGlobalState } from "./global"
 import { InputState } from "./input-state"
@@ -25,7 +26,6 @@ import type {
   KeyMappingOperatorMotion,
   KeyMappingSearch,
   MappableArgType,
-  MappableCommandType,
   VimState,
 } from "./types"
 import { VimApi } from "./vim-api"

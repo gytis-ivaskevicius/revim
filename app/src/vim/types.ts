@@ -1,10 +1,17 @@
-import type { CmSelection, Marker } from "./adapter"
-import type { Pos } from "./common"
+import type {
+  ActionArgs,
+  CmSelection,
+  ExArgs,
+  MotionArgs,
+  OperatorMotionArgs,
+  Pos,
+  SearchArgs,
+  VimOptions,
+} from "@revim/vim-keybindings"
+import type { Marker } from "./adapter"
 import type { InputState } from "./input-state"
 import type { MotionFunc } from "./motions"
 import type { SearchState } from "./search"
-
-export type VimOptions = Record<string, { value?: string | number | boolean }>
 
 export interface LastSelection {
   anchorMark: Marker
@@ -55,45 +62,6 @@ export interface VimState {
   exMode?: boolean
 }
 
-export interface MotionArgs {
-  linewise?: boolean
-  toJumplist?: boolean
-  forward?: boolean
-  wordEnd?: boolean
-  bigWord?: boolean
-  inclusive?: boolean
-  explicitRepeat?: boolean
-  toFirstChar?: boolean
-  repeatOffset?: number
-  sameLine?: boolean
-  textObjectInner?: boolean
-  selectedCharacter?: string
-  repeatIsExplicit?: boolean
-  noRepeat?: boolean
-  repeat?: number
-}
-
-export interface ActionArgs {
-  after?: boolean
-  isEdit?: boolean
-  matchIndent?: boolean
-  forward?: boolean
-  linewise?: boolean
-  insertAt?: string
-  blockwise?: boolean
-  keepSpaces?: boolean
-  replace?: boolean
-  position?: "center" | "top" | "bottom"
-  increase?: boolean
-  backtrack?: boolean
-  indentRight?: boolean
-  selectedCharacter?: string
-  repeat?: number
-  repeatIsExplicit?: boolean
-  registerName?: string
-  head?: Pos
-}
-
 export interface OperatorArgs {
   indentRight?: boolean
   toLower?: boolean
@@ -106,25 +74,8 @@ export interface OperatorArgs {
   registerName?: string
 }
 
-export interface SearchArgs {
-  forward: boolean
-  querySrc: "prompt" | "wordUnderCursor"
-  toJumplist: boolean
-  wholeWordOnly?: boolean
-  selectedCharacter?: string
-}
-
-export interface OperatorMotionArgs {
-  visualLine: boolean
-}
-
-export interface ExArgs {
-  input: string
-}
-
 export type Context = "insert" | "normal" | "visual"
 
-export type MappableCommandType = "motion" | "action" | "operator" | "operatorMotion" | "search" | "ex"
 export type MappableArgType = MotionArgs | ActionArgs | OperatorArgs | OperatorMotionArgs | SearchArgs | ExArgs
 
 export type KeyMappingDefault<T> = { type: T; keys: string; context?: Context; repeatOverride?: number }
@@ -173,16 +124,3 @@ export type KeyMapping =
   | KeyMappingOperatorMotion
   | KeyMappingAction
   | KeyMappingSearch
-
-export type ExCommandDefault = {
-  name: string
-  shortName?: string
-  excludeFromCommandHistory?: boolean
-  user?: boolean
-  possiblyAsync?: boolean
-}
-export type ExCommandExToEx = ExCommandDefault & { type: "exToEx"; toInput: string }
-export type ExCommandExToKey = ExCommandDefault & { type: "exToKey"; toKeys: string }
-export type ExCommandApi = ExCommandDefault & { type: "api" }
-
-export type ExCommand = ExCommandExToEx | ExCommandExToKey | ExCommandApi

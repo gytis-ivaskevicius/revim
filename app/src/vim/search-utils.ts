@@ -1,10 +1,10 @@
+import { cursorEqual, isPos, makePos, type Pos, StringStream } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
-import { cursorEqual, inArray, isNumber, isPos, makePos, type Pos } from "./common"
+import { inArray, isNumber } from "./common"
 import { vimGlobalState } from "./global"
 import { defineOption, getOption } from "./options"
 import { getSearchState, searchOverlay } from "./search"
 import type { StatusBarInputOptions } from "./statusbar"
-import { StringStream } from "./string-stream"
 
 defineOption("pcre", true, "boolean")
 

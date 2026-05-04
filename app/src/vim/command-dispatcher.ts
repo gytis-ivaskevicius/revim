@@ -1,17 +1,16 @@
-import { log } from "../log"
-import { actions } from "./actions"
-import type EditorAdapter from "./adapter"
-import { CmSelection } from "./adapter"
 import {
+  CmSelection,
   copyCursor,
   cursorIsBefore,
   cursorMax,
   cursorMin,
-  getEventKeyName,
   makePos,
   type Pos,
-  stopEvent,
-} from "./common"
+} from "@revim/vim-keybindings"
+import { log } from "../log"
+import { actions } from "./actions"
+import type EditorAdapter from "./adapter"
+import { getEventKeyName, stopEvent } from "./common"
 import { exCommandDispatcher } from "./ex-commands"
 import { vimGlobalState } from "./global"
 import type { InputState } from "./input-state"

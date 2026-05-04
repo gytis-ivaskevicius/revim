@@ -3,16 +3,10 @@
  *     position of the cursor.
  */
 
+import type { MotionArgs } from "@revim/vim-keybindings"
+import { cursorEqual, cursorIsBefore, cursorIsBetween, makePos, type Pos } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
-import {
-  cursorEqual,
-  cursorIsBefore,
-  cursorIsBetween,
-  findFirstNonWhiteSpaceCharacter,
-  isLowerCase,
-  makePos,
-  type Pos,
-} from "./common"
+import { findFirstNonWhiteSpaceCharacter, isLowerCase } from "./common"
 import { vimGlobalState } from "./global"
 import type { InputState } from "./input-state"
 import { getMarkPos } from "./keymap_vim"
@@ -21,7 +15,7 @@ import { motionFindAndSelectNextInclusive, motionFindNext } from "./motion-searc
 import { findSymbol } from "./motion-symbols"
 import { motionTextObjectManipulation } from "./motion-text-objects"
 import { moveToCharacter, moveToWord, recordLastCharacterSearch } from "./motion-word"
-import type { MotionArgs, VimState } from "./types"
+import type { VimState } from "./types"
 import { clipCursorToContent } from "./vim-utils"
 
 // All of the functions below return Cursor objects.

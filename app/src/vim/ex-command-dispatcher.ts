@@ -1,11 +1,11 @@
+import { type ExCommand, type ExCommandDefault, StringStream } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
 import { defaultKeymap } from "./default-key-map"
 import { type ExCommandOptionalParameters, exCommands } from "./ex-commands"
 import { vimGlobalState } from "./global"
 import { exitVisualMode, getMarkPos, vimApi } from "./keymap_vim"
 import { showConfirm } from "./search-utils"
-import { StringStream } from "./string-stream"
-import type { Context, ExCommand, ExCommandDefault, KeyMapping, VimState } from "./types"
+import type { Context, KeyMapping, VimState } from "./types"
 import { trim } from "./vim-utils"
 
 /**

@@ -1,6 +1,6 @@
+import { cursorEqual, type Pos } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
 import type { Marker } from "./adapter"
-import { cursorEqual, type Pos } from "./common"
 
 export class CircularJumpList {
   size = 100

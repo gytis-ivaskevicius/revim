@@ -1,5 +1,5 @@
+import { copyCursor, makePos } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
-import { copyCursor, makePos } from "./common"
 
 const ForwardSymbolPairs: Record<string, string> = { ")": "(", "}": "{" }
 const ReverseSymbolPairs: Record<string, string> = { "(": ")", "{": "}" }

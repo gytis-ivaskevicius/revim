@@ -1,0 +1,9 @@
+{
+  "name": "@revim/vim-keybindings",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

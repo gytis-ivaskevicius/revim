@@ -1,4 +1,5 @@
-import EditorAdapter, { type BindingFunction, type Change } from "./adapter"
+import type { Change } from "@revim/vim-keybindings"
+import EditorAdapter, { type BindingFunction } from "./adapter"
 import { commandDispatcher } from "./command-dispatcher"
 import { vimGlobalState } from "./global"
 import type { MacroModeState } from "./macro-mode-state"

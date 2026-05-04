@@ -1,5 +1,6 @@
+import { makePos, type Pos } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
-import { isEndOfSentenceSymbol, isWhiteSpaceString, makePos, type Pos } from "./common"
+import { isEndOfSentenceSymbol, isWhiteSpaceString } from "./common"
 
 export function findParagraph(
   adapter: EditorAdapter,

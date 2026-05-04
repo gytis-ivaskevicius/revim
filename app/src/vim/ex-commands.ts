@@ -1,15 +1,7 @@
+import { copyCursor, cursorEqual, makePos, PACKAGE_INFO, type Pos, StringStream } from "@revim/vim-keybindings"
 import EditorAdapter from "./adapter"
 import { commandDispatcher } from "./command-dispatcher"
-import {
-  copyCursor,
-  cursorEqual,
-  getEventKeyName,
-  isLowerCase,
-  isUpperCase,
-  makePos,
-  type Pos,
-  stopEvent,
-} from "./common"
+import { getEventKeyName, isLowerCase, isUpperCase, stopEvent } from "./common"
 import { ExCommandDispatcher } from "./ex-command-dispatcher"
 import { vimGlobalState } from "./global"
 import { getOption, getOptionType, type OptionConfig, setOption } from "./options"
@@ -26,9 +18,7 @@ import {
   unescapeRegexReplace,
   updateSearchQuery,
 } from "./search-utils"
-import { StringStream } from "./string-stream"
 import type { Context, VimState } from "./types"
-import { PACKAGE_INFO } from "./version"
 import { clipCursorToContent, lineLength, trim } from "./vim-utils"
 
 export interface ExCommandOptionalParameters {

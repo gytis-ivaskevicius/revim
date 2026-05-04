@@ -1,8 +1,8 @@
+import type { MotionArgs } from "@revim/vim-keybindings"
+import { copyCursor, makePos, type Pos } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
-import { copyCursor, makePos, type Pos } from "./common"
 import { vimGlobalState } from "./global"
 import { bigWordCharTest, keywordCharTest } from "./keymap_vim"
-import type { MotionArgs } from "./types"
 import { lineLength } from "./vim-utils"
 
 /**

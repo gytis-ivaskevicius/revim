@@ -2,7 +2,8 @@
   "name": "revim",
   "workspaces": [
     "lib",
-    "app"
+    "app",
+    "packages/*"
   ],
   "private": true,
   "devDependencies": {

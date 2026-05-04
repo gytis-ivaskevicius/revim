@@ -27,36 +27,22 @@ import {
   setVisualMode,
   triggerAction,
 } from "@revim/lib"
+import {
+  type Change,
+  CmSelection,
+  cursorEqual,
+  cursorMax,
+  cursorMin,
+  type ExCommandOptionalParameters,
+  kMatchingBrackets,
+  makePos,
+  type Pos,
+} from "@revim/vim-keybindings"
 import { log } from "../log"
-import { cursorEqual, cursorMax, cursorMin, makePos, type Pos } from "./common"
 import type { ModeChangeEvent, StatusBarInputOptions } from "./statusbar"
 
 let _id = 0
 const nextId = () => String(++_id)
-
-export class CmSelection {
-  readonly anchor: Pos
-  readonly head: Pos
-
-  constructor(anchor: Pos, head: Pos) {
-    this.anchor = anchor
-    this.head = head
-  }
-
-  from(): Pos {
-    if (this.anchor.line < this.head.line) {
-      return this.anchor
-    } else if (this.anchor.line === this.head.line) {
-      return this.anchor.ch < this.head.ch ? this.anchor : this.head
-    } else {
-      return this.head
-    }
-  }
-
-  empty(): boolean {
-    return this.anchor.line === this.head.line && this.anchor.ch === this.head.ch
-  }
-}
 
 export class Marker implements Pos {
   adapter: EditorAdapter
@@ -95,39 +81,11 @@ export interface KeyMapEntry {
   call?: CallFunction
 }
 
-export interface Change {
-  text: string[]
-  origin: "+input" | "paste"
-  next?: Change
-}
-
 interface Operation {
   lastChange?: Change
   change?: Change
   selectionChanged?: boolean
   isVimOp?: boolean
-}
-
-interface MatchingBracket {
-  symbol: string
-  pair: string
-  mode: "open" | "close"
-  regex: RegExp
-}
-
-const kMatchingBrackets: Record<string, MatchingBracket> = {
-  "(": { symbol: "(", pair: ")", mode: "close", regex: /[()]/ },
-  ")": { symbol: ")", pair: "(", mode: "open", regex: /[()]/ },
-  "[": { symbol: "[", pair: "]", mode: "close", regex: /[[\]]/ },
-  "]": { symbol: "]", pair: "[", mode: "open", regex: /[[\]]/ },
-  "{": { symbol: "{", pair: "}", mode: "close", regex: /[{}]/ },
-  "}": { symbol: "}", pair: "{", mode: "open", regex: /[{}]/ },
-  "<": { symbol: "<", pair: ">", mode: "close", regex: /[<>]/ },
-  ">": { symbol: ">", pair: "<", mode: "open", regex: /[<>]/ },
-}
-
-export interface ExCommandOptionalParameters {
-  argString?: string
 }
 
 export class EditorAdapter {

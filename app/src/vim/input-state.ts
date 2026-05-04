@@ -1,4 +1,5 @@
-import type { MotionArgs, OperatorArgs } from "./types"
+import type { MotionArgs } from "@revim/vim-keybindings"
+import type { OperatorArgs } from "./types"
 
 // Represents the current input state.
 

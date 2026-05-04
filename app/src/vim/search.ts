@@ -1,6 +1,6 @@
+import type { StringStream } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
 import { vimGlobalState } from "./global"
-import type { StringStream } from "./string-stream"
 import type { VimState } from "./types"
 
 export class SearchOverlay {

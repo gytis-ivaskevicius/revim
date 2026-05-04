@@ -1,9 +1,10 @@
+import type { MotionArgs } from "@revim/vim-keybindings"
+import { cursorEqual, makePos, type Pos } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
-import { cursorEqual, makePos, type Pos } from "./common"
 import type { InputState } from "./input-state"
 import { getSearchState } from "./search"
 import { findNext, highlightSearchMatches } from "./search-utils"
-import type { MotionArgs, VimState } from "./types"
+import type { VimState } from "./types"
 
 export function motionFindNext(adapter: EditorAdapter, _head: Pos, motionArgs: MotionArgs): Pos | undefined {
   const state = getSearchState(adapter)

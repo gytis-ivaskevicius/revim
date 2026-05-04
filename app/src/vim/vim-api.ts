@@ -1,3 +1,4 @@
+import type { MappableCommandType } from "@revim/vim-keybindings"
 import { type ActionFunc, defineAction } from "./actions"
 import type EditorAdapter from "./adapter"
 import { commandDispatcher } from "./command-dispatcher"
@@ -11,7 +12,7 @@ import { defineMotion, type MotionFunc } from "./motions"
 import { defineOperator, type OperatorFunc } from "./operators"
 import { defineOption, getOption, type OptionCallback, type OptionConfig, setOption } from "./options"
 import { defineRegister, type IRegister } from "./register-controller"
-import type { Context, KeyMapping, MappableArgType, MappableCommandType } from "./types"
+import type { Context, KeyMapping, MappableArgType } from "./types"
 import { offsetCursor } from "./vim-utils"
 
 export class VimApi {

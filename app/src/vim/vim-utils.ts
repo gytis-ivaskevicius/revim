@@ -1,6 +1,5 @@
+import { CmSelection, isPos, makePos, type Pos } from "@revim/vim-keybindings"
 import type EditorAdapter from "./adapter"
-import { CmSelection } from "./adapter"
-import { isPos, makePos, type Pos } from "./common"
 import type { VimState } from "./types"
 
 export function lineLength(adapter: EditorAdapter, lineNum: number) {

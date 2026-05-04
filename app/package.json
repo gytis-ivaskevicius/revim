@@ -6,7 +6,8 @@
     "dev": "bun run src/index.ts"
   },
   "dependencies": {
-    "@revim/lib": "workspace:*"
+    "@revim/lib": "workspace:*",
+    "@revim/vim-keybindings": "workspace:*"
   },
   "devDependencies": {
     "@microsoft/tui-test": "0.0.3",

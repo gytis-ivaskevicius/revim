@@ -1,21 +1,23 @@
-import EditorAdapter, { CmSelection } from "./adapter"
+import type { ActionArgs } from "@revim/vim-keybindings"
 import {
+  CmSelection,
   copyCursor,
   cursorEqual,
   cursorIsBefore,
   cursorMax,
   cursorMin,
-  findFirstNonWhiteSpaceCharacter,
   makePos,
   type Pos,
-} from "./common"
+} from "@revim/vim-keybindings"
+import EditorAdapter from "./adapter"
+import { findFirstNonWhiteSpaceCharacter } from "./common"
 import { exCommandDispatcher } from "./ex-commands"
 import { vimGlobalState } from "./global"
 import { exitInsertMode, onChange, repeatInsertModeChanges, repeatLastEdit } from "./insert-mode"
 import { exitVisualMode, updateCmSelection, updateLastSelection, updateMark, vimApi } from "./keymap_vim"
 import type { MacroModeState } from "./macro-mode-state"
 import { motions } from "./motions"
-import type { ActionArgs, VimState } from "./types"
+import type { VimState } from "./types"
 import { clipCursorToContent, lineLength, offsetCursor, selectForInsert } from "./vim-utils"
 
 export type ActionFunc = (adapter: EditorAdapter, actionArgs: ActionArgs, vim: VimState) => void
