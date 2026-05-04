@@ -21,15 +21,20 @@ function parseLogPath(args: string[]): string | undefined {
   return undefined
 }
 
-function parseFilePath(args: string[]): string | undefined {
+function parseFilePath(args: string[], scriptAbsPath: string): string | undefined {
   for (let i = 1; i < args.length; i++) {
     const arg = args[i]
+
+    // Skip --log and its immediately following value
     if (arg === "--log") {
-      i++ // skip the next arg (log path)
+      i++
       continue
     }
-    if (arg === "run") continue
-    if (arg.endsWith("index.ts")) continue
+
+    // Skip the script path (may be relative or absolute)
+    if (arg === "run" && i === 1) continue // "bun run <script>" — skip "run"
+    if (arg.endsWith(`/${scriptAbsPath}`) || scriptAbsPath.endsWith(`/${arg}`)) continue
+
     return arg
   }
   return undefined
@@ -50,8 +55,10 @@ async function main() {
 
   initTui()
 
-  const moduleDir = path.dirname(fileURLToPath(import.meta.url))
-  const targetPath = parseFilePath(process.argv) ?? path.join(moduleDir, "../tests/fixtures/demo-content.md")
+  const scriptAbsPath = fileURLToPath(import.meta.url)
+  const moduleDir = path.dirname(scriptAbsPath)
+  const targetPath =
+    parseFilePath(process.argv, scriptAbsPath) ?? path.join(moduleDir, "../tests/fixtures/demo-content.md")
   loadFile(targetPath)
 
   const vimMode = new VimMode(new TerminalStatusBar())
