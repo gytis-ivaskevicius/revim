@@ -31,9 +31,9 @@ function parseFilePath(args: string[], scriptAbsPath: string): string | undefine
       continue
     }
 
-    // Skip the script path (may be relative or absolute)
+    // Skip the script path (may be relative, absolute, or use ./ ../ prefixes)
     if (arg === "run" && i === 1) continue // "bun run <script>" — skip "run"
-    if (arg.endsWith(`/${scriptAbsPath}`) || scriptAbsPath.endsWith(`/${arg}`)) continue
+    if (path.resolve(arg) === scriptAbsPath) continue
 
     return arg
   }
