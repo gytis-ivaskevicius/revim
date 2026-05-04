@@ -78,13 +78,18 @@ test.describe(":w! with loaded file", () => {
   test(":w! behaves identically to :w and writes to the loaded file", async ({ terminal }) => {
     await expect(terminal.getByText("original content")).toBeVisible()
 
+    // Modify the buffer first to prove the write actually persists changes
+    const insertText = "modified "
+    await Keys.pressKeys(terminal, ["i", ...insertText.split(""), "<Esc>"])
+    await Keys.delay(RENDER_DELAY_MS)
+
     // Write with ! flag — should write to loaded file
     await Keys.pressKeys(terminal, [":", "w", "!", "<Enter>"])
     await Keys.delay(RENDER_DELAY_MS * 2)
 
-    // Verify file was written (still has the original content since we didn't modify)
+    // Verify file on disk reflects the modification
     const content = readFileSync(tmpFile, "utf-8")
-    expect(content).toContain("original content")
+    expect(content).toContain("modified original content")
 
     // Cleanup
     try {
