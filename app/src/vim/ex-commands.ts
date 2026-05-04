@@ -679,6 +679,15 @@ export const exCommands: Record<string, ExCommandFunc> = {
       EditorAdapter.commands.save(adapter, params)
     }
   },
+  quit: (adapter, params) => {
+    // :q! is accepted but treated the same as :q (no dirty-state checks yet)
+    EditorAdapter.commands.quit?.(adapter, params)
+  },
+  wq: (adapter, params) => {
+    // Write the file first, then quit
+    exCommands.write(adapter, params)
+    exCommands.quit(adapter, params)
+  },
   nohlsearch: (adapter) => {
     clearSearchHighlight(adapter)
   },

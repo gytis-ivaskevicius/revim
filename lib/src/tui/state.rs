@@ -40,6 +40,7 @@ pub struct TuiState {
     pub highlights: Vec<HighlightRange>,
     pub status_text: String,
     pub scroll_top: u16,
+    pub current_path: Option<String>,
 }
 
 impl Default for TuiState {
@@ -66,6 +67,7 @@ impl TuiState {
             highlights: Vec::new(),
             status_text: String::new(),
             scroll_top: 0,
+            current_path: None,
         }
     }
 
@@ -284,6 +286,12 @@ mod tests {
             demo_text,
             ..TuiState::default()
         }
+    }
+
+    #[test]
+    fn current_path_initialized_to_none() {
+        let state = TuiState::new();
+        assert!(state.current_path.is_none());
     }
 
     #[test]

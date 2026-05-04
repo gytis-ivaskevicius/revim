@@ -79,6 +79,9 @@ pub fn load_file(path: String) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
         let mut state = context.state.lock().map_err(to_napi_error)?;
 
+        // Always track the current path, even on read failure (matching Vim behavior)
+        state.current_path = Some(path.clone());
+
         match std::fs::read_to_string(&path) {
             Ok(content) => {
                 let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
@@ -90,6 +93,43 @@ pub fn load_file(path: String) -> Result<()> {
         }
     }
     render_frame_internal()
+}
+
+#[napi]
+pub fn get_current_path() -> Result<Option<String>> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let context = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+    let state = context.state.lock().map_err(to_napi_error)?;
+    Ok(state.current_path.clone())
+}
+
+#[napi]
+pub fn set_current_path(path: String) -> Result<()> {
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let context = ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+    let mut state = context.state.lock().map_err(to_napi_error)?;
+    state.current_path = Some(path);
+    Ok(())
+}
+
+#[napi]
+pub fn save_file(path: String) -> Result<()> {
+    let lines = {
+        let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let context = ctx
+            .as_ref()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        let state = context.state.lock().map_err(to_napi_error)?;
+        state.demo_text.clone()
+    }; // Drop all locks before I/O
+
+    let content = lines.join("\n") + "\n";
+    std::fs::write(&path, content).map_err(to_napi_error)?;
+    Ok(())
 }
 
 #[napi]

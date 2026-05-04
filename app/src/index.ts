@@ -1,10 +1,20 @@
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { initTui, loadFile, shutdownTui, startKeyboardListener, waitForKeyboardEvent } from "@revim/lib"
+import {
+  getCurrentPath,
+  initTui,
+  loadFile,
+  saveFile,
+  setCurrentPath,
+  setStatusText,
+  shutdownTui,
+  startKeyboardListener,
+  waitForKeyboardEvent,
+} from "@revim/lib"
 import { createErrorWindow } from "./error-window"
 import { closeLog, initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
-import { VimMode } from "./vim"
+import { EditorAdapter, type FileEvent, VimMode } from "./vim"
 import TerminalStatusBar from "./vim/terminal-status-bar"
 
 interface KeyboardEvent {
@@ -62,6 +72,34 @@ async function main() {
   loadFile(targetPath)
 
   const vimMode = new VimMode(new TerminalStatusBar())
+
+  // Wire up the save-file event listener
+  vimMode.addEventListener("save-file", (event: Event) => {
+    const fileEvent = event as FileEvent
+    let filename = fileEvent.filename.trim()
+    // Treat "!" as empty (force flag without a filename)
+    if (filename === "!") {
+      filename = ""
+    }
+    const path = filename || getCurrentPath()
+    if (!path) {
+      setStatusText("No file name")
+      return
+    }
+    if (filename) {
+      setCurrentPath(filename)
+    }
+    try {
+      saveFile(path)
+      setStatusText(`"${path}" written`)
+    } catch (e) {
+      setStatusText(e instanceof Error ? e.message : String(e))
+    }
+  })
+
+  // Register quit command
+  EditorAdapter.commands.quit = (_adapter, _params) => shutdown(0)
+
   vimMode.enable()
   let cleanedUp = false
 
