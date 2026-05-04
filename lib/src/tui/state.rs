@@ -50,61 +50,13 @@ impl Default for TuiState {
 
 impl TuiState {
     pub fn new() -> Self {
-        let demo_text = vec![
-            "Welcome to ReVim!".to_string(),
-            "This is a line of text.".to_string(),
-            "ReVim is a terminal-based text editor.".to_string(),
-            "It mimics the behavior of Vim.".to_string(),
-            "".to_string(),
-            "Basic movement keys:".to_string(),
-            "  h - move left".to_string(),
-            "  j - move down".to_string(),
-            "  k - move up".to_string(),
-            "  l - move right".to_string(),
-            "".to_string(),
-            "Word motion:".to_string(),
-            "  w - next word".to_string(),
-            "  b - previous word".to_string(),
-            "  e - end of word".to_string(),
-            "".to_string(),
-            "Line numbers are not shown yet.".to_string(),
-            "Visual mode selection works.".to_string(),
-            "You can delete, yank, and put text.".to_string(),
-            "".to_string(),
-            "Insert mode:".to_string(),
-            "  i - insert before cursor".to_string(),
-            "  a - insert after cursor".to_string(),
-            "  A - append at line end".to_string(),
-            "  o - open new line below".to_string(),
-            "  O - open new line above".to_string(),
-            "".to_string(),
-            "To exit ReVim:".to_string(),
-            "  Press Ctrl+C to quit".to_string(),
-            "".to_string(),
-            "Sentence motions:".to_string(),
-            "  ( - go to previous sentence".to_string(),
-            "  ) - go to next sentence".to_string(),
-            "  { - go to previous paragraph".to_string(),
-            "  } - go to next paragraph".to_string(),
-            "".to_string(),
-            "This buffer has 46 lines total.".to_string(),
-            "Scrolling is now supported!".to_string(),
-            "Use ArrowDown to scroll down.".to_string(),
-            "When cursor moves past viewport,".to_string(),
-            "the view automatically scrolls.".to_string(),
-            "".to_string(),
-            "Press G to jump to last line.".to_string(),
-            "Press gg to return to first line.".to_string(),
-            "".to_string(),
-            "End of demo buffer.".to_string(),
-        ];
         Self {
             cursor_row: 0,
             cursor_col: 0,
             anchor_row: 0,
             anchor_col: 0,
             visual_mode: VisualMode::None,
-            demo_text,
+            demo_text: vec![String::new()],
             selections: vec![Selection {
                 anchor_line: 0,
                 anchor_ch: 0,
@@ -115,6 +67,16 @@ impl TuiState {
             status_text: String::new(),
             scroll_top: 0,
         }
+    }
+
+    pub fn set_lines(&mut self, lines: Vec<String>) {
+        self.demo_text = lines;
+        self.cursor_row = 0;
+        self.cursor_col = 0;
+        self.anchor_row = 0;
+        self.anchor_col = 0;
+        self.scroll_top = 0;
+        self.sync_primary_selection();
     }
 
     pub fn ordered_range(

@@ -71,6 +71,31 @@ pub fn init_tui() -> Result<()> {
 }
 
 #[napi]
+pub fn load_file(path: String) -> Result<()> {
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let context = ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        let mut state = context.state.lock().map_err(to_napi_error)?;
+
+        match std::fs::read_to_string(&path) {
+            Ok(content) => {
+                let mut lines: Vec<String> = content.split('\n').map(|s| s.to_string()).collect();
+                if lines.last().map(|s| s.is_empty()).unwrap_or(false) {
+                    lines.pop();
+                }
+                state.set_lines(lines);
+            }
+            Err(err) => {
+                state.set_lines(vec![format!("Error opening '{}': {}", path, err)]);
+            }
+        }
+    }
+    render_frame_internal()
+}
+
+#[napi]
 pub fn shutdown_tui() -> Result<()> {
     TUI_RUNNING.store(false, Ordering::SeqCst);
 
