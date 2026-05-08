@@ -322,53 +322,6 @@ impl TuiState {
         }
     }
 
-    pub fn max_rows(&self) -> u16 {
-        self.active().max_rows()
-    }
-
-    pub fn max_scroll_top(&self, viewport_height: u16) -> u16 {
-        self.active().max_scroll_top(viewport_height)
-    }
-
-    pub fn current_line_len(&self) -> u16 {
-        self.active().current_line_len()
-    }
-
-    pub fn get_line(&self, line: u16) -> String {
-        self.active().get_line(line)
-    }
-
-    pub fn char_to_byte_index(text: &str, ch: u16) -> usize {
-        BufferState::char_to_byte_index(text, ch)
-    }
-
-    pub fn get_range(&self, start_line: u16, start_ch: u16, end_line: u16, end_ch: u16) -> String {
-        self.active().get_range(start_line, start_ch, end_line, end_ch)
-    }
-
-    pub fn replace_range(
-        &mut self,
-        text: &str,
-        start_line: u16,
-        start_ch: u16,
-        end_line: u16,
-        end_ch: u16,
-    ) {
-        self.active_mut().replace_range(text, start_line, start_ch, end_line, end_ch);
-    }
-
-    pub fn clip_pos(&self, line: u16, ch: u16) -> (u16, u16) {
-        self.active().clip_pos(line, ch)
-    }
-
-    pub fn index_from_pos(&self, line: u16, ch: u16) -> u32 {
-        self.active().index_from_pos(line, ch)
-    }
-
-    pub fn pos_from_index(&self, offset: u32) -> (u16, u16) {
-        self.active().pos_from_index(offset)
-    }
-
     pub fn sync_primary_selection(&mut self) {
         let active = self.active();
         self.selections = vec![Selection {

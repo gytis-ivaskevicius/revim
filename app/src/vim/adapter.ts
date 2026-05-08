@@ -184,7 +184,7 @@ export class EditorAdapter {
   dispatch(signal: "vim-set-clipboard-register"): void
   dispatch(signal: "vim-mode-change", mode: ModeChangeEvent): void
   dispatch(signal: "vim-keypress", key: string): void
-  dispatch(signal: "buffer-switch", path: string | null): void
+  dispatch(signal: "buffer-switch", path: string | null | undefined): void
   dispatch(signal: string, ...args: any[]): void {
     const listeners = this.listeners[signal]
     if (!listeners) {
@@ -224,7 +224,7 @@ export class EditorAdapter {
   on(event: "vim-set-clipboard-register", handler: () => void): void
   on(event: "vim-mode-change", handler: (mode: ModeChangeEvent) => void): void
   on(event: "vim-keypress", handler: (key: string) => void): void
-  on(event: "buffer-switch", handler: (path: string | null) => void): void
+  on(event: "buffer-switch", handler: (path: string | null | undefined) => void): void
   on(event: string, handler: (...args: any) => void): void {
     if (!this.listeners[event]) {
       this.listeners[event] = []
@@ -667,8 +667,8 @@ export class EditorAdapter {
 
 // Shared helper for dispatching buffer-switch events
 // Used by both action handlers and ex commands
-export function dispatchBufferSwitch(adapter: EditorAdapter, path: string | null) {
-  adapter.dispatch("buffer-switch", path)
+export function dispatchBufferSwitch(adapter: EditorAdapter, path: string | null | undefined) {
+  adapter.dispatch("buffer-switch", path ?? null)
 }
 
 export default EditorAdapter

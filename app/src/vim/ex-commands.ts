@@ -701,12 +701,20 @@ export const exCommands: Record<string, ExCommandFunc> = {
     exCommands.quit(adapter, params)
   },
   bnext: (_adapter, _params) => {
-    const result = nativeNextBuffer()
-    dispatchBufferSwitch(_adapter, result.path as string | null)
+    try {
+      const result = nativeNextBuffer()
+      dispatchBufferSwitch(_adapter, result.path ?? null)
+    } catch (_e) {
+      // Native error — no-op
+    }
   },
   bprev: (_adapter, _params) => {
-    const result = nativePrevBuffer()
-    dispatchBufferSwitch(_adapter, result.path as string | null)
+    try {
+      const result = nativePrevBuffer()
+      dispatchBufferSwitch(_adapter, result.path ?? null)
+    } catch (_e) {
+      // Native error — no-op
+    }
   },
   nohlsearch: (adapter) => {
     clearSearchHighlight(adapter)

@@ -608,9 +608,10 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
                 .max()
                 .unwrap_or(primary.head_ch);
 
+            let current_anchor_col = state.active().anchor_col;
             state.active_mut().anchor_row = min_line as u16;
             state.active_mut().cursor_row = max_line as u16;
-            state.active_mut().cursor_col = if min_col < state.active().anchor_col as u32 {
+            state.active_mut().cursor_col = if min_col < current_anchor_col as u32 {
                 min_col as u16
             } else {
                 max_col.saturating_sub(1) as u16
@@ -824,7 +825,8 @@ pub fn scroll_to(y: u32) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
         let viewport_height = context.viewport_height.load(Ordering::Relaxed);
         let mut state = context.state.lock().map_err(to_napi_error)?;
-        state.active_mut().scroll_top = (y as u16).min(state.active().max_scroll_top(viewport_height));
+        let max_scroll = state.active().max_scroll_top(viewport_height);
+        state.active_mut().scroll_top = (y as u16).min(max_scroll);
     }
 
     render_frame_internal()
@@ -1018,7 +1020,8 @@ pub fn scroll_to_line(line: u32, position: String) -> Result<()> {
             "bottom" => line.saturating_sub(viewport_height - 1),
             _ => line,
         };
-        state.active_mut().scroll_top = new_scroll_top.min(state.active().max_scroll_top(viewport_height));
+        let max_scroll = state.active().max_scroll_top(viewport_height);
+        state.active_mut().scroll_top = new_scroll_top.min(max_scroll);
     }
 
     render_frame_internal()

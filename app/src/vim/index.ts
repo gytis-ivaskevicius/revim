@@ -140,7 +140,7 @@ export class VimMode implements EventTarget {
         statusBar.clear()
       })
 
-      this.adapter_.on("buffer-switch", (path: string | null) => {
+      this.adapter_.on("buffer-switch", (path: string | null | undefined) => {
         const vim = this.adapter_.state.vim as VimState | undefined
         if (vim) {
           // Reset Vim mode state on buffer switch

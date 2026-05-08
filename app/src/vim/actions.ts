@@ -570,15 +570,23 @@ export const actions: Record<string, ActionFunc> = {
 
 export const defineAction = (name: string, fn: ActionFunc) => (actions[name] = fn)
 
-// Buffer switching actions - dispatched to VimMode via adapter events
+// Buffer switching actions
 actions.nextBuffer = (_adapter, _actionArgs, _vim) => {
-  const result = nativeNextBuffer()
-  dispatchBufferSwitch(_adapter, result.path as string | null)
+  try {
+    const result = nativeNextBuffer()
+    dispatchBufferSwitch(_adapter, result.path ?? null)
+  } catch (_e) {
+    // Native error (e.g. TUI not initialized) — no-op
+  }
 }
 
 actions.prevBuffer = (_adapter, _actionArgs, _vim) => {
-  const result = nativePrevBuffer()
-  dispatchBufferSwitch(_adapter, result.path as string | null)
+  try {
+    const result = nativePrevBuffer()
+    dispatchBufferSwitch(_adapter, result.path ?? null)
+  } catch (_e) {
+    // Native error — no-op
+  }
 }
 
 function executeMacroRegister(
