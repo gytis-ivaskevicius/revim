@@ -17,7 +17,7 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: ["v"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864)
     },
   },
   {
@@ -25,7 +25,7 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: ["v", "l"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864)
     },
   },
   {
@@ -38,8 +38,8 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: [{ key: "V", shift: true }, "j"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864)
       expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 1, 3)?.inverse).toBe(67108864)
     },
   },
   {
@@ -52,8 +52,8 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: [{ key: "v", ctrl: true }, "j"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 1, 1)?.inverse).toBe(67108864)
       expect(cellShift(terminal, 1, 2)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 1, 3)?.inverse).toBe(67108864)
     },
   },
   {
@@ -61,8 +61,8 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: ["l", "l", "l", "l", "l", { key: "v", ctrl: true }, "j"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 6, 1)?.inverse).toBe(67108864)
       expect(cellShift(terminal, 6, 2)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 6, 3)?.inverse).toBe(67108864)
     },
   },
   {
@@ -70,8 +70,8 @@ const snapshotCases: Array<{
     readyText: "Welcome to ReVim!",
     keys: ["l", "l", "l", "l", "l", "l", "l", "l", { key: "v", ctrl: true }, "l"],
     assertions: (terminal) => {
-      expect(cellShift(terminal, 9, 1)?.inverse).toBe(67108864)
-      expect(cellShift(terminal, 11, 1)?.inverse).toBe(0)
+      expect(cellShift(terminal, 9, 2)?.inverse).toBe(67108864)
+      expect(cellShift(terminal, 11, 2)?.inverse).toBe(0)
     },
   },
 ]

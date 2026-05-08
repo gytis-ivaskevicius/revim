@@ -76,9 +76,16 @@ async function main() {
 
   let firstFilePath: string
   if (filePaths.length === 0) {
-    // No files specified: load demo content
+    // No files specified: load demo content and open a scratch buffer so the tabs bar is visible
     firstFilePath = path.join(moduleDir, "../tests/fixtures/demo-content.md")
     loadFile(firstFilePath)
+
+    // Open a second demo buffer for tabs bar visibility during development
+    const scratchPath = path.join(moduleDir, "../tests/fixtures/demo-scratch.md")
+    openBuffer(scratchPath)
+
+    // Ensure the first buffer is active
+    switchToBuffer(0)
   } else {
     // Load first file
     firstFilePath = filePaths[0]

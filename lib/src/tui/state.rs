@@ -277,6 +277,11 @@ impl TuiState {
     pub fn active_index(&self) -> usize {
         self.active
     }
+
+    /// Returns the current_path for each buffer.
+    pub fn buffer_paths(&self) -> Vec<Option<String>> {
+        self.buffers.iter().map(|b| b.current_path.clone()).collect()
+    }
 }
 
 impl Default for TuiState {

@@ -2,6 +2,7 @@
 
 exports[`ArrowDown x1 snapshot has no inverse on cursor cell | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
+│ 1 demo-content.md  2 demo-scratch.md                                           │
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
 ││This is a line of text.                                                       ││
@@ -29,7 +30,6 @@ exports[`ArrowDown x1 snapshot has no inverse on cursor cell | 1`] = String.raw`
 ││  A - append at line end                                                      ││
 ││  o - open new line below                                                     ││
 ││  O - open new line above                                                     ││
-││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │NORMAL  demo-content.md                                                      2:1│
 ╰────────────────────────────────────────────────────────────────────────────────╯
@@ -42,12 +42,15 @@ exports[`ArrowDown x1 snapshot has no inverse on cursor cell | 1`] = String.raw`
     "blink": 0,
     "bold": 0,
     "dim": 0,
-    "inverse": 0,
+    "inverse": 67108864,
     "invisible": 0,
     "italic": 0,
     "overline": 0,
     "strike": 0,
     "underline": 0
+  },
+  "19,0": {
+    "inverse": 0
   },
   "0,29": {
     "inverse": 67108864
@@ -57,6 +60,7 @@ exports[`ArrowDown x1 snapshot has no inverse on cursor cell | 1`] = String.raw`
 
 exports[`ArrowRight x4 snapshot has no inverse on cursor cell | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
+│ 1 demo-content.md  2 demo-scratch.md                                           │
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
 ││This is a line of text.                                                       ││
@@ -84,7 +88,6 @@ exports[`ArrowRight x4 snapshot has no inverse on cursor cell | 1`] = String.raw
 ││  A - append at line end                                                      ││
 ││  o - open new line below                                                     ││
 ││  O - open new line above                                                     ││
-││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │NORMAL  demo-content.md                                                      1:5│
 ╰────────────────────────────────────────────────────────────────────────────────╯
@@ -97,12 +100,15 @@ exports[`ArrowRight x4 snapshot has no inverse on cursor cell | 1`] = String.raw
     "blink": 0,
     "bold": 0,
     "dim": 0,
-    "inverse": 0,
+    "inverse": 67108864,
     "invisible": 0,
     "italic": 0,
     "overline": 0,
     "strike": 0,
     "underline": 0
+  },
+  "19,0": {
+    "inverse": 0
   },
   "0,29": {
     "inverse": 67108864
@@ -112,6 +118,7 @@ exports[`ArrowRight x4 snapshot has no inverse on cursor cell | 1`] = String.raw
 
 exports[`initial render snapshot has no inverse on cursor cell | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
+│ 1 demo-content.md  2 demo-scratch.md                                           │
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
 ││This is a line of text.                                                       ││
@@ -139,7 +146,6 @@ exports[`initial render snapshot has no inverse on cursor cell | 1`] = String.ra
 ││  A - append at line end                                                      ││
 ││  o - open new line below                                                     ││
 ││  O - open new line above                                                     ││
-││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │NORMAL  demo-content.md                                                      1:1│
 ╰────────────────────────────────────────────────────────────────────────────────╯
@@ -152,12 +158,15 @@ exports[`initial render snapshot has no inverse on cursor cell | 1`] = String.ra
     "blink": 0,
     "bold": 0,
     "dim": 0,
-    "inverse": 0,
+    "inverse": 67108864,
     "invisible": 0,
     "italic": 0,
     "overline": 0,
     "strike": 0,
     "underline": 0
+  },
+  "19,0": {
+    "inverse": 0
   },
   "0,29": {
     "inverse": 67108864
@@ -167,6 +176,7 @@ exports[`initial render snapshot has no inverse on cursor cell | 1`] = String.ra
 
 exports[`v + ArrowRight x3 preserves visual selection inverse | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────╮
+│ 1 demo-content.md  2 demo-scratch.md                                           │
 │┌ReVim─────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                             ││
 ││This is a line of text.                                                       ││
@@ -194,7 +204,6 @@ exports[`v + ArrowRight x3 preserves visual selection inverse | 1`] = String.raw
 ││  A - append at line end                                                      ││
 ││  o - open new line below                                                     ││
 ││  O - open new line above                                                     ││
-││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
 │VISUAL  demo-content.md                                                      1:5│
 ╰────────────────────────────────────────────────────────────────────────────────╯
@@ -207,17 +216,20 @@ exports[`v + ArrowRight x3 preserves visual selection inverse | 1`] = String.raw
     "blink": 0,
     "bold": 0,
     "dim": 0,
-    "inverse": 0,
+    "inverse": 67108864,
     "invisible": 0,
     "italic": 0,
     "overline": 0,
     "strike": 0,
     "underline": 0
   },
-  "1,1": {
+  "19,0": {
+    "inverse": 0
+  },
+  "1,2": {
     "inverse": 67108864
   },
-  "5,1": {
+  "5,2": {
     "inverse": 0
   },
   "0,29": {

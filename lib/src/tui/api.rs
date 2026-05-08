@@ -1087,6 +1087,8 @@ pub fn open_buffer(path: String) -> Result<BufferInfo> {
         (index as u32, result_path)
     };
 
+    render_frame_internal()?;
+
     Ok(BufferInfo {
         index,
         path: result_path,

@@ -1,10 +1,11 @@
-import { expect, Keys, test, withFiles } from "./test-utils.js"
+import { expect, Keys, test, withFile, withFiles } from "./test-utils.js"
 
 const DEMO_FIXTURE = "app/tests/fixtures/demo-content.md"
 const BUFFER2_FIXTURE = "app/tests/fixtures/buffer2-content.md"
 const BUFFER3_FIXTURE = "app/tests/fixtures/buffer3-content.md"
 
 test.describe("buffer switching", () => {
+  test.use(withFile(DEMO_FIXTURE))
   test("single file mode works as before (no regression)", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
   })

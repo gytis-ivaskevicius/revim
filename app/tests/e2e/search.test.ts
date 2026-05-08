@@ -1,10 +1,13 @@
-import { expect, Keys, RENDER_DELAY_MS, test } from "./test-utils.js"
+import { expect, Keys, RENDER_DELAY_MS, test, withFile } from "./test-utils.js"
 
 async function typeSearch(terminal: any, query: string, prefix = "/") {
   await Keys.pressKeys(terminal, [prefix, ...query.split(""), "Enter"])
 }
 
+const DEMO_FIXTURE = "app/tests/fixtures/demo-content.md"
+
 test.describe("search prompt", () => {
+  test.use(withFile(DEMO_FIXTURE))
   test("status bar shows prompt prefix while typing - press / shows /", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     await Keys.pressKeys(terminal, ["/"])

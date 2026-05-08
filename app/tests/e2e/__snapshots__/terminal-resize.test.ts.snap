@@ -2,6 +2,7 @@
 
 exports[`terminal resize › wider dimensions update display | 1`] = String.raw`
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ 1 demo-content.md  2 demo-scratch.md                                                                                   │
 │┌ReVim─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐│
 ││Welcome to ReVim!                                                                                                     ││
 ││This is a line of text.                                                                                               ││
@@ -39,7 +40,6 @@ exports[`terminal resize › wider dimensions update display | 1`] = String.raw`
 ││  { - go to previous paragraph                                                                                        ││
 ││  } - go to next paragraph                                                                                            ││
 ││                                                                                                                      ││
-││This buffer has 46 lines total.                                                                                       ││
 │└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘│
 │NORMAL  demo-content.md                                                                                              1:1│
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -52,12 +52,15 @@ exports[`terminal resize › wider dimensions update display | 1`] = String.raw`
     "blink": 0,
     "bold": 0,
     "dim": 0,
-    "inverse": 0,
+    "inverse": 67108864,
     "invisible": 0,
     "italic": 0,
     "overline": 0,
     "strike": 0,
     "underline": 0
+  },
+  "19,0": {
+    "inverse": 0
   },
   "0,39": {
     "inverse": 67108864
