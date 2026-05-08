@@ -24,6 +24,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - **Basic ex commands** — Add `:w` (write), `:q` (quit), and `:wq` (write-and-quit) ex commands; track the current file path in Rust `TuiState`; expose `save_file`, `get_current_path`, and `set_current_path` N-API functions; display save errors via the status bar ([story](stories/020-basic-ex-commands/story.md))
 - **Extract lib-independent adapter code** — Separate `adapter.ts` into lib-independent modules (`adapter-types.ts` for types/constants, `adapter-search.ts` for search/bracket logic) so `adapter.ts` contains only code that explicitly depends on `@revim/lib`; re-export from `adapter.ts` to preserve the existing import API ([story](stories/022-extract-adapter-lib-independent/story.md))
 - **Status bar feature completion** — Implement `startDisplay` (transient ex-command messages), `showNotification` (auto-clearing one-shot messages), cursor position indicator (line:col), file name display, and reversed-style status bar rendering; remove stale `startPrompt` known limitation entry ([story](stories/023-status-bar-features/story.md))
+- **Multi-buffer support** — Open multiple files from CLI (`revim file1 file2`), switch between buffers with `gt`/`gT` and `:bnext`/`:bprev`; buffer state (content, cursor, scroll, undo/redo) managed in Rust; undo/redo migrated from TypeScript to Rust per-buffer stacks ([story](stories/024-multi-buffer-support/story.md))
 
 ## Non-Goals
 
