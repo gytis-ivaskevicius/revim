@@ -23,6 +23,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 - **CLI file opening** — Allow `revim <filepath>` to open a file for editing; move hardcoded demo content from Rust `state.rs` to `app/tests/fixtures/demo-content.md`; load the fixture by default when no file is passed; read file content in TypeScript and push it to the Rust buffer via the existing `setAllLines` N-API function ([story](stories/019-cli-file-open/story.md))
 - **Basic ex commands** — Add `:w` (write), `:q` (quit), and `:wq` (write-and-quit) ex commands; track the current file path in Rust `TuiState`; expose `save_file`, `get_current_path`, and `set_current_path` N-API functions; display save errors via the status bar ([story](stories/020-basic-ex-commands/story.md))
 - **Extract lib-independent adapter code** — Separate `adapter.ts` into lib-independent modules (`adapter-types.ts` for types/constants, `adapter-search.ts` for search/bracket logic) so `adapter.ts` contains only code that explicitly depends on `@revim/lib`; re-export from `adapter.ts` to preserve the existing import API ([story](stories/022-extract-adapter-lib-independent/story.md))
+- **Status bar feature completion** — Implement `startDisplay` (transient ex-command messages), `showNotification` (auto-clearing one-shot messages), cursor position indicator (line:col), file name display, and reversed-style status bar rendering; remove stale `startPrompt` known limitation entry ([story](stories/023-status-bar-features/story.md))
 
 ## Non-Goals
 
@@ -33,13 +34,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 ## Known Limitations
 
 - No cross-platform binary builds configured
-- Status bar: mode indicator and key buffer wired (story 008); search prompt `/`/`?` wired (story 010); the following are deferred:
-  - `startPrompt` / `status-close-prompt` for `:` — interactive command-line prompt for ex commands and confirm replacements
-  - `startDisplay` / `status-close-display` — transient ex-command messages (e.g., substitution counts)
-  - `showNotification` — one-shot notification messages from ex commands
-  - Cursor position indicator (line:col) in the status bar
-  - File name display in the status bar
-  - Status bar colors / theming
+- Status bar: mode indicator and key buffer wired (story 008); search prompt `/`/`?` wired (story 010); `:` ex command prompt wired (story 010)
 - Partial ex command coverage
   - `:w`, `:q`, `:wq` are implemented and tested (story 020)
   - `:sort`, `:s`, and other ex commands still need E2E tests or explicit gating
