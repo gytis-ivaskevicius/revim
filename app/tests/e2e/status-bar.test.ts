@@ -113,7 +113,7 @@ test.describe("status bar notifications", () => {
 })
 
 test.describe("status bar display messages", () => {
-  test("substitution count shown after :s command", async ({ terminal }) => {
+  test(":s///g command replaces text and returns to normal mode", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
 
     // Replace "Welcome" with "Hi" on the first line (exactly one substitution on one line)
@@ -140,7 +140,10 @@ test.describe("status bar display messages", () => {
     // Verify replacement happened
     await expect(terminal.getByText("Hi to ReVim")).toBeVisible()
 
-    // The substitution command completed successfully (notification shown via status-notify)
+    // The substitution command completed, returned to normal mode
+    // The substitution count notification is shown via showConfirm but is not
+    // verified here due to E2E rendering timing; see unit tests for
+    // TerminalStatusBar - startDisplay/showNotification coverage
     await expect(terminal.getByText("NORMAL")).toBeVisible()
   })
 

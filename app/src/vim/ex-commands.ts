@@ -70,7 +70,7 @@ function doReplace(
   query: RegExp,
   replaceWith: string,
   callback?: () => void,
-): { count: number; lines: number } {
+): { count: number; lines: number } | null {
   const vim = adapter.state.vim as VimState
   // Set up all the functions.
   vim.exMode = true
@@ -206,7 +206,7 @@ function doReplace(
   next()
   if (done) {
     showConfirm(adapter, `No matches for ${query.source}`)
-    return { count: 0, lines: 0 }
+    return null
   }
   if (!confirm) {
     replaceAll()
@@ -221,7 +221,7 @@ function doReplace(
     desc: "",
     onClose: () => {},
   })
-  return { count: substitutionCount, lines: affectedLines.size }
+  return null
 }
 
 export const exCommands: Record<string, ExCommandFunc> = {
@@ -653,7 +653,7 @@ export const exCommands: Record<string, ExCommandFunc> = {
     const cursor = adapter.getSearchCursor(query, startPos)
     adapter.pushUndoStop()
     const result = doReplace(adapter, confirm, global, lineStart, lineEnd, cursor, query, replacePart, params.callback)
-    if (result.count > 0 && !confirm) {
+    if (result && result.count > 0 && !confirm) {
       const substitutionLabel = result.count === 1 ? "substitution" : "substitutions"
       const lineLabel = result.lines === 1 ? "line" : "lines"
       showConfirm(adapter, `${result.count} ${substitutionLabel} on ${result.lines} ${lineLabel}`)
