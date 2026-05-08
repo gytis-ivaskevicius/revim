@@ -15,6 +15,10 @@ ReVim supports multi-buffer editing (story 024) with `gt`/`gT` and `:bnext`/`:bp
 - Split windows / panes
 - Reordering buffers via drag or command
 
+## In Scope (added from user request)
+
+- When running `just dev` (no CLI file arguments), open 2 demo buffers so the tabs bar is always visible during development. The first buffer loads `demo-content.md` as before; a second buffer loads a new `demo-scratch.md` fixture. This ensures the tabs bar feature is exercised by default.
+
 ## Implementation Approach
 
 ### Rust: Conditional tabs bar in `render_frame_internal`
@@ -102,9 +106,19 @@ Add a method `TuiState::buffer_paths(&self) -> Vec<Option<String>>` that returns
 - `open_buffer` in `api.rs` calls `render_frame_internal()` after the lock scope block (before returning `BufferInfo`), matching the pattern in `load_file`, `switch_to_buffer`, `next_buffer`, and `prev_buffer`
 - `just test-rust` passes
 
-### Task 3 — E2E tests for tabs bar
+### Task 3 — Open 2 demo buffers by default so tabs bar is visible during `just dev`
 
-- Test: single buffer — tabs bar is not visible (no buffer index numbers like ` 1 ` appear in the top row of the rendered output)
+- Create `app/tests/fixtures/demo-scratch.md` with a few lines of scratch content (e.g., `// Scratch buffer` plus 2–3 placeholder lines)
+- In `index.ts`, when `filePaths.length === 0`, after loading `demo-content.md` as the first buffer, also call `openBuffer()` with the path to `demo-scratch.md`, then call `switchToBuffer(0)` to keep the first buffer active
+- This mirrors the existing multi-file CLI startup pattern (lines 82–93) but applies it to the zero-args case
+- Running `just dev` with no arguments shows the tabs bar with 2 tabs: `1 demo-content.md` (active, highlighted) and `2 demo-scratch.md`
+- Running `just dev path/to/file` with a single file still shows no tabs bar (single-buffer mode, unchanged)
+- `just lint` passes
+
+### Task 4 — E2E tests for tabs bar
+
+- Test: single buffer (`withFile`) — tabs bar is not visible (no buffer index numbers like ` 1 ` appear in the top row of the rendered output)
+- Test: default dev mode (no CLI args, 2 demo buffers) — tabs bar is visible showing both filenames
 - Test: two buffers opened from CLI — tabs bar is visible showing both filenames (e.g., `getByText(/1.*demo-content/)` and `getByText(/2.*buffer2-content/)` both match)
 - Test: pressing `gt` switches buffer and the tabs bar updates (the previously inactive filename's content becomes visible in the editor area, confirming the active tab changed)
 - Test: pressing `gT` switches back and the tabs bar updates accordingly
@@ -122,7 +136,8 @@ Add a method `TuiState::buffer_paths(&self) -> Vec<Option<String>>` that returns
 
 ## Notes
 
-- The tabs bar only appears when there are 2+ buffers. With a single buffer, the editor looks identical to the current behavior — no viewport height change, no tabs row.
+- The tabs bar only appears when there are 2+ buffers. With a single buffer (e.g., `revim file1.txt`), the editor looks identical to the current behavior — no viewport height change, no tabs row.
+- Running `just dev` with no arguments now opens 2 demo buffers (`demo-content.md` and `demo-scratch.md`) so the tabs bar is always visible during development. This is a change from the previous single-buffer default.
 - The tabs bar is rendered entirely in Rust within `render_frame_internal`. No new NAPI functions are needed for the tabs bar itself; the existing `getBufferCount()` and `getCurrentBufferIndex()` NAPI functions are not used for rendering (the data is read directly from `TuiState` inside the lock).
 - Buffer indices in the tabs bar are 1-based (matching Vim convention), even though the internal `active` index is 0-based.
 - The `open_buffer` NAPI function does NOT switch to the new buffer. The tabs bar still updates because `render_frame_internal()` reads `buffers.len()` and shows the tabs bar whenever there are 2+ buffers, regardless of which buffer is active.
