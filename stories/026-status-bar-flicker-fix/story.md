@@ -119,6 +119,8 @@ Modify `TerminalStatusBar.update()` in `app/src/vim/terminal-status-bar.ts` to c
 
 Add `focusEditor()` call at the end of `processKeyEvent()` in `app/src/index.ts`, after `vimMode.handleKey(encodedKey)`. This is now the sole render trigger during key processing, since `setStatusText()` no longer renders.
 
+Also add `focusEditor()` after `statusBar.setFilePath(firstFilePath)` in the `main()` function (line ~96). Since `setStatusText()` no longer renders, the initial status bar won't be visible until `focusEditor()` is called. The `initTui()` and `loadFile()` calls still render (they have their own `render_frame_internal()` calls), but the status bar text set by `TerminalStatusBar` constructor and `setFilePath` won't be rendered without this explicit `focusEditor()`.
+
 - Normal keypress (`j`) in normal mode
   - → `focusEditor()` called after `handleKey()` completes
   - → single render shows final state (cursor moved, status bar updated with correct position)
@@ -131,6 +133,9 @@ Add `focusEditor()` call at the end of `processKeyEvent()` in `app/src/index.ts`
 - Error during key processing
   - → `focusEditor()` still called (it's after `processKeyEvent` in the try block)
   - → render shows current state even if key processing partially failed
+- App startup
+  - → `focusEditor()` called after `statusBar.setFilePath(firstFilePath)`
+  - → initial status bar rendered with correct filename and cursor position
 
 ### Task 4 - Add `focusEditor()` for async status bar updates
 
