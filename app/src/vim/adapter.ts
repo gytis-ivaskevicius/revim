@@ -28,35 +28,25 @@ import {
   triggerAction,
 } from "@revim/lib"
 import { log } from "../log"
+import { createSearchCursor, escapeRegex, findMatchingBracket, scanForBracket } from "./adapter-search"
+import {
+  type Binding,
+  type Change,
+  CmSelection,
+  type ExCommandOptionalParameters,
+  type KeyMapEntry,
+  type Operation,
+} from "./adapter-types"
 import { cursorEqual, cursorMax, cursorMin, makePos, type Pos } from "./common"
 import type { ModeChangeEvent, StatusBarInputOptions } from "./statusbar"
 
+export type { MatchingBracket, SearchCursor, SearchMatch } from "./adapter-search"
+export type { BindingFunction, Change, ExCommandOptionalParameters, KeyMapEntry } from "./adapter-types"
+// Re-exports for zero-impact on existing import sites
+export { CmSelection } from "./adapter-types"
+
 let _id = 0
 const nextId = () => String(++_id)
-
-export class CmSelection {
-  readonly anchor: Pos
-  readonly head: Pos
-
-  constructor(anchor: Pos, head: Pos) {
-    this.anchor = anchor
-    this.head = head
-  }
-
-  from(): Pos {
-    if (this.anchor.line < this.head.line) {
-      return this.anchor
-    } else if (this.anchor.line === this.head.line) {
-      return this.anchor.ch < this.head.ch ? this.anchor : this.head
-    } else {
-      return this.head
-    }
-  }
-
-  empty(): boolean {
-    return this.anchor.line === this.head.line && this.anchor.ch === this.head.ch
-  }
-}
 
 export class Marker implements Pos {
   adapter: EditorAdapter
@@ -80,54 +70,6 @@ export class Marker implements Pos {
   find(): Pos {
     return makePos(this.line, this.ch)
   }
-}
-
-export type BindingFunction = (adapter: EditorAdapter, next?: KeyMapEntry) => void
-type CallFunction = (key: any, adapter: EditorAdapter) => any
-type Binding = string | BindingFunction | string[]
-
-export interface KeyMapEntry {
-  keys?: Record<string, string>
-  find?: (key: string) => boolean
-  fallthrough?: string | string[]
-  attach?: BindingFunction
-  detach?: BindingFunction
-  call?: CallFunction
-}
-
-export interface Change {
-  text: string[]
-  origin: "+input" | "paste"
-  next?: Change
-}
-
-interface Operation {
-  lastChange?: Change
-  change?: Change
-  selectionChanged?: boolean
-  isVimOp?: boolean
-}
-
-interface MatchingBracket {
-  symbol: string
-  pair: string
-  mode: "open" | "close"
-  regex: RegExp
-}
-
-const kMatchingBrackets: Record<string, MatchingBracket> = {
-  "(": { symbol: "(", pair: ")", mode: "close", regex: /[()]/ },
-  ")": { symbol: ")", pair: "(", mode: "open", regex: /[()]/ },
-  "[": { symbol: "[", pair: "]", mode: "close", regex: /[[\]]/ },
-  "]": { symbol: "]", pair: "[", mode: "open", regex: /[[\]]/ },
-  "{": { symbol: "{", pair: "}", mode: "close", regex: /[{}]/ },
-  "}": { symbol: "}", pair: "{", mode: "open", regex: /[{}]/ },
-  "<": { symbol: "<", pair: ">", mode: "close", regex: /[<>]/ },
-  ">": { symbol: ">", pair: "<", mode: "open", regex: /[<>]/ },
-}
-
-export interface ExCommandOptionalParameters {
-  argString?: string
 }
 
 export class EditorAdapter {
@@ -568,22 +510,7 @@ export class EditorAdapter {
   }
 
   findMatchingBracket(cur: Pos) {
-    const line = this.getLine(cur.line)
-    for (let ch = cur.ch; ch < line.length; ch++) {
-      const curCh = line.charAt(ch)
-      const matchable = kMatchingBrackets[curCh]
-      if (matchable) {
-        const direction = matchable.mode === "close" ? 1 : -1
-        const offset = direction > 0 ? 1 : -1
-        return this.scanForBracket(
-          makePos(cur.line, ch + offset),
-          direction,
-          matchable.regex,
-          matchable.symbol,
-          matchable.pair,
-        )
-      }
-    }
+    return findMatchingBracket(this, cur)
   }
 
   findFirstNonWhiteSpaceCharacter(line: number) {
@@ -605,120 +532,7 @@ export class EditorAdapter {
   }
 
   getSearchCursor(pattern: string | RegExp, startPos: Pos) {
-    let matchCase = false
-    let isRegex = false
-
-    if (pattern instanceof RegExp) {
-      matchCase = !pattern.ignoreCase
-      isRegex = true
-    }
-
-    const query = typeof pattern === "string" ? pattern : pattern.source
-    const context = this
-    let currentIndex = -1
-
-    const allMatches: { line: number; ch: number; endLine: number; endCh: number }[] = []
-    const lineCount = this.lineCount()
-    for (let lineIdx = 0; lineIdx < lineCount; lineIdx++) {
-      const line = this.getLine(lineIdx)
-      const regex = isRegex
-        ? new RegExp(query, matchCase ? "g" : "gi")
-        : new RegExp(this.escapeRegex(query), matchCase ? "g" : "gi")
-      let match: RegExpExecArray | null
-      while ((match = regex.exec(line)) !== null) {
-        allMatches.push({
-          line: lineIdx,
-          ch: match.index,
-          endLine: lineIdx,
-          endCh: match.index + match[0].length,
-        })
-        if (match[0].length === 0) {
-          regex.lastIndex += 1
-        }
-      }
-    }
-
-    return {
-      getMatches() {
-        return allMatches
-      },
-      findNext() {
-        return this.find(false)
-      },
-      findPrevious() {
-        return this.find(true)
-      },
-      jumpTo(index: number) {
-        if (!allMatches?.length) {
-          return false
-        }
-        currentIndex = Math.max(0, Math.min(index, allMatches.length - 1))
-        const match = allMatches[currentIndex]
-        return { line: match.line, ch: match.ch }
-      },
-      find(back: boolean) {
-        if (!allMatches?.length) {
-          return false
-        }
-
-        if (currentIndex === -1) {
-          if (back) {
-            for (let i = allMatches.length - 1; i >= 0; i--) {
-              const match = allMatches[i]
-              if (match.line < startPos.line || (match.line === startPos.line && match.ch < startPos.ch)) {
-                currentIndex = i
-                break
-              }
-            }
-            if (currentIndex === -1) {
-              currentIndex = allMatches.length - 1
-            }
-          } else {
-            for (let i = 0; i < allMatches.length; i++) {
-              const match = allMatches[i]
-              if (match.line > startPos.line || (match.line === startPos.line && match.ch > startPos.ch)) {
-                currentIndex = i
-                break
-              }
-            }
-            if (currentIndex === -1) {
-              currentIndex = 0
-            }
-          }
-        } else {
-          currentIndex = back
-            ? (currentIndex - 1 + allMatches.length) % allMatches.length
-            : (currentIndex + 1) % allMatches.length
-        }
-
-        return currentIndex >= 0
-      },
-      from() {
-        if (currentIndex < 0) {
-          return undefined
-        }
-        const match = allMatches[currentIndex]
-        return makePos(match.line, match.ch)
-      },
-      to() {
-        if (currentIndex < 0) {
-          return undefined
-        }
-        const match = allMatches[currentIndex]
-        return makePos(match.endLine, match.endCh)
-      },
-      replace(text: string) {
-        const from = this.from()
-        const to = this.to()
-        if (from && to) {
-          context.replaceRange(text, from, to)
-        }
-      },
-    }
-  }
-
-  private escapeRegex(str: string): string {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    return createSearchCursor(this, pattern, startPos, (text, from, to) => this.replaceRange(text, from, to))
   }
 
   highlightRanges(
@@ -729,7 +543,7 @@ export class EditorAdapter {
   }
 
   addOverlay(query: string | RegExp) {
-    const pattern = typeof query === "string" ? new RegExp(this.escapeRegex(query), "g") : query
+    const pattern = typeof query === "string" ? new RegExp(escapeRegex(query), "g") : query
     const ranges: Array<{ startLine: number; startCh: number; endLine: number; endCh: number }> = []
 
     for (let lineIdx = 0; lineIdx < this.lineCount(); lineIdx++) {
@@ -779,42 +593,7 @@ export class EditorAdapter {
     openChar?: string,
     closeChar?: string,
   ): { pos: Pos } | undefined {
-    if (dir === 0) {
-      return undefined
-    }
-    let searchLine = pos.line
-    let searchCh = pos.ch
-    let depth = 0
-
-    while (true) {
-      if (searchLine < 0 || searchLine >= this.lineCount()) {
-        return undefined
-      }
-
-      const line = this.getLine(searchLine)
-      for (let i = searchCh; i >= 0 && i < line.length; i += dir) {
-        const curCh = line[i]
-        if (!bracketRegex.test(curCh)) {
-          continue
-        }
-        if (openChar && curCh === openChar) {
-          depth += 1
-          continue
-        }
-        if (closeChar && curCh === closeChar) {
-          if (depth === 0) {
-            return { pos: makePos(searchLine, i) }
-          }
-          depth -= 1
-        }
-      }
-
-      searchLine += dir
-      if (searchLine < 0 || searchLine >= this.lineCount()) {
-        return undefined
-      }
-      searchCh = dir > 0 ? 0 : this.getLine(searchLine).length - 1
-    }
+    return scanForBracket(this, pos, dir, bracketRegex, openChar, closeChar)
   }
 
   indexFromPos(pos: Pos): number {
