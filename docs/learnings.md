@@ -158,3 +158,25 @@
 **What happened**: `createErrorWindow` was initially placed in `index.ts` (which has top-level side effects like `initTui()`). Unit tests importing it crashed because `index.ts` tried to initialize the terminal outside the TUI test environment.
 **Takeaway**: Any function that needs unit testing must live in a dedicated module with no top-level side effects. Do not put testable utilities in `index.ts` or any module that calls `initTui`, `startKeyboardListener`, or other terminal APIs at import time. Create a separate `*.ts` file even for small utilities.
 ---
+
+## Ex commands must be registered in `defaultExCommandMap`
+**Date**: 2026-05-08
+**Area**: workflow
+**What happened**: Adding `bnext`/`bprev` to `exCommands` was insufficient — `:bnext` and `:bprev` silently failed because they weren't registered in `defaultExCommandMap` in `ex-command-dispatcher.ts`. The command map is built at construction time from this array.
+**Takeaway**: All new ex commands need entries in both `exCommands` (behavior) and `defaultExCommandMap` (registration). The shortName field controls prefix matching (e.g. `"bn"` for `"bnext"`).
+
+---
+
+## Native NAPI calls from action/ex-command handlers need try/catch
+**Date**: 2026-05-08
+**Area**: architecture
+**What happened**: Code-reviewer flagged multiple call sites where `#[napi]` Rust functions (which return `Result` and throw on failure) were called from TypeScript without error handling. Adding try/catch around every NAPI call site or extracting shared helpers (`doNextBuffer`/`doPrevBuffer`) was required.
+**Takeaway**: Every `#[napi]` function can throw. Wrap direct calls in try/catch or route through a shared helper that handles errors. The code-reviewer treats missing error handling as a score-4+ issue.
+
+---
+
+## TuiState active field should be private to prevent bypassing switch_to()
+**Date**: 2026-05-08
+**Area**: rust
+**What happened**: `TuiState::active` was `pub`, allowing direct mutation that bypasses `switch_to()`'s visual-mode reset and selection sync. The code-reviewer flagged this as a correctness risk.
+**Takeaway**: State mutation that must enforce invariants (resetting visual mode, clearing highlights, syncing selections) should be behind methods, not public fields. Use `pub(crate)` or private with a getter like `active_index()`.
