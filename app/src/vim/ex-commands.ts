@@ -70,7 +70,7 @@ function doReplace(
   query: RegExp,
   replaceWith: string,
   callback?: () => void,
-) {
+): { count: number; lines: number } | null {
   const vim = adapter.state.vim as VimState
   // Set up all the functions.
   vim.exMode = true
@@ -79,6 +79,8 @@ function doReplace(
   let lastPos: Pos
   let modifiedLineNumber: number
   let joined: boolean
+  let substitutionCount = 0
+  const affectedLines = new Set<number>()
   const replaceAll = () => {
     while (!done) {
       replace()
@@ -105,6 +107,9 @@ function doReplace(
     modifiedLineNumber = replacedTo.line
     lineEnd += modifiedLineNumber - unmodifiedLineNumber
     joined = modifiedLineNumber < unmodifiedLineNumber
+    substitutionCount++
+    // Track the start line of the match for affected lines count
+    affectedLines.add(from.line)
   }
   const findNextValidMatch = () => {
     const currentTo = searchCursor.to()
@@ -201,14 +206,14 @@ function doReplace(
   next()
   if (done) {
     showConfirm(adapter, `No matches for ${query.source}`)
-    return
+    return null
   }
   if (!confirm) {
     replaceAll()
     if (callback) {
       callback()
     }
-    return
+    return { count: substitutionCount, lines: affectedLines.size }
   }
   showPrompt(adapter, {
     prefix: `replace with **${replaceWith}** (y/n/a/q/l)`,
@@ -216,6 +221,7 @@ function doReplace(
     desc: "",
     onClose: () => {},
   })
+  return null
 }
 
 export const exCommands: Record<string, ExCommandFunc> = {
@@ -646,7 +652,12 @@ export const exCommands: Record<string, ExCommandFunc> = {
     const startPos = clipCursorToContent(adapter, makePos(lineStart, 0))
     const cursor = adapter.getSearchCursor(query, startPos)
     adapter.pushUndoStop()
-    doReplace(adapter, confirm, global, lineStart, lineEnd, cursor, query, replacePart, params.callback)
+    const result = doReplace(adapter, confirm, global, lineStart, lineEnd, cursor, query, replacePart, params.callback)
+    if (result && result.count > 0 && !confirm) {
+      const substitutionLabel = result.count === 1 ? "substitution" : "substitutions"
+      const lineLabel = result.lines === 1 ? "line" : "lines"
+      showConfirm(adapter, `${result.count} ${substitutionLabel} on ${result.lines} ${lineLabel}`)
+    }
   },
   redo: EditorAdapter.commands.redo,
   undo: EditorAdapter.commands.undo,

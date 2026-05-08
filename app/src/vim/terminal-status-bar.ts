@@ -1,4 +1,5 @@
-import { setStatusText } from "@revim/lib"
+import path from "node:path"
+import { getCurrentPath, getCursorPos, getTerminalWidth, setStatusText } from "@revim/lib"
 import { TERMINAL_KEY_MAP } from "../terminal-key"
 import type { IStatusBar, ModeChangeEvent, StatusBarInputOptions, StatusBarKeyEvent } from "./statusbar"
 
@@ -36,18 +37,86 @@ export class TerminalStatusBar implements IStatusBar {
     query: string
     options: StatusBarInputOptions
   } | null = null
+  // Array of display entries. Each entry is an object (not a plain string) to
+  // provide stable reference identity for the indexOf-based removal in closers.
+  private displayState: { message: string }[] = []
+  private notificationTimeout: ReturnType<typeof setTimeout> | null = null
+  private cursorLine = 0
+  private cursorCol = 0
+  private filePath: string | null = null
 
   constructor() {
     this.mode = { mode: "normal" }
+    // Read initial cursor position
+    try {
+      const pos = getCursorPos()
+      this.cursorLine = pos.line
+      this.cursorCol = pos.ch
+    } catch (_e) {
+      // best-effort
+    }
+    try {
+      const p = getCurrentPath()
+      this.filePath = p
+    } catch (_e) {
+      // best-effort
+    }
     // ensure initial text
     this.update()
   }
 
+  private clearNotificationTimeout() {
+    if (this.notificationTimeout !== null) {
+      clearTimeout(this.notificationTimeout)
+      this.notificationTimeout = null
+    }
+  }
+
   private update() {
-    const label = modeLabelFor(this.mode)
-    const text = this.keyBuffer ? `${label}  ${this.keyBuffer}` : label
     try {
-      setStatusText(text)
+      // Priority order: prompt > notification > display > mode+buffer+filename+line:col
+
+      // If prompting, prompt manages its own text via setStatusText
+      if (this.promptState) return
+
+      // If notification is active, don't overwrite it
+      if (this.notificationTimeout !== null) return
+
+      // If display message is active, show the latest one
+      if (this.displayState.length > 0) {
+        setStatusText(this.displayState[this.displayState.length - 1].message)
+        return
+      }
+
+      // Compose mode + buffer + filename + line:col
+      const label = modeLabelFor(this.mode)
+      const keyPart = this.keyBuffer ? `  ${this.keyBuffer}` : ""
+      const filename = this.getFilename()
+      const leftSection = `${label}${keyPart}  ${filename}`
+      const rightSection = `${this.cursorLine + 1}:${this.cursorCol + 1}`
+
+      let terminalWidth: number
+      try {
+        terminalWidth = getTerminalWidth()
+      } catch (_e) {
+        terminalWidth = 80
+      }
+
+      // Right-align line:col with padding
+      const paddingNeeded = terminalWidth - leftSection.length - rightSection.length
+
+      if (paddingNeeded >= 0) {
+        const paddedRight = " ".repeat(paddingNeeded) + rightSection
+        setStatusText(leftSection + paddedRight)
+      } else if (terminalWidth > leftSection.length) {
+        // Truncate right section from the left to fit
+        const availableForRight = terminalWidth - leftSection.length
+        const truncatedRight = rightSection.slice(rightSection.length - availableForRight)
+        setStatusText(leftSection + truncatedRight)
+      } else {
+        // Terminal too narrow, just show left section truncated
+        setStatusText(leftSection.slice(0, terminalWidth))
+      }
     } catch (_e) {
       // best-effort; avoid throwing during shutdown
     }
@@ -57,22 +126,63 @@ export class TerminalStatusBar implements IStatusBar {
     // no-op for terminal
   }
 
-  showNotification(_message: string) {
-    // no-op for MVP
+  showNotification(message: string) {
+    this.clearNotificationTimeout()
+    // Clear any active display message (notification overrides display permanently)
+    this.displayState = []
+    try {
+      setStatusText(message)
+    } catch (_e) {
+      // best-effort
+    }
+    this.notificationTimeout = setTimeout(() => {
+      this.notificationTimeout = null
+      this.update()
+    }, 3000)
   }
 
   setMode(mode: ModeChangeEvent) {
     this.mode = mode
+    this.clearNotificationTimeout()
     this.update()
   }
 
   setKeyBuffer(key: string) {
     this.keyBuffer = key
+    this.clearNotificationTimeout()
     this.update()
   }
 
-  startDisplay(_message: string) {
-    return () => {}
+  setCursorPos(line: number, col: number) {
+    this.cursorLine = line
+    this.cursorCol = col
+    this.update()
+  }
+
+  setFilePath(path: string | null) {
+    this.filePath = path
+    this.update()
+  }
+
+  startDisplay(message: string): () => void {
+    const entry = { message }
+    this.displayState.push(entry)
+    try {
+      setStatusText(message)
+    } catch (_e) {
+      // best-effort
+    }
+    const closer = () => {
+      const idx = this.displayState.indexOf(entry)
+      if (idx >= 0) this.displayState.splice(idx, 1)
+      this.update()
+    }
+    return closer
+  }
+
+  private getFilename(): string {
+    if (!this.filePath) return "[No Name]"
+    return path.basename(this.filePath) || "[No Name]"
   }
 
   isPrompting(): boolean {
@@ -154,6 +264,8 @@ export class TerminalStatusBar implements IStatusBar {
   }
 
   startPrompt(prefix: string, _desc: string, options: StatusBarInputOptions) {
+    // Clear any active display message (prompt overrides display permanently)
+    this.displayState = []
     this.promptState = { prefix, query: "", options }
     setStatusText(prefix)
     return () => {
@@ -169,6 +281,7 @@ export class TerminalStatusBar implements IStatusBar {
   clear() {
     // clear internal state
     this.keyBuffer = ""
+    this.clearNotificationTimeout()
     this.update()
   }
 }

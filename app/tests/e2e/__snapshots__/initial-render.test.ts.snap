@@ -31,7 +31,7 @@ exports[`initial render shows demo text | 1`] = String.raw`
 ││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
-│NORMAL                                                                          │
+│NORMAL  demo-content.md                                                      1:1│
 ╰────────────────────────────────────────────────────────────────────────────────╯
 {
   "0,0": {
@@ -48,6 +48,9 @@ exports[`initial render shows demo text | 1`] = String.raw`
     "overline": 0,
     "strike": 0,
     "underline": 0
+  },
+  "0,29": {
+    "inverse": 67108864
   }
 }
 `;

@@ -71,7 +71,9 @@ async function main() {
     parseFilePath(process.argv, scriptAbsPath) ?? path.join(moduleDir, "../tests/fixtures/demo-content.md")
   loadFile(targetPath)
 
-  const vimMode = new VimMode(new TerminalStatusBar())
+  const statusBar = new TerminalStatusBar()
+  statusBar.setFilePath(targetPath)
+  const vimMode = new VimMode(statusBar)
 
   // Wire up the save-file event listener
   vimMode.addEventListener("save-file", (event: Event) => {
@@ -91,6 +93,7 @@ async function main() {
       // Only update the stored path after a successful write
       if (filename) {
         setCurrentPath(filename)
+        statusBar.setFilePath(filename)
       }
       setStatusText(`"${filePath}" written`)
     } catch (e) {

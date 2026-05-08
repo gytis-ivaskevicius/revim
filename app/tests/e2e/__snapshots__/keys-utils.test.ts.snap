@@ -31,7 +31,7 @@ exports[`keys.pressKeys with modifier sends with modifiers | 1`] = String.raw`
 ││  O - open new line above                                                     ││
 ││                                                                              ││
 │└──────────────────────────────────────────────────────────────────────────────┘│
-│V-BLOCK                                                                         │
+│V-BLOCK  demo-content.md                                                     1:1│
 ╰────────────────────────────────────────────────────────────────────────────────╯
 {
   "0,0": {
@@ -54,6 +54,9 @@ exports[`keys.pressKeys with modifier sends with modifiers | 1`] = String.raw`
   },
   "2,1": {
     "inverse": 0
+  },
+  "0,29": {
+    "inverse": 67108864
   }
 }
 `;
