@@ -835,6 +835,9 @@ export const defaultKeymap: KeyMapping[] = [
       toJumplist: true,
     },
   },
+  // Buffer switching
+  { keys: "gt", type: "action", action: "nextBuffer", context: "normal" },
+  { keys: "gT", type: "action", action: "prevBuffer", context: "normal" },
   // Ex command
   { keys: ":", type: "ex" },
 ]

@@ -40,6 +40,8 @@ const defaultExCommandMap: ExCommandDefault[] = [
   { name: "vglobal", shortName: "v" },
   { name: "global", shortName: "g" },
   { name: "version", shortName: "ve" },
+  { name: "bnext", shortName: "bn" },
+  { name: "bprev", shortName: "bp" },
 ]
 
 export class ExCommandDispatcher {

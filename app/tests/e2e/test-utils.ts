@@ -21,6 +21,10 @@ export function withFile(filePath: string) {
   return { program: { file: "bun", args: ["run", "app/src/index.ts", filePath] } }
 }
 
+export function withFiles(filePaths: string[]) {
+  return { program: { file: "bun", args: ["run", "app/src/index.ts", ...filePaths] } }
+}
+
 export type KeyInput = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
 
 type TerminalKeyApi = {

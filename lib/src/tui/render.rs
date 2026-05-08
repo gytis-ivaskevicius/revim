@@ -45,7 +45,7 @@ pub fn render_frame_internal() -> Result<()> {
         anchor_row,
         anchor_col,
         visual_mode,
-        demo_text,
+        lines,
         highlights,
         selections,
         status_text,
@@ -67,13 +67,14 @@ pub fn render_frame_internal() -> Result<()> {
         context.viewport_height.store(vp_height, Ordering::Relaxed);
         state.adjust_scroll(vp_height);
 
-        let scroll_top = state.scroll_top;
-        let cursor_row = state.cursor_row;
-        let cursor_col = state.cursor_col;
-        let anchor_row = state.anchor_row;
-        let anchor_col = state.anchor_col;
+        let active = state.active();
+        let scroll_top = active.scroll_top;
+        let cursor_row = active.cursor_row;
+        let cursor_col = active.cursor_col;
+        let anchor_row = active.anchor_row;
+        let anchor_col = active.anchor_col;
         let visual_mode = state.visual_mode;
-        let demo_text: Vec<String> = state.demo_text.clone();
+        let lines: Vec<String> = active.lines.clone();
         let highlights = state.highlights.clone();
         let selections = state.selections.clone();
         let status_text = state.status_text.clone();
@@ -83,7 +84,7 @@ pub fn render_frame_internal() -> Result<()> {
             anchor_row,
             anchor_col,
             visual_mode,
-            demo_text,
+            lines,
             highlights,
             selections,
             status_text,
@@ -93,15 +94,15 @@ pub fn render_frame_internal() -> Result<()> {
     };
 
     // Phase 2: Line-building phase (outside locks)
-    let total_lines = demo_text.len() as u16;
+    let total_lines = lines.len() as u16;
     let visible_end = (scroll_top + viewport_height).min(total_lines);
-    let visible_lines: Vec<String> = demo_text[scroll_top as usize..visible_end as usize].to_vec();
+    let visible_lines: Vec<String> = lines[scroll_top as usize..visible_end as usize].to_vec();
 
     let selection_active = visual_mode != VisualMode::None;
     let (sel_start_row, _, sel_end_row, _) =
         TuiState::ordered_range(anchor_row, anchor_col, cursor_row, cursor_col);
 
-    let lines: Vec<Line> = visible_lines
+    let rendered_lines: Vec<Line> = visible_lines
         .iter()
         .enumerate()
         .map(|(idx, line)| {
@@ -178,7 +179,7 @@ pub fn render_frame_internal() -> Result<()> {
             let [editor_area, status_area] = layout.areas(size);
 
             let block = Block::default().borders(Borders::ALL).title("ReVim");
-            let paragraph = Paragraph::new(lines)
+            let paragraph = Paragraph::new(rendered_lines)
                 .block(block.clone())
                 .alignment(Alignment::Left);
             // Only render editor if it has positive height/width

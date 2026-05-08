@@ -14,7 +14,7 @@ use std::thread;
 use std::time::Duration;
 
 use super::render::render_frame_internal;
-use super::state::{HighlightRange, Selection, VisualMode};
+use super::state::{BufferState, HighlightRange, Selection, VisualMode};
 use super::{
     extract_modifiers, revim_log, to_napi_error, wrap_decrement_u16, wrap_increment_u16,
     TuiContext, TUI_CONTEXT, TUI_RUNNING,
@@ -43,6 +43,12 @@ pub struct ScrollInfo {
 pub struct VisibleLines {
     pub top: u32,
     pub bottom: u32,
+}
+
+#[napi(object)]
+pub struct BufferInfo {
+    pub index: u32,
+    pub path: Option<String>,
 }
 
 #[napi]
@@ -80,7 +86,7 @@ pub fn load_file(path: String) -> Result<()> {
         let mut state = context.state.lock().map_err(to_napi_error)?;
 
         // Always track the current path, even on read failure (matching Vim behavior)
-        state.current_path = Some(path.clone());
+        state.active_mut().current_path = Some(path.clone());
 
         match std::fs::read_to_string(&path) {
             Ok(content) => {
@@ -102,7 +108,7 @@ pub fn get_current_path() -> Result<Option<String>> {
         .as_ref()
         .ok_or_else(|| to_napi_error("TUI not initialized"))?;
     let state = context.state.lock().map_err(to_napi_error)?;
-    Ok(state.current_path.clone())
+    Ok(state.active().current_path.clone())
 }
 
 #[napi]
@@ -112,7 +118,7 @@ pub fn set_current_path(path: String) -> Result<()> {
         .as_mut()
         .ok_or_else(|| to_napi_error("TUI not initialized"))?;
     let mut state = context.state.lock().map_err(to_napi_error)?;
-    state.current_path = Some(path);
+    state.active_mut().current_path = Some(path);
     Ok(())
 }
 
@@ -124,7 +130,7 @@ pub fn save_file(path: String) -> Result<()> {
             .as_ref()
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
         let state = context.state.lock().map_err(to_napi_error)?;
-        state.demo_text.clone()
+        state.active().lines.clone()
     }; // Drop all locks before I/O
 
     let content = lines.join("\n") + "\n";
@@ -259,26 +265,27 @@ pub fn move_cursor(direction: String) -> Result<CursorPosition> {
             .lock()
             .map_err(to_napi_error)?;
 
+        let active = state.active();
         match direction.as_str() {
             "up" => (
-                wrap_decrement_u16(state.cursor_row, state.max_rows()),
-                state
+                wrap_decrement_u16(active.cursor_row, active.max_rows()),
+                active
                     .cursor_col
-                    .min(state.current_line_len().saturating_sub(1)),
+                    .min(active.current_line_len().saturating_sub(1)),
             ),
             "down" => (
-                wrap_increment_u16(state.cursor_row, state.max_rows()),
-                state
+                wrap_increment_u16(active.cursor_row, active.max_rows()),
+                active
                     .cursor_col
-                    .min(state.current_line_len().saturating_sub(1)),
+                    .min(active.current_line_len().saturating_sub(1)),
             ),
             "left" => (
-                state.cursor_row,
-                wrap_decrement_u16(state.cursor_col, state.current_line_len()),
+                active.cursor_row,
+                wrap_decrement_u16(active.cursor_col, active.current_line_len()),
             ),
             "right" => (
-                state.cursor_row,
-                wrap_increment_u16(state.cursor_col, state.current_line_len()),
+                active.cursor_row,
+                wrap_increment_u16(active.cursor_col, active.current_line_len()),
             ),
             _ => return Err(to_napi_error(format!("Invalid direction: {}", direction))),
         }
@@ -292,8 +299,8 @@ pub fn move_cursor(direction: String) -> Result<CursorPosition> {
             .state
             .lock()
             .map_err(to_napi_error)?;
-        state.cursor_row = row;
-        state.cursor_col = col;
+        state.active_mut().cursor_row = row;
+        state.active_mut().cursor_col = col;
         state.sync_primary_selection();
     }
 
@@ -314,7 +321,7 @@ pub fn get_line(line: u32) -> Result<String> {
         .state
         .lock()
         .map_err(to_napi_error)?;
-    Ok(state.get_line(line as u16))
+    Ok(state.active().get_line(line as u16))
 }
 
 #[napi]
@@ -326,7 +333,7 @@ pub fn get_line_count() -> Result<u32> {
         .state
         .lock()
         .map_err(to_napi_error)?;
-    Ok(state.demo_text.len() as u32)
+    Ok(state.active().lines.len() as u32)
 }
 
 #[napi]
@@ -338,7 +345,7 @@ pub fn get_all_lines() -> Result<Vec<String>> {
         .state
         .lock()
         .map_err(to_napi_error)?;
-    Ok(state.demo_text.clone())
+    Ok(state.active().lines.clone())
 }
 
 #[napi]
@@ -351,7 +358,7 @@ pub fn set_all_lines(lines: Vec<String>) -> Result<()> {
             .state
             .lock()
             .map_err(to_napi_error)?;
-        state.demo_text = lines;
+        state.active_mut().lines = lines;
     }
     render_frame_internal()?;
     Ok(())
@@ -366,9 +373,10 @@ pub fn get_cursor_pos() -> Result<CursorPosition> {
         .state
         .lock()
         .map_err(to_napi_error)?;
+    let active = state.active();
     Ok(CursorPosition {
-        line: state.cursor_row as u32,
-        ch: state.cursor_col as u32,
+        line: active.cursor_row as u32,
+        ch: active.cursor_col as u32,
     })
 }
 
@@ -385,9 +393,9 @@ pub fn set_cursor_pos(line: u32, ch: u32) -> Result<()> {
             .lock()
             .map_err(to_napi_error)?;
 
-        let (line, ch) = state.clip_pos(line, ch);
-        state.cursor_row = line;
-        state.cursor_col = ch;
+        let (line, ch) = state.active().clip_pos(line, ch);
+        state.active_mut().cursor_row = line;
+        state.active_mut().cursor_col = ch;
         state.sync_primary_selection();
     }
     render_frame_internal()?;
@@ -403,7 +411,7 @@ pub fn get_range(start_line: u32, start_ch: u32, end_line: u32, end_ch: u32) -> 
         .state
         .lock()
         .map_err(to_napi_error)?;
-    Ok(state.get_range(
+    Ok(state.active().get_range(
         start_line as u16,
         start_ch as u16,
         end_line as u16,
@@ -428,7 +436,7 @@ pub fn replace_range(
             .lock()
             .map_err(to_napi_error)?;
 
-        state.replace_range(
+        state.active_mut().replace_range(
             &text,
             start_line as u16,
             start_ch as u16,
@@ -442,11 +450,11 @@ pub fn replace_range(
         } else {
             inserted_lines.last().unwrap_or(&"").chars().count() as u16
         };
-        let (final_line, final_ch) = state.clip_pos(final_line, final_ch);
-        state.anchor_row = final_line;
-        state.anchor_col = final_ch;
-        state.cursor_row = final_line;
-        state.cursor_col = final_ch;
+        let (final_line, final_ch) = state.active().clip_pos(final_line, final_ch);
+        state.active_mut().anchor_row = final_line;
+        state.active_mut().anchor_col = final_ch;
+        state.active_mut().cursor_row = final_line;
+        state.active_mut().cursor_col = final_ch;
         state.sync_primary_selection();
     }
     render_frame_internal()?;
@@ -463,10 +471,11 @@ pub fn get_selection() -> Result<String> {
         .lock()
         .map_err(to_napi_error)?;
 
-    let (start_line, start_ch) = (state.anchor_row, state.anchor_col);
-    let (end_line, end_ch) = (state.cursor_row, state.cursor_col);
+    let active = state.active();
+    let (start_line, start_ch) = (active.anchor_row, active.anchor_col);
+    let (end_line, end_ch) = (active.cursor_row, active.cursor_col);
 
-    Ok(state.get_range(start_line, start_ch, end_line, end_ch))
+    Ok(active.get_range(start_line, start_ch, end_line, end_ch))
 }
 
 #[napi]
@@ -480,13 +489,13 @@ pub fn set_selection(anchor_line: u32, anchor_ch: u32, head_line: u32, head_ch: 
             .lock()
             .map_err(to_napi_error)?;
 
-        let (anchor_line, anchor_ch) = state.clip_pos(anchor_line as u16, anchor_ch as u16);
-        let (head_line, head_ch) = state.clip_pos(head_line as u16, head_ch as u16);
+        let (anchor_line, anchor_ch) = state.active().clip_pos(anchor_line as u16, anchor_ch as u16);
+        let (head_line, head_ch) = state.active().clip_pos(head_line as u16, head_ch as u16);
 
-        state.anchor_row = anchor_line;
-        state.anchor_col = anchor_ch;
-        state.cursor_row = head_line;
-        state.cursor_col = head_ch;
+        state.active_mut().anchor_row = anchor_line;
+        state.active_mut().anchor_col = anchor_ch;
+        state.active_mut().cursor_row = head_line;
+        state.active_mut().cursor_col = head_ch;
         state.sync_primary_selection();
     }
 
@@ -508,7 +517,7 @@ pub fn get_selections() -> Result<Vec<String>> {
         .selections
         .iter()
         .map(|selection| {
-            state.get_range(
+            state.active().get_range(
                 selection.anchor_line as u16,
                 selection.anchor_ch as u16,
                 selection.head_line as u16,
@@ -563,9 +572,9 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
             .into_iter()
             .map(|selection| {
                 let (anchor_line, anchor_ch) =
-                    state.clip_pos(selection.anchor_line as u16, selection.anchor_ch as u16);
+                    state.active().clip_pos(selection.anchor_line as u16, selection.anchor_ch as u16);
                 let (head_line, head_ch) =
-                    state.clip_pos(selection.head_line as u16, selection.head_ch as u16);
+                    state.active().clip_pos(selection.head_line as u16, selection.head_ch as u16);
                 Selection {
                     anchor_line: anchor_line as u32,
                     anchor_ch: anchor_ch as u32,
@@ -599,18 +608,18 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
                 .max()
                 .unwrap_or(primary.head_ch);
 
-            state.anchor_row = min_line as u16;
-            state.cursor_row = max_line as u16;
-            state.cursor_col = if min_col < state.anchor_col as u32 {
+            state.active_mut().anchor_row = min_line as u16;
+            state.active_mut().cursor_row = max_line as u16;
+            state.active_mut().cursor_col = if min_col < state.active().anchor_col as u32 {
                 min_col as u16
             } else {
                 max_col.saturating_sub(1) as u16
             };
         } else {
-            state.anchor_row = primary.anchor_line as u16;
-            state.anchor_col = primary.anchor_ch as u16;
-            state.cursor_row = primary.head_line as u16;
-            state.cursor_col = primary.head_ch as u16;
+            state.active_mut().anchor_row = primary.anchor_line as u16;
+            state.active_mut().anchor_col = primary.anchor_ch as u16;
+            state.active_mut().cursor_row = primary.head_line as u16;
+            state.active_mut().cursor_col = primary.head_ch as u16;
         }
         state.selections = clipped;
     }
@@ -673,8 +682,8 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
                 let start_ch = selection.anchor_ch as u16;
                 let end_line = selection.head_line as u16;
                 let end_ch = selection.head_ch as u16;
-                let start_index = state.index_from_pos(start_line, start_ch);
-                let end_index = state.index_from_pos(end_line, end_ch);
+                let start_index = state.active().index_from_pos(start_line, start_ch);
+                let end_index = state.active().index_from_pos(end_line, end_ch);
 
                 (index, selection, text, start_index, end_index)
             })
@@ -684,13 +693,13 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
         let mut next_selections = vec![None; operations.len()];
 
         for (index, _selection, text, start_index, end_index) in operations {
-            let start_pos = state.pos_from_index(start_index);
-            let end_pos = state.pos_from_index(end_index);
+            let start_pos = state.active().pos_from_index(start_index);
+            let end_pos = state.active().pos_from_index(end_index);
 
-            state.replace_range(&text, start_pos.0, start_pos.1, end_pos.0, end_pos.1);
+            state.active_mut().replace_range(&text, start_pos.0, start_pos.1, end_pos.0, end_pos.1);
 
             let final_index = start_index + text.chars().count() as u32;
-            let (final_line, final_ch) = state.pos_from_index(final_index);
+            let (final_line, final_ch) = state.active().pos_from_index(final_index);
             next_selections[index] = Some(Selection {
                 anchor_line: final_line as u32,
                 anchor_ch: final_ch as u32,
@@ -702,10 +711,10 @@ pub fn replace_selections(texts: Vec<String>) -> Result<()> {
         let next_selections = next_selections.into_iter().flatten().collect::<Vec<_>>();
         state.selections = next_selections.clone();
         if let Some(primary) = next_selections.first() {
-            state.anchor_row = primary.anchor_line as u16;
-            state.anchor_col = primary.anchor_ch as u16;
-            state.cursor_row = primary.head_line as u16;
-            state.cursor_col = primary.head_ch as u16;
+            state.active_mut().anchor_row = primary.anchor_line as u16;
+            state.active_mut().anchor_col = primary.anchor_ch as u16;
+            state.active_mut().cursor_row = primary.head_line as u16;
+            state.active_mut().cursor_col = primary.head_ch as u16;
         }
     }
     render_frame_internal()?;
@@ -723,7 +732,7 @@ pub fn indent_line(line: u32, indent_right: bool) -> Result<()> {
             .lock()
             .map_err(to_napi_error)?;
 
-        if let Some(line_str) = state.demo_text.get_mut(line as usize) {
+        if let Some(line_str) = state.active_mut().lines.get_mut(line as usize) {
             if indent_right {
                 line_str.insert(0, '\t');
             } else if let Some(first_char) = line_str.chars().next() {
@@ -750,7 +759,7 @@ pub fn index_from_pos(line: u32, ch: u32) -> Result<u32> {
         .lock()
         .map_err(to_napi_error)?;
 
-    Ok(state.index_from_pos(line as u16, ch as u16))
+    Ok(state.active().index_from_pos(line as u16, ch as u16))
 }
 
 #[napi]
@@ -763,7 +772,7 @@ pub fn pos_from_index(offset: u32) -> Result<CursorPosition> {
         .lock()
         .map_err(to_napi_error)?;
 
-    let (line, ch) = state.pos_from_index(offset);
+    let (line, ch) = state.active().pos_from_index(offset);
     Ok(CursorPosition {
         line: line as u32,
         ch: ch as u32,
@@ -780,7 +789,7 @@ pub fn get_line_first_non_whitespace(line: u32) -> Result<u32> {
         .lock()
         .map_err(to_napi_error)?;
 
-    let line_str = state.get_line(line as u16);
+    let line_str = state.active().get_line(line as u16);
     for (i, ch) in line_str.chars().enumerate() {
         if !ch.is_whitespace() {
             return Ok(i as u32);
@@ -800,8 +809,8 @@ pub fn get_scroll_info() -> Result<ScrollInfo> {
     let viewport_height = context.viewport_height.load(Ordering::Relaxed);
 
     Ok(ScrollInfo {
-        top: state.scroll_top as u32,
-        height: state.max_rows() as u32,
+        top: state.active().scroll_top as u32,
+        height: state.active().max_rows() as u32,
         client_height: viewport_height as u32,
     })
 }
@@ -815,7 +824,7 @@ pub fn scroll_to(y: u32) -> Result<()> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
         let viewport_height = context.viewport_height.load(Ordering::Relaxed);
         let mut state = context.state.lock().map_err(to_napi_error)?;
-        state.scroll_top = (y as u16).min(state.max_scroll_top(viewport_height));
+        state.active_mut().scroll_top = (y as u16).min(state.active().max_scroll_top(viewport_height));
     }
 
     render_frame_internal()
@@ -831,28 +840,119 @@ pub fn clip_pos(line: u32, ch: u32) -> Result<CursorPosition> {
         .lock()
         .map_err(to_napi_error)?;
 
-    let (line, ch) = state.clip_pos(line as u16, ch as u16);
+    let (line, ch) = state.active().clip_pos(line as u16, ch as u16);
     Ok(CursorPosition {
         line: line as u32,
         ch: ch as u32,
     })
 }
 
-// Note: pushUndoStop is implemented in TypeScript using snapshot-based approach.
-// See app/src/vim/adapter.ts for the implementation.
-
 #[napi]
 pub fn push_undo_stop() -> Result<()> {
-    // No-op: undo/redo is handled in TypeScript
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .map_err(to_napi_error)?;
+
+        let snapshot = state.active().snapshot();
+        state.active_mut().undo_stack.push(snapshot);
+        state.active_mut().redo_stack.clear();
+    }
     Ok(())
+}
+
+#[napi]
+pub fn undo() -> Result<CursorPosition> {
+    let (row, col) = {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .map_err(to_napi_error)?;
+
+        if state.active().undo_stack.is_empty() {
+            return Ok(CursorPosition {
+                line: state.active().cursor_row as u32,
+                ch: state.active().cursor_col as u32,
+            });
+        }
+
+        // Push current state to redo stack
+        let current = state.active().snapshot();
+        state.active_mut().redo_stack.push(current);
+
+        // Pop from undo stack and restore
+        let snapshot = state.active_mut().undo_stack.pop().unwrap();
+        state.active_mut().restore_snapshot(&snapshot);
+        state.sync_primary_selection();
+
+        (state.active().cursor_row, state.active().cursor_col)
+    };
+
+    render_frame_internal()?;
+
+    Ok(CursorPosition {
+        line: row as u32,
+        ch: col as u32,
+    })
+}
+
+#[napi]
+pub fn redo() -> Result<CursorPosition> {
+    let (row, col) = {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let state = &mut ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?
+            .state
+            .lock()
+            .map_err(to_napi_error)?;
+
+        if state.active().redo_stack.is_empty() {
+            return Ok(CursorPosition {
+                line: state.active().cursor_row as u32,
+                ch: state.active().cursor_col as u32,
+            });
+        }
+
+        // Push current state to undo stack
+        let current = state.active().snapshot();
+        state.active_mut().undo_stack.push(current);
+
+        // Pop from redo stack and restore
+        let snapshot = state.active_mut().redo_stack.pop().unwrap();
+        state.active_mut().restore_snapshot(&snapshot);
+        state.sync_primary_selection();
+
+        (state.active().cursor_row, state.active().cursor_col)
+    };
+
+    render_frame_internal()?;
+
+    Ok(CursorPosition {
+        line: row as u32,
+        ch: col as u32,
+    })
 }
 
 #[napi]
 pub fn trigger_action(action: String) -> Result<()> {
     match action.as_str() {
         "undo" | "redo" | "undoLine" => {
-            // Undo/redo disabled - needs proper implementation
-            // See story 007 for details
+            // Undo/redo is now handled via native NAPI functions
+            // Keep backward compatibility - redirect to native functions
+            if action == "undo" {
+                return undo().map(|_| ());
+            } else if action == "redo" {
+                return redo().map(|_| ());
+            }
+            // undoLine falls through to no-op
             Ok(())
         }
         "formatSelection" => {
@@ -918,7 +1018,7 @@ pub fn scroll_to_line(line: u32, position: String) -> Result<()> {
             "bottom" => line.saturating_sub(viewport_height - 1),
             _ => line,
         };
-        state.scroll_top = new_scroll_top.min(state.max_scroll_top(viewport_height));
+        state.active_mut().scroll_top = new_scroll_top.min(state.active().max_scroll_top(viewport_height));
     }
 
     render_frame_internal()
@@ -932,9 +1032,9 @@ pub fn get_visible_lines() -> Result<VisibleLines> {
         .ok_or_else(|| to_napi_error("TUI not initialized"))?;
     let state = context.state.lock().map_err(to_napi_error)?;
     let viewport_height = context.viewport_height.load(Ordering::Relaxed).max(1);
-    let total_lines = state.max_rows();
+    let total_lines = state.active().max_rows();
 
-    let top = state.scroll_top;
+    let top = state.active().scroll_top;
     let bottom = (top + viewport_height - 1).min(total_lines.saturating_sub(1));
 
     Ok(VisibleLines {
@@ -971,4 +1071,136 @@ pub fn set_status_text(text: String) -> Result<()> {
         state.status_text = text;
     }
     render_frame_internal()
+}
+
+// Buffer management functions
+
+#[napi]
+pub fn open_buffer(path: String) -> Result<BufferInfo> {
+    let (index, path_clone) = {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let context = ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        let mut state = context.state.lock().map_err(to_napi_error)?;
+
+        let mut buf = BufferState::new();
+        buf.current_path = Some(path.clone());
+
+        match std::fs::read_to_string(&path) {
+            Ok(content) => {
+                let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+                if lines.is_empty() {
+                    buf.lines = vec![String::new()];
+                } else {
+                    buf.lines = lines;
+                }
+            }
+            Err(err) => {
+                buf.lines = vec![format!("Error opening '{}': {}", path, err)];
+            }
+        }
+
+        let index = state.buffers.len();
+        state.buffers.push(buf);
+        (index as u32, state.buffers[index].current_path.clone())
+    };
+
+    Ok(BufferInfo {
+        index,
+        path: path_clone,
+    })
+}
+
+#[napi]
+pub fn switch_to_buffer(index: u32) -> Result<BufferInfo> {
+    let path;
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let context = ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        let mut state = context.state.lock().map_err(to_napi_error)?;
+
+        if !state.switch_to(index as usize) {
+            return Err(to_napi_error(format!(
+                "Invalid buffer index: {}",
+                index
+            )));
+        }
+        path = state.active().current_path.clone();
+    }
+
+    render_frame_internal()?;
+
+    Ok(BufferInfo {
+        index,
+        path,
+    })
+}
+
+#[napi]
+pub fn next_buffer() -> Result<BufferInfo> {
+    let index;
+    let path;
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let context = ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        let mut state = context.state.lock().map_err(to_napi_error)?;
+
+        index = state.next_buffer() as u32;
+        path = state.active().current_path.clone();
+    }
+
+    render_frame_internal()?;
+
+    Ok(BufferInfo {
+        index,
+        path,
+    })
+}
+
+#[napi]
+pub fn prev_buffer() -> Result<BufferInfo> {
+    let index;
+    let path;
+    {
+        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+        let context = ctx
+            .as_mut()
+            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+        let mut state = context.state.lock().map_err(to_napi_error)?;
+
+        index = state.prev_buffer() as u32;
+        path = state.active().current_path.clone();
+    }
+
+    render_frame_internal()?;
+
+    Ok(BufferInfo {
+        index,
+        path,
+    })
+}
+
+#[napi]
+pub fn get_buffer_count() -> Result<u32> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let context = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+    let state = context.state.lock().map_err(to_napi_error)?;
+    Ok(state.buffers.len() as u32)
+}
+
+#[napi]
+pub fn get_current_buffer_index() -> Result<u32> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let context = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+    let state = context.state.lock().map_err(to_napi_error)?;
+    Ok(state.active as u32)
 }

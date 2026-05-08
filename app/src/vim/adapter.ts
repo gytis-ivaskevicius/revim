@@ -1,7 +1,6 @@
 import {
   clipPos,
   focusEditor,
-  getAllLines,
   getCursorPos,
   getLine,
   getLineCount,
@@ -11,12 +10,14 @@ import {
   getVisibleLines,
   indentLine,
   indexFromPos,
+  pushUndoStop as nativePushUndoStop,
+  redo as nativeRedo,
+  undo as nativeUndo,
   posFromIndex,
   replaceRange,
   replaceSelections,
   scrollTo,
   scrollToLine,
-  setAllLines,
   setCursorPos,
   setHighlights,
   setSelection as setNativeSelection,
@@ -134,8 +135,8 @@ export class EditorAdapter {
   selectionAnchor: Pos = makePos(0, 0)
   selectionHead: Pos = makePos(0, 0)
   selections: CmSelection[] = [new CmSelection(makePos(0, 0), makePos(0, 0))]
-  undoStack: { lines: string[]; cursor: Pos }[] = []
-  redoStack: { lines: string[]; cursor: Pos }[] = []
+  // Undo/redo is now managed in Rust (per-buffer)
+  // See nativePushUndoStop, nativeUndo, nativeRedo
 
   constructor() {
     const pos = this.readHead()
@@ -183,6 +184,7 @@ export class EditorAdapter {
   dispatch(signal: "vim-set-clipboard-register"): void
   dispatch(signal: "vim-mode-change", mode: ModeChangeEvent): void
   dispatch(signal: "vim-keypress", key: string): void
+  dispatch(signal: "buffer-switch", path: string | null): void
   dispatch(signal: string, ...args: any[]): void {
     const listeners = this.listeners[signal]
     if (!listeners) {
@@ -222,6 +224,7 @@ export class EditorAdapter {
   on(event: "vim-set-clipboard-register", handler: () => void): void
   on(event: "vim-mode-change", handler: (mode: ModeChangeEvent) => void): void
   on(event: "vim-keypress", handler: (key: string) => void): void
+  on(event: "buffer-switch", handler: (path: string | null) => void): void
   on(event: string, handler: (...args: any) => void): void {
     if (!this.listeners[event]) {
       this.listeners[event] = []
@@ -314,40 +317,18 @@ export class EditorAdapter {
   }
 
   pushUndoStop() {
-    this.undoStack.push({
-      lines: getAllLines(),
-      cursor: this.readHead(),
-    })
-    this.redoStack = []
+    nativePushUndoStop()
   }
 
   undo() {
-    if (this.undoStack.length === 0) {
-      return
-    }
-    const current = {
-      lines: getAllLines(),
-      cursor: this.readHead(),
-    }
-    this.redoStack.push(current)
-    const previous = this.undoStack.pop()!
-    setAllLines(previous.lines)
-    this.setCursor(previous.cursor.line, previous.cursor.ch)
+    const result = nativeUndo()
+    this.syncSelection(makePos(result.line, result.ch), makePos(result.line, result.ch))
     this.dispatch("cursorActivity", this)
   }
 
   redo() {
-    if (this.redoStack.length === 0) {
-      return
-    }
-    const current = {
-      lines: getAllLines(),
-      cursor: this.readHead(),
-    }
-    this.undoStack.push(current)
-    const next = this.redoStack.pop()!
-    setAllLines(next.lines)
-    this.setCursor(next.cursor.line, next.cursor.ch)
+    const result = nativeRedo()
+    this.syncSelection(makePos(result.line, result.ch), makePos(result.line, result.ch))
     this.dispatch("cursorActivity", this)
   }
 

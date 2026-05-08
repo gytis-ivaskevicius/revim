@@ -4,11 +4,13 @@ import {
   getCurrentPath,
   initTui,
   loadFile,
+  openBuffer,
   saveFile,
   setCurrentPath,
   setStatusText,
   shutdownTui,
   startKeyboardListener,
+  switchToBuffer,
   waitForKeyboardEvent,
 } from "@revim/lib"
 import { createErrorWindow } from "./error-window"
@@ -31,7 +33,8 @@ function parseLogPath(args: string[]): string | undefined {
   return undefined
 }
 
-function parseFilePath(args: string[], scriptAbsPath: string): string | undefined {
+function parseFilePaths(args: string[], scriptAbsPath: string): string[] {
+  const filePaths: string[] = []
   for (let i = 1; i < args.length; i++) {
     const arg = args[i]
 
@@ -45,9 +48,9 @@ function parseFilePath(args: string[], scriptAbsPath: string): string | undefine
     if (arg === "run" && i === 1) continue // "bun run <script>" — skip "run"
     if (path.resolve(arg) === scriptAbsPath) continue
 
-    return arg
+    filePaths.push(arg)
   }
-  return undefined
+  return filePaths
 }
 
 function processKeyEvent(vimMode: VimMode, event: KeyboardEvent) {
@@ -67,12 +70,29 @@ async function main() {
 
   const scriptAbsPath = fileURLToPath(import.meta.url)
   const moduleDir = path.dirname(scriptAbsPath)
-  const targetPath =
-    parseFilePath(process.argv, scriptAbsPath) ?? path.join(moduleDir, "../tests/fixtures/demo-content.md")
-  loadFile(targetPath)
+  const filePaths = parseFilePaths(process.argv, scriptAbsPath)
+
+  let firstFilePath: string
+  if (filePaths.length === 0) {
+    // No files specified: load demo content
+    firstFilePath = path.join(moduleDir, "../tests/fixtures/demo-content.md")
+    loadFile(firstFilePath)
+  } else {
+    // Load first file
+    firstFilePath = filePaths[0]
+    loadFile(firstFilePath)
+
+    // Open additional files as buffers (but don't switch to them)
+    for (let i = 1; i < filePaths.length; i++) {
+      openBuffer(filePaths[i])
+    }
+
+    // Ensure first file is active
+    switchToBuffer(0)
+  }
 
   const statusBar = new TerminalStatusBar()
-  statusBar.setFilePath(targetPath)
+  statusBar.setFilePath(firstFilePath)
   const vimMode = new VimMode(statusBar)
 
   // Wire up the save-file event listener

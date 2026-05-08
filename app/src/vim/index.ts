@@ -1,7 +1,9 @@
+import { getCurrentPath } from "@revim/lib"
 import EditorAdapter from "./adapter"
-import { initVimAdapter, vimApi } from "./keymap_vim"
+import { clearInputState, exitVisualMode, initVimAdapter, vimApi } from "./keymap_vim"
 import type * as Registers from "./register-controller"
 import type * as StatusBar from "./statusbar"
+import type { VimState } from "./types"
 
 export type IRegister = Registers.IRegister
 export type IStatusBar = StatusBar.IStatusBar
@@ -136,6 +138,31 @@ export class VimMode implements EventTarget {
         statusBar.toggleVisibility(false)
         statusBar.closeInput()
         statusBar.clear()
+      })
+
+      this.adapter_.on("buffer-switch", (path: string | null) => {
+        const vim = this.adapter_.state.vim as VimState | undefined
+        if (vim) {
+          // Reset Vim mode state on buffer switch
+          this.adapter_.enterVimMode() // sets adapter.insertMode = false, calls setVimMode(true)
+          vim.insertMode = false
+          if (vim.visualMode) {
+            exitVisualMode(this.adapter_)
+          }
+          clearInputState(this.adapter_)
+        }
+        if (path) {
+          statusBar.setFilePath(path)
+        } else {
+          // If no path, try to get current path from native state
+          try {
+            const currentPath = getCurrentPath()
+            statusBar.setFilePath(currentPath)
+          } catch (_e) {
+            statusBar.setFilePath(null)
+          }
+        }
+        this.adapter_.dispatch("cursorActivity", this.adapter_)
       })
     }
 

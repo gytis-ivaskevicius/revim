@@ -1,3 +1,4 @@
+import { nextBuffer as nativeNextBuffer, prevBuffer as nativePrevBuffer } from "@revim/lib"
 import EditorAdapter from "./adapter"
 import { commandDispatcher } from "./command-dispatcher"
 import {
@@ -698,6 +699,14 @@ export const exCommands: Record<string, ExCommandFunc> = {
     // Write the file first, then quit
     exCommands.write(adapter, params)
     exCommands.quit(adapter, params)
+  },
+  bnext: (_adapter, _params) => {
+    const result = nativeNextBuffer()
+    _adapter.dispatch("buffer-switch", result.path as string | null)
+  },
+  bprev: (_adapter, _params) => {
+    const result = nativePrevBuffer()
+    _adapter.dispatch("buffer-switch", result.path as string | null)
   },
   nohlsearch: (adapter) => {
     clearSearchHighlight(adapter)
