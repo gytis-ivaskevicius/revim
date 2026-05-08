@@ -1,5 +1,13 @@
 # Learnings
 
+## Types referencing EditorAdapter cannot be extracted to separate module
+**Date**: 2026-05-08
+**Area**: architecture
+**What happened**: Extracting `BindingFunction`, `CallFunction`, `Binding`, and `KeyMapEntry` types from `adapter.ts` to `adapter-types.ts` caused issues because they all reference `EditorAdapter`, creating a circular dependency. Using `any` was rejected, and a structural `Adapter` interface failed due to TypeScript function parameter contravariance (functions typed with `EditorAdapter` aren't assignable to functions expecting the wider `Adapter` type).
+**Takeaway**: Before extracting types from `adapter.ts`, check if they reference `EditorAdapter`. If they do, they must stay in `adapter.ts` — the EditorAdapter class itself cannot be imported into the types module without creating a cycle. Function parameter contravariance (`strictFunctionTypes`) prevents using a wider structural interface in callback signatures when existing callbacks use the narrower concrete type.
+
+---
+
 ## tui-test getByText only accepts string and RegExp (not functions), requires `g` flag on regex
 **Date**: 2026-05-03
 **Area**: testing
