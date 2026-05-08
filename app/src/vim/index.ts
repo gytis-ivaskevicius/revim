@@ -1,5 +1,6 @@
-import { getCurrentPath } from "@revim/lib"
+import { getCurrentPath, getCursorPos } from "@revim/lib"
 import EditorAdapter from "./adapter"
+import { makePos } from "./common"
 import { clearInputState, exitVisualMode, initVimAdapter, vimApi } from "./keymap_vim"
 import type * as Registers from "./register-controller"
 import type * as StatusBar from "./statusbar"
@@ -150,6 +151,14 @@ export class VimMode implements EventTarget {
             exitVisualMode(this.adapter_)
           }
           clearInputState(this.adapter_)
+        }
+        // Re-sync adapter selection from native state (buffer switch resets anchor=cursor)
+        try {
+          const pos = getCursorPos()
+          const cursor = makePos(pos.line, pos.ch)
+          this.adapter_.syncSelection(cursor, cursor)
+        } catch (_e) {
+          // best-effort
         }
         if (path) {
           statusBar.setFilePath(path)

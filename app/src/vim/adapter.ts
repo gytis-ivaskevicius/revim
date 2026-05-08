@@ -151,7 +151,7 @@ export class EditorAdapter {
     return makePos(pos.line, pos.ch)
   }
 
-  private syncSelection(anchor: Pos, head: Pos) {
+  syncSelection(anchor: Pos, head: Pos) {
     this.selectionAnchor = makePos(anchor.line, anchor.ch)
     this.selectionHead = makePos(head.line, head.ch)
     this.selections = [new CmSelection(this.selectionAnchor, this.selectionHead)]
@@ -326,6 +326,10 @@ export class EditorAdapter {
     try {
       const result = nativeUndo()
       this.syncSelection(makePos(result.line, result.ch), makePos(result.line, result.ch))
+      this.dispatch("change", this, {
+        text: [""],
+        origin: "+input" as const,
+      })
       this.dispatch("cursorActivity", this)
     } catch (_e) {
       // Native error (e.g. TUI not initialized) — no-op
@@ -336,6 +340,10 @@ export class EditorAdapter {
     try {
       const result = nativeRedo()
       this.syncSelection(makePos(result.line, result.ch), makePos(result.line, result.ch))
+      this.dispatch("change", this, {
+        text: [""],
+        origin: "+input" as const,
+      })
       this.dispatch("cursorActivity", this)
     } catch (_e) {
       // Native error — no-op
