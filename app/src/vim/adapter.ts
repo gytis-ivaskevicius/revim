@@ -323,15 +323,23 @@ export class EditorAdapter {
   }
 
   undo() {
-    const result = nativeUndo()
-    this.syncSelection(makePos(result.line, result.ch), makePos(result.line, result.ch))
-    this.dispatch("cursorActivity", this)
+    try {
+      const result = nativeUndo()
+      this.syncSelection(makePos(result.line, result.ch), makePos(result.line, result.ch))
+      this.dispatch("cursorActivity", this)
+    } catch (_e) {
+      // Native error (e.g. TUI not initialized) — no-op
+    }
   }
 
   redo() {
-    const result = nativeRedo()
-    this.syncSelection(makePos(result.line, result.ch), makePos(result.line, result.ch))
-    this.dispatch("cursorActivity", this)
+    try {
+      const result = nativeRedo()
+      this.syncSelection(makePos(result.line, result.ch), makePos(result.line, result.ch))
+      this.dispatch("cursorActivity", this)
+    } catch (_e) {
+      // Native error — no-op
+    }
   }
 
   undoLine() {
