@@ -85,8 +85,8 @@ test.describe("status bar notifications", () => {
     await Keys.pressKeys(terminal, [":", "s", "e", "t", " ", "u", "n", "k", "n", "o", "w", "n", "<Enter>"])
     await Keys.delay(RENDER_DELAY_MS)
 
-    // The notification should appear ("no such option: unknown" or similar)
-    // Try matching on parts of the notification message
-    await expect(terminal.getByText(/unknown/)).toBeVisible()
+    // The notification should appear ("Unknown option: unknown" or similar)
+    // Try matching on parts of the notification message; must include g flag per tui-test requirements
+    await expect(terminal.getByText(/unknown/g)).toBeVisible()
   })
 })

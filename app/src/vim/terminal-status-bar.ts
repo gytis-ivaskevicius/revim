@@ -1,3 +1,4 @@
+import path from "node:path"
 import { getCurrentPath, getCursorPos, getTerminalWidth, setStatusText } from "@revim/lib"
 import { TERMINAL_KEY_MAP } from "../terminal-key"
 import type { IStatusBar, ModeChangeEvent, StatusBarInputOptions, StatusBarKeyEvent } from "./statusbar"
@@ -28,11 +29,6 @@ export function applyKeyToQuery(evt: StatusBarKeyEvent, query: string): string {
   return query
 }
 
-function basename(filePath: string): string {
-  const lastSlash = filePath.lastIndexOf("/")
-  return lastSlash >= 0 ? filePath.slice(lastSlash + 1) : filePath
-}
-
 export class TerminalStatusBar implements IStatusBar {
   private mode: ModeChangeEvent | undefined
   private keyBuffer = ""
@@ -41,6 +37,8 @@ export class TerminalStatusBar implements IStatusBar {
     query: string
     options: StatusBarInputOptions
   } | null = null
+  // Array of display entries. Each entry is an object (not a plain string) to
+  // provide stable reference identity for the indexOf-based removal in closers.
   private displayState: { message: string }[] = []
   private notificationTimeout: ReturnType<typeof setTimeout> | null = null
   private cursorLine = 0
@@ -99,7 +97,7 @@ export class TerminalStatusBar implements IStatusBar {
 
       let terminalWidth: number
       try {
-        terminalWidth = getTerminalWidth() as unknown as number
+        terminalWidth = getTerminalWidth()
       } catch (_e) {
         terminalWidth = 80
       }
@@ -184,8 +182,7 @@ export class TerminalStatusBar implements IStatusBar {
 
   private getFilename(): string {
     if (!this.filePath) return "[No Name]"
-    const name = basename(this.filePath)
-    return name || "[No Name]"
+    return path.basename(this.filePath) || "[No Name]"
   }
 
   isPrompting(): boolean {
