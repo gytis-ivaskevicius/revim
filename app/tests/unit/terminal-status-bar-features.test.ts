@@ -14,6 +14,7 @@ mock.module("@revim/lib", () => {
     getCursorPos: () => mockCursorPos,
     getCurrentPath: () => mockCurrentPath,
     getTerminalWidth: () => mockTerminalWidth,
+    focusEditor: () => {},
   }
 })
 
@@ -256,6 +257,7 @@ describe("TerminalStatusBar - cursor position and filename", () => {
     const bar = new TerminalStatusBar()
     setStatusTextCalls.length = 0
 
+    mockCursorPos = { line: 5, ch: 3 }
     bar.setCursorPos(5, 3)
 
     const lastCall = setStatusTextCalls[setStatusTextCalls.length - 1]
@@ -314,7 +316,7 @@ describe("TerminalStatusBar - cursor position and filename", () => {
 
   test("right section is truncated when terminal is too narrow", () => {
     mockCurrentPath = "/tmp/very-long-filename.txt"
-    mockCursorPos = { line: 10, col: 5 }
+    mockCursorPos = { line: 10, ch: 5 }
     mockTerminalWidth = 20
     // leftSection = "NORMAL  very-long-filename.txt" = 30 chars
     // Already longer than 20, so should be truncated
@@ -328,7 +330,7 @@ describe("TerminalStatusBar - cursor position and filename", () => {
 
   test("right section truncated from left when partially fitting", () => {
     mockCurrentPath = "/tmp/f.txt"
-    mockCursorPos = { line: 10, col: 5 }
+    mockCursorPos = { line: 10, ch: 5 }
     mockTerminalWidth = 20
     // leftSection = "NORMAL  f.txt" = 12 chars
     // rightSection = "11:6" = 4 chars

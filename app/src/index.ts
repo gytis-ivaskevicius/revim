@@ -58,6 +58,7 @@ function processKeyEvent(vimMode: VimMode, event: KeyboardEvent) {
   const insertMode = Boolean(vimMode.adapter.state.vim?.insertMode)
   const encodedKey = encodeTerminalKey(event, insertMode)
   vimMode.handleKey(encodedKey)
+  focusEditor()
 }
 
 async function main() {
@@ -94,6 +95,7 @@ async function main() {
 
   const statusBar = new TerminalStatusBar()
   statusBar.setFilePath(firstFilePath)
+  focusEditor()
   const vimMode = new VimMode(statusBar)
 
   // Wire up the save-file event listener

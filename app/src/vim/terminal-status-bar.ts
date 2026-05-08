@@ -1,5 +1,5 @@
 import path from "node:path"
-import { getCurrentPath, getCursorPos, getTerminalWidth, setStatusText } from "@revim/lib"
+import { focusEditor, getCurrentPath, getCursorPos, getTerminalWidth, setStatusText } from "@revim/lib"
 import { TERMINAL_KEY_MAP } from "../terminal-key"
 import type { IStatusBar, ModeChangeEvent, StatusBarInputOptions, StatusBarKeyEvent } from "./statusbar"
 
@@ -41,20 +41,10 @@ export class TerminalStatusBar implements IStatusBar {
   // provide stable reference identity for the indexOf-based removal in closers.
   private displayState: { message: string }[] = []
   private notificationTimeout: ReturnType<typeof setTimeout> | null = null
-  private cursorLine = 0
-  private cursorCol = 0
   private filePath: string | null = null
 
   constructor() {
     this.mode = { mode: "normal" }
-    // Read initial cursor position
-    try {
-      const pos = getCursorPos()
-      this.cursorLine = pos.line
-      this.cursorCol = pos.ch
-    } catch (_e) {
-      // best-effort
-    }
     try {
       const p = getCurrentPath()
       this.filePath = p
@@ -93,7 +83,8 @@ export class TerminalStatusBar implements IStatusBar {
       const keyPart = this.keyBuffer ? `  ${this.keyBuffer}` : ""
       const filename = this.getFilename()
       const leftSection = `${label}${keyPart}  ${filename}`
-      const rightSection = `${this.cursorLine + 1}:${this.cursorCol + 1}`
+      const pos = getCursorPos()
+      const rightSection = `${pos.line + 1}:${pos.ch + 1}`
 
       let terminalWidth: number
       try {
@@ -132,12 +123,14 @@ export class TerminalStatusBar implements IStatusBar {
     this.displayState = []
     try {
       setStatusText(message)
+      focusEditor()
     } catch (_e) {
       // best-effort
     }
     this.notificationTimeout = setTimeout(() => {
       this.notificationTimeout = null
       this.update()
+      focusEditor()
     }, 3000)
   }
 
@@ -153,9 +146,7 @@ export class TerminalStatusBar implements IStatusBar {
     this.update()
   }
 
-  setCursorPos(line: number, col: number) {
-    this.cursorLine = line
-    this.cursorCol = col
+  setCursorPos(_line: number, _col: number) {
     this.update()
   }
 
@@ -169,6 +160,7 @@ export class TerminalStatusBar implements IStatusBar {
     this.displayState.push(entry)
     try {
       setStatusText(message)
+      focusEditor()
     } catch (_e) {
       // best-effort
     }
@@ -176,6 +168,7 @@ export class TerminalStatusBar implements IStatusBar {
       const idx = this.displayState.indexOf(entry)
       if (idx >= 0) this.displayState.splice(idx, 1)
       this.update()
+      focusEditor()
     }
     return closer
   }
@@ -268,9 +261,11 @@ export class TerminalStatusBar implements IStatusBar {
     this.displayState = []
     this.promptState = { prefix, query: "", options }
     setStatusText(prefix)
+    focusEditor()
     return () => {
       this.promptState = null
       this.update()
+      focusEditor()
     }
   }
 

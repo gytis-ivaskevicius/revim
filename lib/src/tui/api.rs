@@ -376,23 +376,20 @@ pub fn get_cursor_pos() -> Result<CursorPosition> {
 
 #[napi]
 pub fn set_cursor_pos(line: u32, ch: u32) -> Result<()> {
-    {
-        let line = line as u16;
-        let ch = ch as u16;
-        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let state = &mut ctx
-            .as_mut()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?
-            .state
-            .lock()
-            .map_err(to_napi_error)?;
+    let line = line as u16;
+    let ch = ch as u16;
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = &mut ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .map_err(to_napi_error)?;
 
-        let (line, ch) = state.active().clip_pos(line, ch);
-        state.active_mut().cursor_row = line;
-        state.active_mut().cursor_col = ch;
-        state.sync_primary_selection();
-    }
-    render_frame_internal()?;
+    let (line, ch) = state.active().clip_pos(line, ch);
+    state.active_mut().cursor_row = line;
+    state.active_mut().cursor_col = ch;
+    state.sync_primary_selection();
     Ok(())
 }
 
@@ -474,26 +471,22 @@ pub fn get_selection() -> Result<String> {
 
 #[napi]
 pub fn set_selection(anchor_line: u32, anchor_ch: u32, head_line: u32, head_ch: u32) -> Result<()> {
-    {
-        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let state = &mut ctx
-            .as_mut()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?
-            .state
-            .lock()
-            .map_err(to_napi_error)?;
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = &mut ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .map_err(to_napi_error)?;
 
-        let (anchor_line, anchor_ch) = state.active().clip_pos(anchor_line as u16, anchor_ch as u16);
-        let (head_line, head_ch) = state.active().clip_pos(head_line as u16, head_ch as u16);
+    let (anchor_line, anchor_ch) = state.active().clip_pos(anchor_line as u16, anchor_ch as u16);
+    let (head_line, head_ch) = state.active().clip_pos(head_line as u16, head_ch as u16);
 
-        state.active_mut().anchor_row = anchor_line;
-        state.active_mut().anchor_col = anchor_ch;
-        state.active_mut().cursor_row = head_line;
-        state.active_mut().cursor_col = head_ch;
-        state.sync_primary_selection();
-    }
-
-    render_frame_internal()?;
+    state.active_mut().anchor_row = anchor_line;
+    state.active_mut().anchor_col = anchor_ch;
+    state.active_mut().cursor_row = head_line;
+    state.active_mut().cursor_col = head_ch;
+    state.sync_primary_selection();
     Ok(())
 }
 
@@ -619,7 +612,6 @@ pub fn set_selections(selections: Vec<Selection>) -> Result<()> {
         state.selections = clipped;
     }
 
-    render_frame_internal()?;
     Ok(())
 }
 
@@ -1046,17 +1038,15 @@ pub fn get_terminal_width() -> Result<u16> {
 
 #[napi]
 pub fn set_status_text(text: String) -> Result<()> {
-    {
-        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let state = &mut ctx
-            .as_mut()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?
-            .state
-            .lock()
-            .map_err(to_napi_error)?;
-        state.status_text = text;
-    }
-    render_frame_internal()
+    let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let state = &mut ctx
+        .as_mut()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?
+        .state
+        .lock()
+        .map_err(to_napi_error)?;
+    state.status_text = text;
+    Ok(())
 }
 
 // Buffer management functions
