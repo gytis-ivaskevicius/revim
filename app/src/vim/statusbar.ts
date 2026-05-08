@@ -34,6 +34,8 @@ export interface IStatusBar {
   showNotification: (message: string) => void
   setMode: (mode: ModeChangeEvent) => void
   setKeyBuffer: (key: string) => void
+  setCursorPos: (line: number, col: number) => void
+  setFilePath: (path: string | null) => void
   startDisplay: (message: string) => () => void
   startPrompt: (prefix: string, desc: string, options: StatusBarInputOptions) => () => void
   closeInput: () => void

@@ -34,7 +34,7 @@ A high-performance vim editor built with Rust and TypeScript. The architecture u
 ## Known Limitations
 
 - No cross-platform binary builds configured
-- Status bar: mode indicator and key buffer wired (story 008); search prompt `/`/`?` wired (story 010); `:` ex command prompt wired (story 010)
+- Status bar: all features implemented — mode indicator and key buffer (story 008); search and ex command prompts (story 010); display messages, notifications, cursor position, filename, and reversed style (story 023)
 - Partial ex command coverage
   - `:w`, `:q`, `:wq` are implemented and tested (story 020)
   - `:sort`, `:s`, and other ex commands still need E2E tests or explicit gating

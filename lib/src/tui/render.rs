@@ -196,7 +196,9 @@ pub fn render_frame_internal() -> Result<()> {
                 f.set_cursor_position((cx, cy));
             }
 
-            let status_bar = Paragraph::new(status_text.as_str()).alignment(Alignment::Left);
+            let status_bar = Paragraph::new(status_text.as_str())
+                .alignment(Alignment::Left)
+                .style(Style::default().add_modifier(Modifier::REVERSED));
             f.render_widget(status_bar, status_area);
         })
         .map_err(to_napi_error)?;

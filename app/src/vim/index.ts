@@ -62,7 +62,17 @@ export class VimMode implements EventTarget {
     const command = keymap?.call?.(key, this.adapter_)
 
     if (typeof command === "function") {
-      return command()
+      const result = command()
+      this.updateCursorPos()
+      return result
+    }
+    this.updateCursorPos()
+  }
+
+  private updateCursorPos() {
+    if (this.statusBar_) {
+      const pos = this.adapter_.getCursor()
+      this.statusBar_.setCursorPos(pos.line, pos.ch)
     }
   }
 

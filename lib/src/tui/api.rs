@@ -949,6 +949,16 @@ pub fn focus_editor() -> Result<()> {
 }
 
 #[napi]
+pub fn get_terminal_width() -> Result<u16> {
+    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
+    let context = ctx
+        .as_ref()
+        .ok_or_else(|| to_napi_error("TUI not initialized"))?;
+    let size = context.terminal.size().map_err(to_napi_error)?;
+    Ok(size.width)
+}
+
+#[napi]
 pub fn set_status_text(text: String) -> Result<()> {
     {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
