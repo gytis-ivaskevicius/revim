@@ -1,6 +1,7 @@
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import {
+  focusEditor,
   getCurrentPath,
   initTui,
   loadFile,
@@ -155,6 +156,15 @@ async function main() {
     while (!cleanedUp) {
       try {
         const event = (await waitForKeyboardEvent()) as KeyboardEvent
+
+        if (event.key === "Resize") {
+          if (!statusBar.isPrompting()) {
+            statusBar.refresh()
+          } else {
+            focusEditor()
+          }
+          continue
+        }
 
         if (event.modifiers.includes("Ctrl") && normalizeCtrlCharacter(event.key) === "c") {
           shutdown(0)

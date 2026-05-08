@@ -278,6 +278,10 @@ export class TerminalStatusBar implements IStatusBar {
     // no-op
   }
 
+  refresh() {
+    this.update()
+  }
+
   clear() {
     // clear internal state
     this.keyBuffer = ""

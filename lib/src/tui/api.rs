@@ -175,32 +175,50 @@ pub fn start_keyboard_listener() -> Result<()> {
             match poll_result {
                 Ok(true) => {
                     let read_result = event::read();
-                    if let Ok(Event::Key(key_event)) = read_result {
-                        let key = match key_event.code {
-                            KeyCode::Up => "Up".to_string(),
-                            KeyCode::Down => "Down".to_string(),
-                            KeyCode::Left => "Left".to_string(),
-                            KeyCode::Right => "Right".to_string(),
-                            KeyCode::Delete => "Delete".to_string(),
-                            KeyCode::Insert => "Insert".to_string(),
-                            KeyCode::Home => "Home".to_string(),
-                            KeyCode::End => "End".to_string(),
-                            KeyCode::PageUp => "PageUp".to_string(),
-                            KeyCode::PageDown => "PageDown".to_string(),
-                            KeyCode::Char(c) => c.to_string(),
-                            KeyCode::Enter => "Enter".to_string(),
-                            KeyCode::Backspace => "Backspace".to_string(),
-                            KeyCode::Tab => "Tab".to_string(),
-                            KeyCode::Esc => "Esc".to_string(),
-                            _ => continue,
-                        };
+                    match read_result {
+                        Ok(Event::Key(key_event)) => {
+                            let key = match key_event.code {
+                                KeyCode::Up => "Up".to_string(),
+                                KeyCode::Down => "Down".to_string(),
+                                KeyCode::Left => "Left".to_string(),
+                                KeyCode::Right => "Right".to_string(),
+                                KeyCode::Delete => "Delete".to_string(),
+                                KeyCode::Insert => "Insert".to_string(),
+                                KeyCode::Home => "Home".to_string(),
+                                KeyCode::End => "End".to_string(),
+                                KeyCode::PageUp => "PageUp".to_string(),
+                                KeyCode::PageDown => "PageDown".to_string(),
+                                KeyCode::Char(c) => c.to_string(),
+                                KeyCode::Enter => "Enter".to_string(),
+                                KeyCode::Backspace => "Backspace".to_string(),
+                                KeyCode::Tab => "Tab".to_string(),
+                                KeyCode::Esc => "Esc".to_string(),
+                                _ => continue,
+                            };
 
-                        let modifiers = extract_modifiers(key_event.modifiers);
-                        {
-                            let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap_or_else(|e| e.into_inner());
-                            queue.push_back(KeyboardEvent { key, modifiers });
+                            let modifiers = extract_modifiers(key_event.modifiers);
+                            {
+                                let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap_or_else(|e| e.into_inner());
+                                queue.push_back(KeyboardEvent { key, modifiers });
+                            }
+                            KEYBOARD_QUEUE.condvar.notify_one();
                         }
-                        KEYBOARD_QUEUE.condvar.notify_one();
+                        Ok(Event::Resize(_width, _height)) => {
+                            let mut queue = KEYBOARD_QUEUE.queue.lock().unwrap_or_else(|e| e.into_inner());
+                            // Coalesce consecutive resize events: only push if the last event is not already a Resize
+                            if !matches!(queue.back(), Some(e) if e.key == "Resize") {
+                                queue.push_back(KeyboardEvent {
+                                    key: "Resize".to_string(),
+                                    modifiers: vec![],
+                                });
+                            }
+                            drop(queue);
+                            KEYBOARD_QUEUE.condvar.notify_one();
+                        }
+                        Ok(_) => {} // ignore other events (e.g. mouse, focus)
+                        Err(e) => {
+                            revim_log!("keyboard_listener: read error: {:?}", e);
+                        }
                     }
                 }
                 Ok(false) => {}
