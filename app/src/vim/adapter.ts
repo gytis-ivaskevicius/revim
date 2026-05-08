@@ -29,19 +29,12 @@ import {
 } from "@revim/lib"
 import { log } from "../log"
 import { createSearchCursor, escapeRegex, findMatchingBracket, scanForBracket } from "./adapter-search"
-import {
-  type Binding,
-  type Change,
-  CmSelection,
-  type ExCommandOptionalParameters,
-  type KeyMapEntry,
-  type Operation,
-} from "./adapter-types"
+import { type Change, CmSelection, type ExCommandOptionalParameters, type Operation } from "./adapter-types"
 import { cursorEqual, cursorMax, cursorMin, makePos, type Pos } from "./common"
 import type { ModeChangeEvent, StatusBarInputOptions } from "./statusbar"
 
 export type { MatchingBracket, SearchCursor, SearchMatch } from "./adapter-search"
-export type { BindingFunction, Change, ExCommandOptionalParameters, KeyMapEntry } from "./adapter-types"
+export type { Change, ExCommandOptionalParameters } from "./adapter-types"
 // Re-exports for zero-impact on existing import sites
 export { CmSelection } from "./adapter-types"
 
@@ -70,6 +63,19 @@ export class Marker implements Pos {
   find(): Pos {
     return makePos(this.line, this.ch)
   }
+}
+
+export type BindingFunction = (adapter: EditorAdapter, next?: KeyMapEntry) => void
+type CallFunction = (key: any, adapter: EditorAdapter) => any
+type Binding = string | BindingFunction | string[]
+
+export interface KeyMapEntry {
+  keys?: Record<string, string>
+  find?: (key: string) => boolean
+  fallthrough?: string | string[]
+  attach?: BindingFunction
+  detach?: BindingFunction
+  call?: CallFunction
 }
 
 export class EditorAdapter {
