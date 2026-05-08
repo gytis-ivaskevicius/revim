@@ -130,7 +130,11 @@ export class TerminalStatusBar implements IStatusBar {
     this.notificationTimeout = setTimeout(() => {
       this.notificationTimeout = null
       this.update()
-      focusEditor()
+      try {
+        focusEditor()
+      } catch (_e) {
+        // best-effort
+      }
     }, 3000)
   }
 
@@ -168,7 +172,11 @@ export class TerminalStatusBar implements IStatusBar {
       const idx = this.displayState.indexOf(entry)
       if (idx >= 0) this.displayState.splice(idx, 1)
       this.update()
-      focusEditor()
+      try {
+        focusEditor()
+      } catch (_e) {
+        // best-effort
+      }
     }
     return closer
   }
@@ -260,12 +268,20 @@ export class TerminalStatusBar implements IStatusBar {
     // Clear any active display message (prompt overrides display permanently)
     this.displayState = []
     this.promptState = { prefix, query: "", options }
-    setStatusText(prefix)
-    focusEditor()
+    try {
+      setStatusText(prefix)
+      focusEditor()
+    } catch (_e) {
+      // best-effort
+    }
     return () => {
       this.promptState = null
       this.update()
-      focusEditor()
+      try {
+        focusEditor()
+      } catch (_e) {
+        // best-effort
+      }
     }
   }
 
