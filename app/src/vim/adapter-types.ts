@@ -24,8 +24,15 @@ export class CmSelection {
   }
 }
 
-// Note: `any` used for adapter parameter to avoid circular dependency with EditorAdapter (in adapter.ts).
-// The structural type is sufficient since these are callback signatures, not class parameter types.
+export interface Adapter {
+  state: Record<string, any>
+  options: any
+}
+
+// `any` is used for the adapter parameter to avoid a circular import with EditorAdapter (in adapter.ts)
+// while preserving backward compatibility with existing callbacks typed as (adapter: EditorAdapter, ...).
+// Function parameter contravariance prevents using the narrower Adapter interface here — callbacks
+// in keymap_vim.ts and other files explicitly type their adapter parameter as EditorAdapter.
 export type BindingFunction = (adapter: any, next?: KeyMapEntry) => void
 type CallFunction = (key: any, adapter: any) => any
 type Binding = string | BindingFunction | string[]
