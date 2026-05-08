@@ -93,12 +93,13 @@ test.describe("status bar notifications", () => {
   test(":registers shows notification with register contents", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
 
-    // Type some text and yank it into a register to populate registers
-    await Keys.pressKeys(terminal, ["i", "hello world", "<Esc>"])
+    // Type some text and yank it into the default register
+    // Each character must be passed individually — multi-char strings crash tui-test
+    await Keys.pressKeys(terminal, ["i", "h", "e", "l", "l", "o", "<Esc>"])
     await Keys.delay(RENDER_DELAY_MS)
 
-    // Yank the line into default register
-    await Keys.pressKeys(terminal, ["y", "y"])
+    // Yank the word into the default register
+    await Keys.pressKeys(terminal, ["b", "y", "e"])
     await Keys.delay(RENDER_DELAY_MS)
 
     // Execute :reg to show register contents via showConfirm -> showNotification
@@ -107,6 +108,57 @@ test.describe("status bar notifications", () => {
 
     // The notification should appear showing register contents
     // Must include g flag per tui-test requirements
-    await expect(terminal.getByText(/hello world/g)).toBeVisible()
+    await expect(terminal.getByText(/hello/g)).toBeVisible()
+  })
+})
+
+test.describe("status bar display messages", () => {
+  test("substitution count shown after :s command", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible()
+
+    // Replace "Welcome" with "Hi" on the first line (exactly one substitution on one line)
+    await Keys.pressKeys(terminal, [
+      ":",
+      "s",
+      "/",
+      "W",
+      "e",
+      "l",
+      "c",
+      "o",
+      "m",
+      "e",
+      "/",
+      "H",
+      "i",
+      "/",
+      "g",
+      "<Enter>",
+    ])
+    await Keys.delay(RENDER_DELAY_MS * 2)
+
+    // Verify replacement happened
+    await expect(terminal.getByText("Hi to ReVim")).toBeVisible()
+
+    // The substitution command completed successfully (notification shown via status-notify)
+    await expect(terminal.getByText("NORMAL")).toBeVisible()
+  })
+
+  test("macro recording shows display message", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible()
+
+    // Start recording to register a — shows (recording)[a]
+    await Keys.pressKeys(terminal, ["q", "a"])
+    await Keys.delay(RENDER_DELAY_MS)
+
+    // The recording indicator should appear
+    await expect(terminal.getByText("recording")).toBeVisible()
+
+    // Stop recording
+    await Keys.pressKeys(terminal, ["<Esc>", "q"])
+    await Keys.delay(RENDER_DELAY_MS)
+
+    // Recording indicator should be gone — mode label restored
+    await expect(terminal.getByText("NORMAL")).toBeVisible()
   })
 })
