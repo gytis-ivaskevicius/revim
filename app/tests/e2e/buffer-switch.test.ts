@@ -2,6 +2,7 @@ import { expect, Keys, test, withFiles } from "./test-utils.js"
 
 const DEMO_FIXTURE = "app/tests/fixtures/demo-content.md"
 const BUFFER2_FIXTURE = "app/tests/fixtures/buffer2-content.md"
+const BUFFER3_FIXTURE = "app/tests/fixtures/buffer3-content.md"
 
 test.describe("buffer switching", () => {
   test("single file mode works as before (no regression)", async ({ terminal }) => {
@@ -124,5 +125,37 @@ test.describe("buffer switching with two files", () => {
     buffer = Keys.visibleBuffer(terminal)
     expect(buffer.includes("XYZ")).toBe(false)
     expect(buffer.includes("Welcome to ReVim!")).toBe(true)
+  })
+})
+
+test.describe("buffer switching with three files", () => {
+  test.use(withFiles([DEMO_FIXTURE, BUFFER2_FIXTURE, BUFFER3_FIXTURE]))
+
+  test("gt wraps from last buffer to first", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+
+    // Go to second buffer
+    await Keys.pressKeys(terminal, [":", "b", "n", "e", "x", "t", "<Enter>"])
+    await Keys.delay(100)
+    await expect(terminal.getByText("This is file number two.")).toBeVisible()
+
+    // Go to third buffer
+    await Keys.pressKeys(terminal, [":", "b", "n", "e", "x", "t", "<Enter>"])
+    await Keys.delay(100)
+    await expect(terminal.getByText("This is file number three.")).toBeVisible()
+
+    // gt wraps from last to first
+    await Keys.pressKeys(terminal, ["g", "t"])
+    await Keys.delay(100)
+    await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+  })
+
+  test("gT wraps from first buffer to last", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
+
+    // gT on first buffer should wrap to last buffer
+    await Keys.pressKeys(terminal, ["g", "T"])
+    await Keys.delay(100)
+    await expect(terminal.getByText("This is file number three.")).toBeVisible()
   })
 })

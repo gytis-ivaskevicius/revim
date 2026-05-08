@@ -78,6 +78,10 @@ pub fn init_tui() -> Result<()> {
 
 #[napi]
 pub fn load_file(path: String) -> Result<()> {
+    // Read file outside any locks to avoid blocking the JS thread
+    let file_content = std::fs::read_to_string(&path);
+    let path_for_error = path.clone();
+
     {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
@@ -86,15 +90,15 @@ pub fn load_file(path: String) -> Result<()> {
         let mut state = context.state.lock().map_err(to_napi_error)?;
 
         // Always track the current path, even on read failure (matching Vim behavior)
-        state.active_mut().current_path = Some(path.clone());
+        state.active_mut().current_path = Some(path);
 
-        match std::fs::read_to_string(&path) {
+        match file_content {
             Ok(content) => {
                 let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
                 state.set_lines(lines);
             }
             Err(err) => {
-                state.set_lines(vec![format!("Error opening '{}': {}", path, err)]);
+                state.set_lines(vec![format!("Error opening '{}': {}", path_for_error, err)]);
             }
         }
     }
@@ -334,34 +338,6 @@ pub fn get_line_count() -> Result<u32> {
         .lock()
         .map_err(to_napi_error)?;
     Ok(state.active().lines.len() as u32)
-}
-
-#[napi]
-pub fn get_all_lines() -> Result<Vec<String>> {
-    let ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-    let state = ctx
-        .as_ref()
-        .ok_or_else(|| to_napi_error("TUI not initialized"))?
-        .state
-        .lock()
-        .map_err(to_napi_error)?;
-    Ok(state.active().lines.clone())
-}
-
-#[napi]
-pub fn set_all_lines(lines: Vec<String>) -> Result<()> {
-    {
-        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let mut state = ctx
-            .as_mut()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?
-            .state
-            .lock()
-            .map_err(to_napi_error)?;
-        state.active_mut().set_lines(lines);
-    }
-    render_frame_internal()?;
-    Ok(())
 }
 
 #[napi]

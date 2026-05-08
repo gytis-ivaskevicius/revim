@@ -10,6 +10,8 @@ import {
   getVisibleLines,
   indentLine,
   indexFromPos,
+  nextBuffer as nativeNextBuffer,
+  prevBuffer as nativePrevBuffer,
   pushUndoStop as nativePushUndoStop,
   redo as nativeRedo,
   undo as nativeUndo,
@@ -665,10 +667,31 @@ export class EditorAdapter {
   }
 }
 
-// Shared helper for dispatching buffer-switch events
+// Shared helpers for buffer-switch operations
 // Used by both action handlers and ex commands
+
 export function dispatchBufferSwitch(adapter: EditorAdapter, path: string | null | undefined) {
   adapter.dispatch("buffer-switch", path ?? null)
+}
+
+/** Call the native nextBuffer and dispatch a buffer-switch event. */
+export function doNextBuffer(adapter: EditorAdapter) {
+  try {
+    const result = nativeNextBuffer()
+    dispatchBufferSwitch(adapter, result.path ?? null)
+  } catch (_e) {
+    // Native error (e.g. TUI not initialized) — no-op
+  }
+}
+
+/** Call the native prevBuffer and dispatch a buffer-switch event. */
+export function doPrevBuffer(adapter: EditorAdapter) {
+  try {
+    const result = nativePrevBuffer()
+    dispatchBufferSwitch(adapter, result.path ?? null)
+  } catch (_e) {
+    // Native error — no-op
+  }
 }
 
 export default EditorAdapter

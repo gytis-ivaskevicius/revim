@@ -1,5 +1,4 @@
-import { nextBuffer as nativeNextBuffer, prevBuffer as nativePrevBuffer } from "@revim/lib"
-import EditorAdapter, { dispatchBufferSwitch } from "./adapter"
+import EditorAdapter, { doNextBuffer, doPrevBuffer } from "./adapter"
 import { commandDispatcher } from "./command-dispatcher"
 import {
   copyCursor,
@@ -701,20 +700,10 @@ export const exCommands: Record<string, ExCommandFunc> = {
     exCommands.quit(adapter, params)
   },
   bnext: (_adapter, _params) => {
-    try {
-      const result = nativeNextBuffer()
-      dispatchBufferSwitch(_adapter, result.path ?? null)
-    } catch (_e) {
-      // Native error — no-op
-    }
+    doNextBuffer(_adapter)
   },
   bprev: (_adapter, _params) => {
-    try {
-      const result = nativePrevBuffer()
-      dispatchBufferSwitch(_adapter, result.path ?? null)
-    } catch (_e) {
-      // Native error — no-op
-    }
+    doPrevBuffer(_adapter)
   },
   nohlsearch: (adapter) => {
     clearSearchHighlight(adapter)
