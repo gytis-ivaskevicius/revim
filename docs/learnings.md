@@ -144,6 +144,14 @@
 
 ---
 
+## adapter.dispatch (status-display/status-notify) may fail from within doReplace
+**Date**: 2026-05-08
+**Area**: testing
+**What happened**: Calling `adapter.openNotification` or `showConfirm` from inside `doReplace` (specifically from `stop()` called via `replaceAll()`) did not produce visible notifications in E2E tests, despite working from the caller after `doReplace` returned. The root cause was never identified, but the fix was to return data from `doReplace` and call `showConfirm` from the substitute handler.
+**Takeaway**: When dispatching status bar events from deep callbacks inside complex ex-command flows (especially inside `doReplace`), prefer returning the result data and dispatching from the calling handler. This avoids an apparent dispatch issue within the nested closure tree.
+
+---
+
 ## Testable utilities must go in side-effect-free modules
 **Date**: 2026-05-04
 **Area**: testing
