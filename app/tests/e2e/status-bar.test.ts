@@ -89,4 +89,24 @@ test.describe("status bar notifications", () => {
     // Try matching on parts of the notification message; must include g flag per tui-test requirements
     await expect(terminal.getByText(/unknown/g)).toBeVisible()
   })
+
+  test(":registers shows notification with register contents", async ({ terminal }) => {
+    await expect(terminal.getByText("Welcome")).toBeVisible()
+
+    // Type some text and yank it into a register to populate registers
+    await Keys.pressKeys(terminal, ["i", "hello world", "<Esc>"])
+    await Keys.delay(RENDER_DELAY_MS)
+
+    // Yank the line into default register
+    await Keys.pressKeys(terminal, ["y", "y"])
+    await Keys.delay(RENDER_DELAY_MS)
+
+    // Execute :reg to show register contents via showConfirm -> showNotification
+    await Keys.pressKeys(terminal, [":", "r", "e", "g", "<Enter>"])
+    await Keys.delay(RENDER_DELAY_MS)
+
+    // The notification should appear showing register contents
+    // Must include g flag per tui-test requirements
+    await expect(terminal.getByText(/hello world/g)).toBeVisible()
+  })
 })

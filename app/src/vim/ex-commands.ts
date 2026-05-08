@@ -79,12 +79,20 @@ function doReplace(
   let lastPos: Pos
   let modifiedLineNumber: number
   let joined: boolean
+  let substitutionCount = 0
+  const affectedLines = new Set<number>()
   const replaceAll = () => {
     while (!done) {
       replace()
       next()
     }
     stop()
+    // Report substitution count after all replacements
+    if (substitutionCount > 0) {
+      const lines = affectedLines.size
+      const msg = `${substitutionCount} substitution${substitutionCount === 1 ? "" : "s"} on ${lines} line${lines === 1 ? "" : "s"}`
+      adapter.displayMessage(msg)
+    }
   }
   const replace = () => {
     const from = searchCursor.from()
@@ -105,6 +113,8 @@ function doReplace(
     modifiedLineNumber = replacedTo.line
     lineEnd += modifiedLineNumber - unmodifiedLineNumber
     joined = modifiedLineNumber < unmodifiedLineNumber
+    substitutionCount++
+    affectedLines.add(to.line)
   }
   const findNextValidMatch = () => {
     const currentTo = searchCursor.to()
