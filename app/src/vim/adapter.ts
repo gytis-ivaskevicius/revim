@@ -665,4 +665,10 @@ export class EditorAdapter {
   }
 }
 
+// Shared helper for dispatching buffer-switch events
+// Used by both action handlers and ex commands
+export function dispatchBufferSwitch(adapter: EditorAdapter, path: string | null) {
+  adapter.dispatch("buffer-switch", path)
+}
+
 export default EditorAdapter

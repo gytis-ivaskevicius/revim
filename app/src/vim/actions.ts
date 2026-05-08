@@ -1,5 +1,5 @@
 import { nextBuffer as nativeNextBuffer, prevBuffer as nativePrevBuffer } from "@revim/lib"
-import EditorAdapter, { CmSelection } from "./adapter"
+import EditorAdapter, { CmSelection, dispatchBufferSwitch } from "./adapter"
 import {
   copyCursor,
   cursorEqual,
@@ -573,16 +573,12 @@ export const defineAction = (name: string, fn: ActionFunc) => (actions[name] = f
 // Buffer switching actions - dispatched to VimMode via adapter events
 actions.nextBuffer = (_adapter, _actionArgs, _vim) => {
   const result = nativeNextBuffer()
-  if (result.index !== undefined) {
-    _adapter.dispatch("buffer-switch", result.path as string | null)
-  }
+  dispatchBufferSwitch(_adapter, result.path as string | null)
 }
 
 actions.prevBuffer = (_adapter, _actionArgs, _vim) => {
   const result = nativePrevBuffer()
-  if (result.index !== undefined) {
-    _adapter.dispatch("buffer-switch", result.path as string | null)
-  }
+  dispatchBufferSwitch(_adapter, result.path as string | null)
 }
 
 function executeMacroRegister(

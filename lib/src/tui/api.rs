@@ -358,7 +358,7 @@ pub fn set_all_lines(lines: Vec<String>) -> Result<()> {
             .state
             .lock()
             .map_err(to_napi_error)?;
-        state.active_mut().lines = lines;
+        state.active_mut().set_lines(lines);
     }
     render_frame_internal()?;
     Ok(())
@@ -1077,6 +1077,9 @@ pub fn set_status_text(text: String) -> Result<()> {
 
 #[napi]
 pub fn open_buffer(path: String) -> Result<BufferInfo> {
+    // Read file outside any locks
+    let file_content = std::fs::read_to_string(&path);
+
     let (index, path_clone) = {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
@@ -1087,8 +1090,8 @@ pub fn open_buffer(path: String) -> Result<BufferInfo> {
         let mut buf = BufferState::new();
         buf.current_path = Some(path.clone());
 
-        match std::fs::read_to_string(&path) {
-            Ok(content) => {
+        match file_content {
+            Ok(ref content) => {
                 let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
                 if lines.is_empty() {
                     buf.lines = vec![String::new()];
@@ -1096,7 +1099,7 @@ pub fn open_buffer(path: String) -> Result<BufferInfo> {
                     buf.lines = lines;
                 }
             }
-            Err(err) => {
+            Err(ref err) => {
                 buf.lines = vec![format!("Error opening '{}': {}", path, err)];
             }
         }
