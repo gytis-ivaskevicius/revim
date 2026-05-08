@@ -160,9 +160,10 @@ async function main() {
         if (event.key === "Resize") {
           if (!statusBar.isPrompting()) {
             statusBar.refresh()
-          } else {
-            focusEditor()
           }
+          // Always re-render the frame — refresh() may be a no-op during notifications,
+          // but focusEditor() unconditionally calls render_frame_internal()
+          focusEditor()
           continue
         }
 
