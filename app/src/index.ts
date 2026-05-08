@@ -70,7 +70,7 @@ async function main() {
 
   const scriptAbsPath = fileURLToPath(import.meta.url)
   const moduleDir = path.dirname(scriptAbsPath)
-  const filePaths = parseFilePaths(process.argv, scriptAbsPath)
+  const filePaths = parseFilePaths(process.argv, scriptAbsPath).map((p) => path.resolve(p))
 
   let firstFilePath: string
   if (filePaths.length === 0) {

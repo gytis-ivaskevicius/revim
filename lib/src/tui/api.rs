@@ -14,7 +14,7 @@ use std::thread;
 use std::time::Duration;
 
 use super::render::render_frame_internal;
-use super::state::{BufferState, HighlightRange, Selection, VisualMode};
+use super::state::{BufferState, HighlightRange, Selection, TuiState, VisualMode};
 use super::{
     extract_modifiers, revim_log, to_napi_error, wrap_decrement_u16, wrap_increment_u16,
     TuiContext, TUI_CONTEXT, TUI_RUNNING,
@@ -843,8 +843,9 @@ pub fn push_undo_stop() -> Result<()> {
     Ok(())
 }
 
-#[napi]
-pub fn undo() -> Result<CursorPosition> {
+/// Private helper: undo or redo the active buffer.
+/// `is_undo` true = undo, false = redo.
+fn do_undo_redo(is_undo: bool) -> Result<CursorPosition> {
     let (row, col) = {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let state = &mut ctx
@@ -854,20 +855,36 @@ pub fn undo() -> Result<CursorPosition> {
             .lock()
             .map_err(to_napi_error)?;
 
-        if state.active().undo_stack.is_empty() {
+        let source_empty = if is_undo {
+            state.active().undo_stack.is_empty()
+        } else {
+            state.active().redo_stack.is_empty()
+        };
+
+        if source_empty {
             return Ok(CursorPosition {
                 line: state.active().cursor_row as u32,
                 ch: state.active().cursor_col as u32,
             });
         }
 
-        // Push current state to redo stack
+        // Push current state to destination stack
         let current = state.active().snapshot();
-        state.active_mut().redo_stack.push(current);
+        if is_undo {
+            state.active_mut().redo_stack.push(current);
+        } else {
+            state.active_mut().undo_stack.push(current);
+        }
 
-        // Pop from undo stack and restore
-        let snapshot = state.active_mut().undo_stack.pop().unwrap();
-        state.active_mut().restore_snapshot(&snapshot);
+        // Pop from source stack and restore
+        let snapshot = if is_undo {
+            state.active_mut().undo_stack.pop()
+        } else {
+            state.active_mut().redo_stack.pop()
+        };
+        if let Some(snapshot) = snapshot {
+            state.active_mut().restore_snapshot(&snapshot);
+        }
         state.sync_primary_selection();
 
         (state.active().cursor_row, state.active().cursor_col)
@@ -882,41 +899,13 @@ pub fn undo() -> Result<CursorPosition> {
 }
 
 #[napi]
+pub fn undo() -> Result<CursorPosition> {
+    do_undo_redo(true)
+}
+
+#[napi]
 pub fn redo() -> Result<CursorPosition> {
-    let (row, col) = {
-        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let state = &mut ctx
-            .as_mut()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?
-            .state
-            .lock()
-            .map_err(to_napi_error)?;
-
-        if state.active().redo_stack.is_empty() {
-            return Ok(CursorPosition {
-                line: state.active().cursor_row as u32,
-                ch: state.active().cursor_col as u32,
-            });
-        }
-
-        // Push current state to undo stack
-        let current = state.active().snapshot();
-        state.active_mut().undo_stack.push(current);
-
-        // Pop from redo stack and restore
-        let snapshot = state.active_mut().redo_stack.pop().unwrap();
-        state.active_mut().restore_snapshot(&snapshot);
-        state.sync_primary_selection();
-
-        (state.active().cursor_row, state.active().cursor_col)
-    };
-
-    render_frame_internal()?;
-
-    Ok(CursorPosition {
-        line: row as u32,
-        ch: col as u32,
-    })
+    do_undo_redo(false)
 }
 
 #[napi]
@@ -1059,7 +1048,7 @@ pub fn open_buffer(path: String) -> Result<BufferInfo> {
     // Read file outside any locks
     let file_content = std::fs::read_to_string(&path);
 
-    let (index, path_clone) = {
+    let (index, result_path) = {
         let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
         let context = ctx
             .as_mut()
@@ -1085,12 +1074,14 @@ pub fn open_buffer(path: String) -> Result<BufferInfo> {
 
         let index = state.buffers.len();
         state.buffers.push(buf);
-        (index as u32, state.buffers[index].current_path.clone())
+        // Use the cloned path from the buffer; avoid cloning `path` again
+        let result_path = state.buffers[index].current_path.clone();
+        (index as u32, result_path)
     };
 
     Ok(BufferInfo {
         index,
-        path: path_clone,
+        path: result_path,
     })
 }
 
@@ -1121,8 +1112,9 @@ pub fn switch_to_buffer(index: u32) -> Result<BufferInfo> {
     })
 }
 
-#[napi]
-pub fn next_buffer() -> Result<BufferInfo> {
+/// Private helper: switch to a different buffer and return its info.
+/// `switch_fn` receives `&mut TuiState` and returns the new buffer index.
+fn do_buffer_switch(switch_fn: impl FnOnce(&mut TuiState) -> usize) -> Result<BufferInfo> {
     let index;
     let path;
     {
@@ -1132,7 +1124,7 @@ pub fn next_buffer() -> Result<BufferInfo> {
             .ok_or_else(|| to_napi_error("TUI not initialized"))?;
         let mut state = context.state.lock().map_err(to_napi_error)?;
 
-        index = state.next_buffer() as u32;
+        index = switch_fn(&mut state) as u32;
         path = state.active().current_path.clone();
     }
 
@@ -1145,26 +1137,13 @@ pub fn next_buffer() -> Result<BufferInfo> {
 }
 
 #[napi]
+pub fn next_buffer() -> Result<BufferInfo> {
+    do_buffer_switch(|state: &mut TuiState| state.next_buffer())
+}
+
+#[napi]
 pub fn prev_buffer() -> Result<BufferInfo> {
-    let index;
-    let path;
-    {
-        let mut ctx = TUI_CONTEXT.lock().map_err(to_napi_error)?;
-        let context = ctx
-            .as_mut()
-            .ok_or_else(|| to_napi_error("TUI not initialized"))?;
-        let mut state = context.state.lock().map_err(to_napi_error)?;
-
-        index = state.prev_buffer() as u32;
-        path = state.active().current_path.clone();
-    }
-
-    render_frame_internal()?;
-
-    Ok(BufferInfo {
-        index,
-        path,
-    })
+    do_buffer_switch(|state: &mut TuiState| state.prev_buffer())
 }
 
 #[napi]
@@ -1184,5 +1163,5 @@ pub fn get_current_buffer_index() -> Result<u32> {
         .as_ref()
         .ok_or_else(|| to_napi_error("TUI not initialized"))?;
     let state = context.state.lock().map_err(to_napi_error)?;
-    Ok(state.active as u32)
+    Ok(state.active_index() as u32)
 }

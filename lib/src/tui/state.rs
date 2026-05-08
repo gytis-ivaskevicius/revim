@@ -264,12 +264,19 @@ impl BufferState {
 
 pub struct TuiState {
     pub buffers: Vec<BufferState>,
-    pub active: usize,
+    active: usize,
     // Global (not per-buffer):
     pub visual_mode: VisualMode,
     pub selections: Vec<Selection>,
     pub highlights: Vec<HighlightRange>,
     pub status_text: String,
+}
+
+impl TuiState {
+    /// Returns the index of the active buffer.
+    pub fn active_index(&self) -> usize {
+        self.active
+    }
 }
 
 impl Default for TuiState {
