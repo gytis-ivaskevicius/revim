@@ -23,6 +23,8 @@ const kMatchingBrackets: Record<string, MatchingBracket> = {
   ">": { symbol: ">", pair: "<", mode: "open", regex: /[<>]/ },
 }
 
+// Extracted from EditorAdapter.escapeRegex. Note: search-utils.ts has a similar escapeRegex with
+// a slightly different character class — this preserves the original adapter.ts behavior unchanged.
 export function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
@@ -91,6 +93,7 @@ export function findMatchingBracket(accessor: LineAccessor, cur: Pos): { pos: Po
       )
     }
   }
+  return undefined
 }
 
 export interface SearchMatch {

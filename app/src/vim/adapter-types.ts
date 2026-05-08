@@ -24,6 +24,8 @@ export class CmSelection {
   }
 }
 
+// Note: `any` used for adapter parameter to avoid circular dependency with EditorAdapter (in adapter.ts).
+// The structural type is sufficient since these are callback signatures, not class parameter types.
 export type BindingFunction = (adapter: any, next?: KeyMapEntry) => void
 type CallFunction = (key: any, adapter: any) => any
 type Binding = string | BindingFunction | string[]
@@ -54,4 +56,5 @@ export interface ExCommandOptionalParameters {
   argString?: string
 }
 
+// Exported for use by adapter.ts only; not re-exported from adapter.ts (internal implementation detail).
 export type { Binding, Operation }
