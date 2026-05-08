@@ -1,0 +1,67 @@
+// TUI Test Snapshot v1
+
+exports[`terminal resize › wider dimensions update display | 1`] = String.raw`
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│┌ReVim─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐│
+││Welcome to ReVim!                                                                                                     ││
+││This is a line of text.                                                                                               ││
+││ReVim is a terminal-based text editor.                                                                                ││
+││It mimics the behavior of Vim.                                                                                        ││
+││                                                                                                                      ││
+││Basic movement keys:                                                                                                  ││
+││  h - move left                                                                                                       ││
+││  j - move down                                                                                                       ││
+││  k - move up                                                                                                         ││
+││  l - move right                                                                                                      ││
+││                                                                                                                      ││
+││Word motion:                                                                                                          ││
+││  w - next word                                                                                                       ││
+││  b - previous word                                                                                                   ││
+││  e - end of word                                                                                                     ││
+││                                                                                                                      ││
+││Line numbers are not shown yet.                                                                                       ││
+││Visual mode selection works.                                                                                          ││
+││You can delete, yank, and put text.                                                                                   ││
+││                                                                                                                      ││
+││Insert mode:                                                                                                          ││
+││  i - insert before cursor                                                                                            ││
+││  a - insert after cursor                                                                                             ││
+││  A - append at line end                                                                                              ││
+││  o - open new line below                                                                                             ││
+││  O - open new line above                                                                                             ││
+││                                                                                                                      ││
+││To exit ReVim:                                                                                                        ││
+││  Press Ctrl+C to quit                                                                                                ││
+││                                                                                                                      ││
+││Sentence motions:                                                                                                     ││
+││  ( - go to previous sentence                                                                                         ││
+││  ) - go to next sentence                                                                                             ││
+││  { - go to previous paragraph                                                                                        ││
+││  } - go to next paragraph                                                                                            ││
+││                                                                                                                      ││
+││This buffer has 46 lines total.                                                                                       ││
+│└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘│
+│NORMAL  demo-content.md                                                                                              1:1│
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+{
+  "0,0": {
+    "bgColorMode": 0,
+    "bgColor": -1,
+    "fgColorMode": 0,
+    "fgColor": -1,
+    "blink": 0,
+    "bold": 0,
+    "dim": 0,
+    "inverse": 0,
+    "invisible": 0,
+    "italic": 0,
+    "overline": 0,
+    "strike": 0,
+    "underline": 0
+  },
+  "0,39": {
+    "inverse": 67108864
+  }
+}
+`;
+
