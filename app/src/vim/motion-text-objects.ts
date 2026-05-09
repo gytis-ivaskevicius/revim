@@ -1,4 +1,4 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { copyCursor, cursorIsBefore, cursorMax, cursorMin, makePos, type Pos } from "./common"
 import { expandWordUnderCursor } from "./keymap_vim"
 import { findParagraph } from "./motion-paragraph"
@@ -7,7 +7,7 @@ import { lineLength, offsetCursor } from "./vim-utils"
 
 // TODO: perhaps this finagling of start and end positions belongs
 // in codemirror/replaceRange?
-export function selectCompanionObject(adapter: EditorAdapter, head: Pos, symb: string, inclusive: boolean): [Pos, Pos] {
+export function selectCompanionObject(adapter: IEditorAdapter, head: Pos, symb: string, inclusive: boolean): [Pos, Pos] {
   const cur = head
 
   const bracketRegexpMatcher: Record<string, RegExp> = {
@@ -65,7 +65,7 @@ export function selectCompanionObject(adapter: EditorAdapter, head: Pos, symb: s
 // Takes in a symbol and a cursor and tries to simulate text objects that
 // have identical opening and closing symbols
 // TODO support across multiple lines
-export function findBeginningAndEnd(adapter: EditorAdapter, head: Pos, symb: string, inclusive: boolean): [Pos, Pos] {
+export function findBeginningAndEnd(adapter: IEditorAdapter, head: Pos, symb: string, inclusive: boolean): [Pos, Pos] {
   const cur = copyCursor(head)
   const line = adapter.getLine(cur.line)
   const chars = line.split("")
@@ -149,11 +149,11 @@ export function findBeginningAndEnd(adapter: EditorAdapter, head: Pos, symb: str
  *   <div><brok><en></div>
  *   ```
  */
-export function expandTagUnderCursor(_adapter: EditorAdapter, head: Pos, _inclusive: boolean): [Pos, Pos] {
+export function expandTagUnderCursor(_adapter: IEditorAdapter, head: Pos, _inclusive: boolean): [Pos, Pos] {
   return [head, head]
 }
 
-export function expandSelection(adapter: EditorAdapter, start: Pos, end: Pos): [Pos, Pos] {
+export function expandSelection(adapter: IEditorAdapter, start: Pos, end: Pos): [Pos, Pos] {
   const vim = adapter.state.vim as VimState
   const sel = vim.sel
   let head = sel.head
@@ -178,7 +178,7 @@ export function expandSelection(adapter: EditorAdapter, start: Pos, end: Pos): [
 }
 
 export function motionTextObjectManipulation(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   head: Pos,
   motionArgs: import("./types").MotionArgs,
   vim: VimState,

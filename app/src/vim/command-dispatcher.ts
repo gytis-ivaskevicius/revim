@@ -1,6 +1,6 @@
 import { log } from "../log"
 import { actions } from "./actions"
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { CmSelection } from "./adapter"
 import {
   copyCursor,
@@ -61,7 +61,7 @@ interface PromptKeyDownOptions {
 
 /** Shared onKeyDown handler for prompt inputs (search, ex-command, etc.) */
 function makePromptKeyDown(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   historyController: HistoryController,
   options?: PromptKeyDownOptions,
 ): (e: StatusBarKeyEvent, input: string, setQuery: (value: string) => void) => boolean {
@@ -120,7 +120,7 @@ export class CommandDispatcher {
     return { type: "full", command: bestMatch }
   }
 
-  processCommand(adapter: EditorAdapter, vim: VimState, command: KeyMapping) {
+  processCommand(adapter: IEditorAdapter, vim: VimState, command: KeyMapping) {
     vim.inputState.repeatOverride = command.repeatOverride
     switch (command.type) {
       case "motion":
@@ -148,7 +148,7 @@ export class CommandDispatcher {
   }
 
   processMotion(
-    adapter: EditorAdapter,
+    adapter: IEditorAdapter,
     vim: VimState,
     command: KeyMappingMotion | KeyMappingOperatorMotion | KeyMappingAction,
   ) {
@@ -158,7 +158,7 @@ export class CommandDispatcher {
   }
 
   processOperator(
-    adapter: EditorAdapter,
+    adapter: IEditorAdapter,
     vim: VimState,
     command: KeyMappingOperator | KeyMappingOperatorMotion | KeyMappingAction,
   ) {
@@ -191,7 +191,7 @@ export class CommandDispatcher {
     }
   }
 
-  processOperatorMotion(adapter: EditorAdapter, vim: VimState, command: KeyMappingOperatorMotion) {
+  processOperatorMotion(adapter: IEditorAdapter, vim: VimState, command: KeyMappingOperatorMotion) {
     const visualMode = vim.visualMode
     const operatorMotionArgs = copyArgs(command.operatorMotionArgs)
     if (operatorMotionArgs) {
@@ -206,7 +206,7 @@ export class CommandDispatcher {
     }
   }
 
-  processAction(adapter: EditorAdapter, vim: VimState, command: KeyMappingAction) {
+  processAction(adapter: IEditorAdapter, vim: VimState, command: KeyMappingAction) {
     const inputState = vim.inputState
     const repeat = inputState.getRepeat()
     const repeatIsExplicit = !!repeat
@@ -235,7 +235,7 @@ export class CommandDispatcher {
     actions[command.action!](adapter, actionArgs, vim)
   }
 
-  processSearch(adapter: EditorAdapter, vim: VimState, command: KeyMappingSearch) {
+  processSearch(adapter: IEditorAdapter, vim: VimState, command: KeyMappingSearch) {
     if (!adapter.getSearchCursor) {
       // Search depends on SearchCursor.
       return
@@ -372,7 +372,7 @@ export class CommandDispatcher {
     }
   }
 
-  processEx(adapter: EditorAdapter, vim: VimState, command: KeyMapping) {
+  processEx(adapter: IEditorAdapter, vim: VimState, command: KeyMapping) {
     const onPromptClose = (input: string) => {
       // Give the prompt some time to close so that if processCommand shows
       // an error, the elements don't overlap.
@@ -407,7 +407,7 @@ export class CommandDispatcher {
       }
     }
   }
-  evalInput(adapter: EditorAdapter, vim: VimState) {
+  evalInput(adapter: IEditorAdapter, vim: VimState) {
     // If the motion command is set, execute both the operator and motion.
     // Otherwise return.
     const inputState = vim.inputState

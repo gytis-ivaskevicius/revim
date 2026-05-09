@@ -1,4 +1,5 @@
 import EditorAdapter, { CmSelection, doNextBuffer, doPrevBuffer } from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import {
   copyCursor,
   cursorEqual,
@@ -18,7 +19,7 @@ import { motions } from "./motions"
 import type { ActionArgs, VimState } from "./types"
 import { clipCursorToContent, lineLength, offsetCursor, selectForInsert } from "./vim-utils"
 
-export type ActionFunc = (adapter: EditorAdapter, actionArgs: ActionArgs, vim: VimState) => void
+export type ActionFunc = (adapter: IEditorAdapter, actionArgs: ActionArgs, vim: VimState) => void
 export const actions: Record<string, ActionFunc> = {
   jumpListWalk: (adapter, actionArgs, vim) => {
     if (vim.visualMode) {
@@ -579,7 +580,7 @@ actions.prevBuffer = (_adapter, _actionArgs, _vim) => {
 }
 
 function executeMacroRegister(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   vim: VimState,
   macroModeState: MacroModeState,
   registerName: string,
@@ -619,7 +620,7 @@ function executeMacroRegister(
   macroModeState.isPlaying = false
 }
 
-function getSelectedAreaRange(adapter: EditorAdapter, vim: VimState): [Pos, Pos] {
+function getSelectedAreaRange(adapter: IEditorAdapter, vim: VimState): [Pos, Pos] {
   const lastSelection = vim.lastSelection!
   const getCurrentSelectedAreaRange = (): [Pos, Pos] => {
     const selections = adapter.listSelections()
@@ -668,7 +669,7 @@ function getSelectedAreaRange(adapter: EditorAdapter, vim: VimState): [Pos, Pos]
   }
 }
 
-function extendLineToColumn(adapter: EditorAdapter, lineNum: number, column: number) {
+function extendLineToColumn(adapter: IEditorAdapter, lineNum: number, column: number) {
   const endCh = lineLength(adapter, lineNum)
   const spaces = "".padEnd(column - endCh, " ")
   adapter.setCursor(makePos(lineNum, endCh))
@@ -681,7 +682,7 @@ function extendLineToColumn(adapter: EditorAdapter, lineNum: number, column: num
 // Difference in selectionEnd.line and first/last selection.line
 // Width of the block:
 // Distance between selectionEnd.ch and any(first considered here) selection.ch
-function selectBlock(adapter: EditorAdapter, selectionEnd: Pos) {
+function selectBlock(adapter: IEditorAdapter, selectionEnd: Pos) {
   const ranges = adapter.listSelections()
   const head = copyCursor(adapter.clipPos(selectionEnd))
   const isClipped = !cursorEqual(selectionEnd, head)

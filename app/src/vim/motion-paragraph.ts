@@ -1,8 +1,8 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { isEndOfSentenceSymbol, isWhiteSpaceString, makePos, type Pos } from "./common"
 
 export function findParagraph(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   head: Pos,
   repeat: number,
   dir: 1 | 0 | -1,
@@ -75,7 +75,7 @@ interface Index {
 
 type PartialIndex = Partial<Pick<Index, "line" | "ln" | "pos">> & { dir: -1 | 1 }
 
-export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, dir: -1 | 1): Pos {
+export function findSentence(adapter: IEditorAdapter, cur: Pos, repeat: number, dir: -1 | 1): Pos {
   /*
         Takes an index object
         {
@@ -88,7 +88,7 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
         next valid position or sets them to null if there are
         no more valid positions.
        */
-  const nextChar = (adapter: EditorAdapter, idx: PartialIndex) => {
+  const nextChar = (adapter: IEditorAdapter, idx: PartialIndex) => {
     if (idx.line === undefined || idx.ln === undefined || idx.pos === undefined) {
       idx.line = undefined
       idx.ln = undefined
@@ -114,7 +114,7 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
         Performs one iteration of traversal in forward direction
         Returns an index object of the new location
        */
-  const forward = (adapter: EditorAdapter, ln: number, pos: number, dir: -1 | 1) => {
+  const forward = (adapter: IEditorAdapter, ln: number, pos: number, dir: -1 | 1) => {
     let line = adapter.getLine(ln)
     let stop = line === ""
 
@@ -178,7 +178,7 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
         Performs one iteration of traversal in reverse direction
         Returns an index object of the new location
        */
-  const reverse = (adapter: EditorAdapter, ln: number, pos: number, dir: -1 | 1) => {
+  const reverse = (adapter: IEditorAdapter, ln: number, pos: number, dir: -1 | 1) => {
     let line = adapter.getLine(ln)
 
     const curr: Index = {
@@ -251,6 +251,6 @@ export function findSentence(adapter: EditorAdapter, cur: Pos, repeat: number, d
   return makePos(curr_index.ln!, curr_index.pos!)
 }
 
-function isLine(adapter: EditorAdapter, line: number) {
+function isLine(adapter: IEditorAdapter, line: number) {
   return line >= adapter.firstLine() && line <= adapter.lastLine()
 }

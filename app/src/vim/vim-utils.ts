@@ -1,9 +1,9 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { CmSelection } from "./adapter"
 import { isPos, makePos, type Pos } from "./common"
 import type { VimState } from "./types"
 
-export function lineLength(adapter: EditorAdapter, lineNum: number) {
+export function lineLength(adapter: IEditorAdapter, lineNum: number) {
   return adapter.getLine(lineNum).length
 }
 
@@ -24,7 +24,7 @@ export function offsetCursor(cur: Pos, offsetLine: number | Pos, offsetCh?: numb
  * Clips cursor to ensure that line is within the buffer's range.
  * If includeLineBreak is true, then allow cur.ch == lineLength.
  */
-export function clipCursorToContent(adapter: EditorAdapter, cur: Pos) {
+export function clipCursorToContent(adapter: IEditorAdapter, cur: Pos) {
   const vim = adapter.state.vim as VimState
   const includeLineBreak = vim.insertMode || vim.visualMode
   const line = Math.min(Math.max(adapter.firstLine(), cur.line), adapter.lastLine())
@@ -33,7 +33,7 @@ export function clipCursorToContent(adapter: EditorAdapter, cur: Pos) {
   return makePos(line, ch)
 }
 
-export function selectForInsert(adapter: EditorAdapter, head: Pos, height: number) {
+export function selectForInsert(adapter: IEditorAdapter, head: Pos, height: number) {
   const sel: CmSelection[] = []
   for (let i = 0; i < height; i++) {
     const lineHead = offsetCursor(head, i, 0)

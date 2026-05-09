@@ -1,4 +1,5 @@
 import EditorAdapter, { CmSelection, type KeyMapEntry } from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import {
   copyCursor,
   cursorEqual,
@@ -31,7 +32,7 @@ import type {
 import { VimApi } from "./vim-api"
 import { clipCursorToContent, lineLength, offsetCursor } from "./vim-utils"
 
-function enterVimMode(adapter: EditorAdapter) {
+function enterVimMode(adapter: IEditorAdapter) {
   adapter.setOption("disableInput", true)
   adapter.setOption("showCursorWhenSelecting", false)
   adapter.emitVimModeChange({ mode: "normal" })
@@ -40,7 +41,7 @@ function enterVimMode(adapter: EditorAdapter) {
   adapter.enterVimMode()
 }
 
-function leaveVimMode(adapter: EditorAdapter) {
+function leaveVimMode(adapter: IEditorAdapter) {
   adapter.setOption("disableInput", false)
   adapter.off("cursorActivity", onCursorActivity)
   adapter.state.vim = null
@@ -48,20 +49,20 @@ function leaveVimMode(adapter: EditorAdapter) {
   adapter.leaveVimMode()
 }
 
-function detachVimMap(adapter: EditorAdapter, next?: KeyMapEntry) {
+function detachVimMap(adapter: IEditorAdapter, next?: KeyMapEntry) {
   adapter.attached = false
 
   if (!next || next.attach !== attachVimMap) leaveVimMode(adapter)
 }
 function attachVimMap(
   this: {
-    attach: (adapter: EditorAdapter, prev?: KeyMapEntry) => void
-    detach: (adapter: EditorAdapter, next?: KeyMapEntry | undefined) => void
-    call: (key: string, adapter: EditorAdapter) => false | (() => boolean) | undefined
+    attach: (adapter: IEditorAdapter, prev?: KeyMapEntry) => void
+    detach: (adapter: IEditorAdapter, next?: KeyMapEntry | undefined) => void
+    call: (key: string, adapter: IEditorAdapter) => false | (() => boolean) | undefined
     fallthrough?: string[]
     keys?: { Backspace: string }
   },
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   prev?: KeyMapEntry,
 ) {
   if ((this as KeyMapEntry) === EditorAdapter.keyMap.vim) {
@@ -74,7 +75,7 @@ function attachVimMap(
   if (!prev || prev.attach !== attachVimMap) enterVimMode(adapter)
 }
 
-function cmKey(key: string, adapter: EditorAdapter) {
+function cmKey(key: string, adapter: IEditorAdapter) {
   if (!adapter) {
     return undefined
   }
@@ -177,7 +178,7 @@ defineOption("filetype", undefined, "string", ["ft"], (name, adapter) => {
   }
 })
 
-export function maybeInitVimState(adapter: EditorAdapter): VimState {
+export function maybeInitVimState(adapter: IEditorAdapter): VimState {
   if (!adapter.state.vim) {
     // Store instance state in the EditorAdapter object.
     const vimState: VimState = {
@@ -219,7 +220,7 @@ export function maybeInitVimState(adapter: EditorAdapter): VimState {
   return adapter.state.vim as VimState
 }
 
-export function clearInputState(adapter: EditorAdapter, reason?: string) {
+export function clearInputState(adapter: IEditorAdapter, reason?: string) {
   ;(adapter.state.vim as VimState).inputState = new InputState()
   adapter.dispatch("vim-command-done", reason)
 }
@@ -287,7 +288,7 @@ export function lastChar(keys: string): string {
 
 // Updates the previous selection with the current selection's values. This
 // should only be called in visual mode.
-export function updateLastSelection(adapter: EditorAdapter, vim: VimState) {
+export function updateLastSelection(adapter: IEditorAdapter, vim: VimState) {
   const anchor = vim.sel.anchor
   let head = vim.sel.head
   // To accommodate the effect of lastPastedText in the last selection
@@ -306,7 +307,7 @@ export function updateLastSelection(adapter: EditorAdapter, vim: VimState) {
   }
 }
 
-export function updateMark(adapter: EditorAdapter, vim: VimState, markName: string, pos: Pos) {
+export function updateMark(adapter: IEditorAdapter, vim: VimState, markName: string, pos: Pos) {
   if (!validMarks.includes(markName)) {
     return
   }
@@ -320,7 +321,7 @@ export function updateMark(adapter: EditorAdapter, vim: VimState, markName: stri
  * Updates the EditorAdapter selection to match the provided vim selection.
  * If no arguments are given, it uses the current vim selection state.
  */
-export function updateCmSelection(adapter: EditorAdapter, sel?: CmSelection, mode?: "line" | "block" | "char") {
+export function updateCmSelection(adapter: IEditorAdapter, sel?: CmSelection, mode?: "line" | "block" | "char") {
   const vim = adapter.state.vim as VimState
   sel = sel || vim.sel
   mode = mode || vim.visualLine ? "line" : vim.visualBlock ? "block" : "char"
@@ -329,7 +330,7 @@ export function updateCmSelection(adapter: EditorAdapter, sel?: CmSelection, mod
 }
 
 export function makeCmSelection(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   sel: CmSelection,
   mode: "line" | "block" | "char",
   exclusive?: boolean,
@@ -391,7 +392,7 @@ export function makeCmSelection(
   }
 }
 
-function getHead(adapter: EditorAdapter) {
+function getHead(adapter: IEditorAdapter) {
   const cur = adapter.getCursor("head")
   if (adapter.getSelection().length === 1) {
     // Small corner case when only 1 character is selected. The "real"
@@ -406,7 +407,7 @@ function getHead(adapter: EditorAdapter) {
  * touched. The caller assumes the responsibility of putting the cursor
  * in the right place.
  */
-export function exitVisualMode(adapter: EditorAdapter, moveHead?: boolean) {
+export function exitVisualMode(adapter: IEditorAdapter, moveHead?: boolean) {
   const vim = adapter.state.vim as VimState
   if (moveHead !== false) {
     adapter.setCursor(clipCursorToContent(adapter, vim.sel.head))
@@ -422,7 +423,7 @@ export function exitVisualMode(adapter: EditorAdapter, moveHead?: boolean) {
 // example, with the caret at the start of the last word on the line,
 // 'dw' should word, but not the newline, while 'w' should advance the
 // caret to the first character of the next line.
-export function clipToLine(adapter: EditorAdapter, curStart: Pos, curEnd: Pos) {
+export function clipToLine(adapter: IEditorAdapter, curStart: Pos, curEnd: Pos) {
   const selection = adapter.getRange(curStart, curEnd)
   // Only clip if the selection ends with trailing newline + whitespace
   if (/\n\s*$/.test(selection)) {
@@ -451,14 +452,14 @@ export function clipToLine(adapter: EditorAdapter, curStart: Pos, curEnd: Pos) {
 }
 
 // Expand the selection to line ends.
-export function expandSelectionToLine(_cm: EditorAdapter, curStart: Pos, curEnd: Pos) {
+export function expandSelectionToLine(_cm: IEditorAdapter, curStart: Pos, curEnd: Pos) {
   curStart.ch = 0
   curEnd.ch = 0
   curEnd.line++
 }
 
 export function expandWordUnderCursor(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   inclusive: boolean,
   _forward: boolean,
   bigWord: boolean,
@@ -517,13 +518,13 @@ export function expandWordUnderCursor(
   return [makePos(cur.line, start), makePos(cur.line, end)]
 }
 
-export function recordJumpPosition(adapter: EditorAdapter, oldCur: Pos, newCur: Pos) {
+export function recordJumpPosition(adapter: IEditorAdapter, oldCur: Pos, newCur: Pos) {
   if (!cursorEqual(oldCur, newCur)) {
     vimGlobalState.jumpList.add(adapter, oldCur, newCur)
   }
 }
 
-export function getMarkPos(adapter: EditorAdapter, vim: VimState, markName: string) {
+export function getMarkPos(adapter: IEditorAdapter, vim: VimState, markName: string) {
   if (markName === "'" || markName === "`") {
     return vimGlobalState.jumpList.find(adapter, -1) || makePos(0, 0)
   } else if (markName === ".") {
@@ -537,7 +538,7 @@ export function getMarkPos(adapter: EditorAdapter, vim: VimState, markName: stri
 /**
  * Listens for any kind of cursor activity on EditorAdapter.
  */
-function onCursorActivity(adapter: EditorAdapter) {
+function onCursorActivity(adapter: IEditorAdapter) {
   const vim = adapter.state.vim as VimState
   if (vim.insertMode) {
     // Tracking cursor activity in insert mode (for macro support).
@@ -556,7 +557,7 @@ function onCursorActivity(adapter: EditorAdapter) {
     handleExternalSelection(adapter, vim)
   }
 }
-function handleExternalSelection(adapter: EditorAdapter, vim: VimState) {
+function handleExternalSelection(adapter: IEditorAdapter, vim: VimState) {
   let anchor = adapter.getCursor("anchor")
   let head = adapter.getCursor("head")
   // Enter or exit visual mode to match mouse selection.
@@ -709,7 +710,7 @@ defineOption(
   },
 )
 
-defineOption("background", "dark", "string", ["bg"], (value?: string | number | boolean, adapter?: EditorAdapter) => {
+defineOption("background", "dark", "string", ["bg"], (value?: string | number | boolean, adapter?: IEditorAdapter) => {
   if (typeof value !== "string") {
     if (adapter) {
       const theme = adapter.getOption("theme").toString().toLowerCase()

@@ -1,4 +1,5 @@
-import type { CmSelection, Marker } from "./adapter"
+import type { CmSelection } from "./adapter"
+import type { IMarker } from "./adapter-interface"
 import type { Pos } from "./common"
 import type { InputState } from "./input-state"
 import type { MotionFunc } from "./motions"
@@ -7,8 +8,8 @@ import type { SearchState } from "./search"
 export type VimOptions = Record<string, { value?: string | number | boolean }>
 
 export interface LastSelection {
-  anchorMark: Marker
-  headMark: Marker
+  anchorMark: IMarker
+  headMark: IMarker
   anchor: Pos
   head: Pos
   visualMode: boolean
@@ -35,7 +36,7 @@ export interface VimState {
   // The last motion command run. Cleared if a non-motion command gets
   // executed in between.
   lastMotion?: MotionFunc
-  marks: Record<string, Marker>
+  marks: Record<string, IMarker>
   insertMode: boolean
   // Repeat count for changes made in insert mode, triggered by key
   // sequences like 3,i. Only exists when insertMode is true.

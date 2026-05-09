@@ -1,4 +1,4 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { cursorEqual, inArray, isNumber, isPos, makePos, type Pos } from "./common"
 import { vimGlobalState } from "./global"
 import { defineOption, getOption } from "./options"
@@ -205,7 +205,7 @@ function parseQuery(query: string | RegExp, ignoreCase: boolean, smartCase: bool
   return new RegExp(regexPart, ignoreCase || forceIgnoreCase ? "im" : "m")
 }
 
-export function showConfirm(adapter: EditorAdapter, template: string) {
+export function showConfirm(adapter: IEditorAdapter, template: string) {
   adapter.openNotification(template)
 }
 
@@ -215,7 +215,7 @@ interface PromptOptions extends StatusBarInputOptions {
   onClose: (value: string) => void
 }
 
-export function showPrompt(adapter: EditorAdapter, options: PromptOptions) {
+export function showPrompt(adapter: IEditorAdapter, options: PromptOptions) {
   adapter.openPrompt(options.prefix, options.desc || "", {
     onKeyDown: options.onKeyDown,
     onKeyUp: options.onKeyUp,
@@ -239,7 +239,7 @@ function regexEqual(r1: RegExp | string, r2: RegExp | string) {
 
 // Returns true if the query is valid.
 export function updateSearchQuery(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   rawQuery?: string,
   ignoreCase?: boolean,
   smartCase?: boolean,
@@ -265,7 +265,7 @@ export function updateSearchQuery(
 
 let pendingHighlightTimeoutId: ReturnType<typeof setTimeout> | undefined
 
-export function highlightSearchMatches(adapter: EditorAdapter, query: RegExp) {
+export function highlightSearchMatches(adapter: IEditorAdapter, query: RegExp) {
   clearTimeout(pendingHighlightTimeoutId)
   pendingHighlightTimeoutId = setTimeout(() => {
     if (!adapter.state.vim) return
@@ -288,7 +288,7 @@ export function cancelPendingHighlight() {
   pendingHighlightTimeoutId = undefined
 }
 
-export function findNext(adapter: EditorAdapter, prev: boolean, query: RegExp, repeat?: number) {
+export function findNext(adapter: IEditorAdapter, prev: boolean, query: RegExp, repeat?: number) {
   if (repeat === undefined) {
     repeat = 1
   }
@@ -319,7 +319,7 @@ export function findNext(adapter: EditorAdapter, prev: boolean, query: RegExp, r
   return cursor.from()
 }
 
-export function clearSearchHighlight(adapter: EditorAdapter) {
+export function clearSearchHighlight(adapter: IEditorAdapter) {
   const state = getSearchState(adapter)
   if (!state) {
     adapter.removeOverlay()

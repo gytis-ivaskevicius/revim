@@ -1,9 +1,9 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import type { VimState } from "./types"
 
 export type OptionCallback = (
   value?: string | number | boolean,
-  adapter?: EditorAdapter,
+  adapter?: IEditorAdapter,
 ) => string | number | boolean | Error
 
 export interface OptionConfig {
@@ -53,7 +53,7 @@ export function defineOption(
   }
 }
 
-export function setOption(name: string, value: string | number | boolean, adapter?: EditorAdapter, cfg?: OptionConfig) {
+export function setOption(name: string, value: string | number | boolean, adapter?: IEditorAdapter, cfg?: OptionConfig) {
   const option = options.get(name)
   if (!option) {
     return new Error(`Unknown option: ${name}`)
@@ -152,7 +152,7 @@ export function setOption(name: string, value: string | number | boolean, adapte
   }
 }
 
-export function getOption(name: string, adapter?: EditorAdapter, cfg?: OptionConfig) {
+export function getOption(name: string, adapter?: IEditorAdapter, cfg?: OptionConfig) {
   const option = options.get(name)
   cfg = cfg || {}
   const scope = cfg.scope

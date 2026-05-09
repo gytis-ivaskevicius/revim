@@ -1,4 +1,4 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { vimGlobalState } from "./global"
 import { createInsertModeChanges, type InsertModeChanges } from "./insert-mode"
 
@@ -22,7 +22,7 @@ export class MacroModeState {
     this.isRecording = false
   }
 
-  enterMacroRecordMode(adapter: EditorAdapter, registerName: string) {
+  enterMacroRecordMode(adapter: IEditorAdapter, registerName: string) {
     const register = vimGlobalState.registerController.getRegister(registerName)
     if (register) {
       register.clear()

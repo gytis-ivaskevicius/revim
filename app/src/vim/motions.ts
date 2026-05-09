@@ -3,7 +3,7 @@
  *     position of the cursor.
  */
 
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import {
   cursorEqual,
   cursorIsBefore,
@@ -26,7 +26,7 @@ import { clipCursorToContent } from "./vim-utils"
 
 // All of the functions below return Cursor objects.
 export type MotionFunc = (
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   head: Pos,
   motionArgs: MotionArgs,
   vim: VimState,
@@ -196,7 +196,7 @@ export const motions: Record<string, MotionFunc> = {
     return res
   },
   moveByPage: (adapter, head, motionArgs) => {
-    // EditorAdapter only exposes functions that move the cursor page down, so
+    // IEditorAdapter only exposes functions that move the cursor page down, so
     // doing this bad hack to move the cursor and move it back. evalInput
     // will move the cursor to where it should be in the end.
     const curStart = head
@@ -309,7 +309,7 @@ export const motions: Record<string, MotionFunc> = {
 
 export const defineMotion = (name: string, fn: MotionFunc) => (motions[name] = fn)
 
-function getUserVisibleLines(adapter: EditorAdapter) {
+function getUserVisibleLines(adapter: IEditorAdapter) {
   const scrollInfo = adapter.getScrollInfo()
   const occludeToleranceTop = 6
   const occludeToleranceBottom = 10
@@ -319,7 +319,7 @@ function getUserVisibleLines(adapter: EditorAdapter) {
   return { top: from.line, bottom: to.line }
 }
 
-function moveToEol(adapter: EditorAdapter, head: Pos, motionArgs: MotionArgs, vim: VimState, keepHPos: boolean) {
+function moveToEol(adapter: IEditorAdapter, head: Pos, motionArgs: MotionArgs, vim: VimState, keepHPos: boolean) {
   const cur = head
   const retval = makePos(cur.line + motionArgs.repeat! - 1, Infinity)
   const end = adapter.clipPos(retval)
@@ -331,7 +331,7 @@ function moveToEol(adapter: EditorAdapter, head: Pos, motionArgs: MotionArgs, vi
   return retval
 }
 
-function moveToColumn(adapter: EditorAdapter, repeat: number) {
+function moveToColumn(adapter: IEditorAdapter, repeat: number) {
   // repeat is always >= 1, so repeat - 1 always corresponds
   // to the column we want to go to.
   const line = adapter.getCursor().line

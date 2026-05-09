@@ -1,5 +1,4 @@
-import type EditorAdapter from "./adapter"
-import type { Marker } from "./adapter"
+import type { IEditorAdapter, IMarker } from "./adapter-interface"
 import { cursorEqual, type Pos } from "./common"
 
 export class CircularJumpList {
@@ -7,10 +6,10 @@ export class CircularJumpList {
   pointer = -1
   head = 0
   tail = 0
-  buffer: Marker[] = new Array(100)
+  buffer: IMarker[] = new Array(100)
   cachedCursor?: Pos = undefined
 
-  add(adapter: EditorAdapter, oldCur: Pos, newCur: Pos) {
+  add(adapter: IEditorAdapter, oldCur: Pos, newCur: Pos) {
     const current = this.pointer % this.size
     const curMark = this.buffer[current]
     const useNextSlot = (cursor: Pos) => {
@@ -38,7 +37,7 @@ export class CircularJumpList {
     }
   }
 
-  move(adapter: EditorAdapter, offset: number) {
+  move(adapter: IEditorAdapter, offset: number) {
     this.pointer += offset
     if (this.pointer > this.head) {
       this.pointer = this.head
@@ -63,7 +62,7 @@ export class CircularJumpList {
     return mark
   }
 
-  find(adapter: EditorAdapter, offset: number) {
+  find(adapter: IEditorAdapter, offset: number) {
     const oldPointer = this.pointer
     const mark = this.move(adapter, offset)
     this.pointer = oldPointer

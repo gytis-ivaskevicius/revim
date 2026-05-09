@@ -1,4 +1,5 @@
 import EditorAdapter, { type BindingFunction, type Change } from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { commandDispatcher } from "./command-dispatcher"
 import { vimGlobalState } from "./global"
 import type { MacroModeState } from "./macro-mode-state"
@@ -72,7 +73,7 @@ export function logSearchQuery(macroModeState: MacroModeState, query: string) {
  * Listens for changes made in insert mode.
  * Should only be active in insert mode.
  */
-export function onChange(adapter: EditorAdapter, change: Change): void {
+export function onChange(adapter: IEditorAdapter, change: Change): void {
   let changeObj: Change | undefined = change
   const macroModeState = vimGlobalState.macroModeState
   const lastChange = macroModeState.lastInsertModeChanges
@@ -107,7 +108,7 @@ export function onChange(adapter: EditorAdapter, change: Change): void {
   }
 }
 
-export function exitInsertMode(adapter: EditorAdapter) {
+export function exitInsertMode(adapter: IEditorAdapter) {
   const vim = adapter.state.vim as VimState
   const macroModeState = vimGlobalState.macroModeState
   const insertModeChangeRegister = vimGlobalState.registerController.getRegister(".")
@@ -146,7 +147,7 @@ export function exitInsertMode(adapter: EditorAdapter) {
  * exitInsertMode to repeat the insert mode changes the user just made. The
  * corresponding enterInsertMode call was made with a count.
  */
-export function repeatLastEdit(adapter: EditorAdapter, vim: VimState, repeat: number, repeatForInsert: boolean) {
+export function repeatLastEdit(adapter: IEditorAdapter, vim: VimState, repeat: number, repeatForInsert: boolean) {
   const macroModeState = vimGlobalState.macroModeState
   macroModeState.isPlaying = true
   const isAction = !!vim.lastEditActionCommand
@@ -193,7 +194,7 @@ export function repeatLastEdit(adapter: EditorAdapter, vim: VimState, repeat: nu
   macroModeState.isPlaying = false
 }
 
-export function repeatInsertModeChanges(adapter: EditorAdapter, changes: (string | InsertModeKey)[], repeat: number) {
+export function repeatInsertModeChanges(adapter: IEditorAdapter, changes: (string | InsertModeKey)[], repeat: number) {
   const keyHandler = (binding: string | string[] | BindingFunction): boolean => {
     if (typeof binding === "string") {
       EditorAdapter.commands[binding](adapter, {})

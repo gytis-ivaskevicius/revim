@@ -1,4 +1,4 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { vimGlobalState } from "./global"
 import type { StringStream } from "./string-stream"
 import type { VimState } from "./types"
@@ -76,7 +76,7 @@ export const searchOverlay = (query: RegExp) => {
   return new SearchOverlay(query)
 }
 
-export const getSearchState = (adapter: EditorAdapter) => {
+export const getSearchState = (adapter: IEditorAdapter) => {
   const vim = adapter.state.vim as VimState | null
   if (!vim) {
     return null

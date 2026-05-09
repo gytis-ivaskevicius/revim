@@ -1,5 +1,5 @@
 import { type ActionFunc, defineAction } from "./actions"
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { commandDispatcher } from "./command-dispatcher"
 import { defaultKeymap, defaultKeymapLength } from "./default-key-map"
 import { findDigraph } from "./digraph"
@@ -108,12 +108,12 @@ export class VimApi {
   }
 
   // TODO: Expose setOption and getOption as instance methods. Need to decide how to namespace
-  // them, or somehow make them work with the existing EditorAdapter setOption/getOption API.
-  setOption(name: string, value: string | number | boolean, adapter?: EditorAdapter, cfg?: OptionConfig) {
+  // them, or somehow make them work with the existing IEditorAdapter setOption/getOption API.
+  setOption(name: string, value: string | number | boolean, adapter?: IEditorAdapter, cfg?: OptionConfig) {
     setOption(name, value, adapter, cfg)
   }
 
-  getOption(name: string, adapter?: EditorAdapter, cfg?: OptionConfig) {
+  getOption(name: string, adapter?: IEditorAdapter, cfg?: OptionConfig) {
     return getOption(name, adapter, cfg)
   }
 
@@ -142,7 +142,7 @@ export class VimApi {
     })
   }
 
-  handleKey(adapter: EditorAdapter, key: string, origin?: string) {
+  handleKey(adapter: IEditorAdapter, key: string, origin?: string) {
     const command = this.findKey(adapter, key, origin)
     if (typeof command === "function") {
       return command()
@@ -150,7 +150,7 @@ export class VimApi {
   }
 
   /**
-   * This is the outermost function called by EditorAdapter, after keys have
+   * This is the outermost function called by IEditorAdapter, after keys have
    * been mapped to their Vim equivalents.
    *
    * Finds a command based on the key (and cached keys if there is a
@@ -159,7 +159,7 @@ export class VimApi {
    * execute the bound command if a a key is matched. The function always
    * returns true.
    */
-  findKey(adapter: EditorAdapter, key: string, origin?: string) {
+  findKey(adapter: IEditorAdapter, key: string, origin?: string) {
     const vim = maybeInitVimState(adapter)
     const handleMacroRecording = () => {
       const macroModeState = vimGlobalState.macroModeState
@@ -352,7 +352,7 @@ export class VimApi {
     if (command === false) {
       return !vim.insertMode && key.length === 1 ? () => true : undefined
     } else if (command === true) {
-      // TODO: Look into using EditorAdapter's multi-key handling.
+      // TODO: Look into using IEditorAdapter's multi-key handling.
       // Return no-op since we are caching the key. Counts as handled, but
       // don't want act on it just yet.
       return () => true
@@ -379,7 +379,7 @@ export class VimApi {
     }
   }
 
-  handleEx(adapter: EditorAdapter, input: string) {
+  handleEx(adapter: IEditorAdapter, input: string) {
     exCommandDispatcher.processCommand(adapter, input)
   }
 
@@ -407,10 +407,10 @@ export class VimApi {
     defineRegister(name, register)
   }
 
-  exitVisualMode(adapter: EditorAdapter, moveHead?: boolean) {
+  exitVisualMode(adapter: IEditorAdapter, moveHead?: boolean) {
     exitVisualMode(adapter, moveHead)
   }
-  exitInsertMode(adapter: EditorAdapter) {
+  exitInsertMode(adapter: IEditorAdapter) {
     exitInsertMode(adapter)
   }
 }

@@ -33,6 +33,7 @@ import {
 import { log } from "../log"
 import { createSearchCursor, escapeRegex, findMatchingBracket, scanForBracket } from "./adapter-search"
 import { type Change, CmSelection, type ExCommandOptionalParameters, type Operation } from "./adapter-types"
+import type { IEditorAdapter, IMarker } from "./adapter-interface"
 import { cursorEqual, cursorMax, cursorMin, makePos, type Pos } from "./common"
 import type { ModeChangeEvent, StatusBarInputOptions } from "./statusbar"
 
@@ -40,18 +41,19 @@ export type { MatchingBracket, SearchCursor, SearchMatch } from "./adapter-searc
 export type { Change, ExCommandOptionalParameters } from "./adapter-types"
 // Re-exports for zero-impact on existing import sites
 export { CmSelection } from "./adapter-types"
+export type { IEditorAdapter, IMarker } from "./adapter-interface"
 
 let _id = 0
 const nextId = () => String(++_id)
 
-export class Marker implements Pos {
-  adapter: EditorAdapter
+export class Marker implements IMarker {
+  adapter: IEditorAdapter
   id: number
   insertRight: boolean = false
   line: number
   ch: number
 
-  constructor(adapter: EditorAdapter, id: number, line: number, ch: number) {
+  constructor(adapter: IEditorAdapter, id: number, line: number, ch: number) {
     this.line = line
     this.ch = ch
     this.adapter = adapter
@@ -68,8 +70,8 @@ export class Marker implements Pos {
   }
 }
 
-export type BindingFunction = (adapter: EditorAdapter, next?: KeyMapEntry) => void
-type CallFunction = (key: any, adapter: EditorAdapter) => any
+export type BindingFunction = (adapter: IEditorAdapter, next?: KeyMapEntry) => void
+type CallFunction = (key: any, adapter: IEditorAdapter) => any
 type Binding = string | BindingFunction | string[]
 
 export interface KeyMapEntry {
@@ -81,21 +83,21 @@ export interface KeyMapEntry {
   call?: CallFunction
 }
 
-export class EditorAdapter {
+export class EditorAdapter implements IEditorAdapter {
   static keyMap: Record<string, KeyMapEntry> = {
     default: { find: () => true },
   }
-  static commands: Record<string, (adapter: EditorAdapter, params: ExCommandOptionalParameters) => void> = {
-    redo: (adapter: EditorAdapter) => {
+  static commands: Record<string, (adapter: IEditorAdapter, params: ExCommandOptionalParameters) => void> = {
+    redo: (adapter: IEditorAdapter) => {
       adapter.redo()
     },
-    undo: (adapter: EditorAdapter) => {
+    undo: (adapter: IEditorAdapter) => {
       adapter.undo()
     },
-    undoLine: (adapter: EditorAdapter) => {
+    undoLine: (adapter: IEditorAdapter) => {
       adapter.undoLine()
     },
-    newlineAndIndent: (adapter: EditorAdapter) => {
+    newlineAndIndent: (adapter: IEditorAdapter) => {
       adapter.triggerEditorAction("editor.action.insertLineAfter")
     },
   }
@@ -686,12 +688,12 @@ export class EditorAdapter {
 // Shared helpers for buffer-switch operations
 // Used by both action handlers and ex commands
 
-export function dispatchBufferSwitch(adapter: EditorAdapter, path: string | null | undefined) {
+export function dispatchBufferSwitch(adapter: IEditorAdapter, path: string | null | undefined) {
   adapter.dispatch("buffer-switch", path ?? null)
 }
 
 /** Call the native nextBuffer and dispatch a buffer-switch event. */
-export function doNextBuffer(adapter: EditorAdapter) {
+export function doNextBuffer(adapter: IEditorAdapter) {
   try {
     const result = nativeNextBuffer()
     dispatchBufferSwitch(adapter, result.path ?? null)
@@ -701,7 +703,7 @@ export function doNextBuffer(adapter: EditorAdapter) {
 }
 
 /** Call the native prevBuffer and dispatch a buffer-switch event. */
-export function doPrevBuffer(adapter: EditorAdapter) {
+export function doPrevBuffer(adapter: IEditorAdapter) {
   try {
     const result = nativePrevBuffer()
     dispatchBufferSwitch(adapter, result.path ?? null)

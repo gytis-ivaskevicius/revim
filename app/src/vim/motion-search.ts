@@ -1,11 +1,11 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { cursorEqual, makePos, type Pos } from "./common"
 import type { InputState } from "./input-state"
 import { getSearchState } from "./search"
 import { findNext, highlightSearchMatches } from "./search-utils"
 import type { MotionArgs, VimState } from "./types"
 
-export function motionFindNext(adapter: EditorAdapter, _head: Pos, motionArgs: MotionArgs): Pos | undefined {
+export function motionFindNext(adapter: IEditorAdapter, _head: Pos, motionArgs: MotionArgs): Pos | undefined {
   const state = getSearchState(adapter)
   if (!state) return
   const query = state.getQuery()
@@ -28,7 +28,7 @@ export function motionFindNext(adapter: EditorAdapter, _head: Pos, motionArgs: M
  * 2. Rather than only returning the cursor's from, we return the cursor's from and to as a tuple.
  */
 function findNextFromAndToInclusive(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   prev: boolean,
   query: RegExp,
   repeat: number,
@@ -81,7 +81,7 @@ function findNextFromAndToInclusive(
  * 3. If there is no associated operator, this will turn on visual mode.
  */
 export function motionFindAndSelectNextInclusive(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   _head: Pos,
   motionArgs: MotionArgs,
   vim: VimState,

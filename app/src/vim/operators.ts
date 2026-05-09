@@ -1,5 +1,6 @@
 import { actions } from "./actions"
 import EditorAdapter, { type CmSelection } from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { cursorMin, isUpperCase, isWhiteSpaceString, makePos, type Pos } from "./common"
 import { vimGlobalState } from "./global"
 import { motions } from "./motions"
@@ -12,7 +13,7 @@ import { clipCursorToContent, lineLength, offsetCursor } from "./vim-utils"
  * match the input selection.
  */
 export type OperatorFunc = (
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   args: OperatorArgs,
   ranges: CmSelection[],
   oldAnchor: Pos,

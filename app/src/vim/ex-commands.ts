@@ -1,4 +1,6 @@
 import EditorAdapter, { doNextBuffer, doPrevBuffer } from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
+import type { SearchCursor } from "./adapter-search"
 import { commandDispatcher } from "./command-dispatcher"
 import {
   copyCursor,
@@ -46,7 +48,7 @@ interface ExCommandParams extends ExCommandOptionalParameters {
   setCfg?: OptionConfig
 }
 
-export type ExCommandFunc = (adapter: EditorAdapter, params: ExCommandParams, ctx?: Context) => void
+export type ExCommandFunc = (adapter: IEditorAdapter, params: ExCommandParams, ctx?: Context) => void
 
 export const exCommandDispatcher = new ExCommandDispatcher()
 
@@ -61,12 +63,12 @@ export const exCommandDispatcher = new ExCommandDispatcher()
  * @param {function()} callback A callback for when the replace is done.
  */
 function doReplace(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   confirm: boolean,
   global: boolean,
   lineStart: number,
   lineEnd: number,
-  searchCursor: ReturnType<InstanceType<typeof EditorAdapter>["getSearchCursor"]>,
+  searchCursor: SearchCursor,
   query: RegExp,
   replaceWith: string,
   callback?: () => void,

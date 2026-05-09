@@ -1,4 +1,4 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { copyCursor, makePos } from "./common"
 
 const ForwardSymbolPairs: Record<string, string> = { ")": "(", "}": "{" }
@@ -103,7 +103,7 @@ const findSymbolModes: Record<SymbolMode, SymbolModeHandler> = {
   },
 }
 
-export function findSymbol(adapter: EditorAdapter, repeat: number, forward: boolean, symb: string) {
+export function findSymbol(adapter: IEditorAdapter, repeat: number, forward: boolean, symb: string) {
   const cur = copyCursor(adapter.getCursor())
   const increment = forward ? 1 : -1
   const endLine = forward ? adapter.lineCount() : -1

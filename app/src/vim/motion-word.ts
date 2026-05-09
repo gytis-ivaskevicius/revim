@@ -1,4 +1,4 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { copyCursor, makePos, type Pos } from "./common"
 import { vimGlobalState } from "./global"
 import { bigWordCharTest, keywordCharTest } from "./keymap_vim"
@@ -6,7 +6,7 @@ import type { MotionArgs } from "./types"
 import { lineLength } from "./vim-utils"
 
 /**
- * @param {EditorAdapter} adapter EditorAdapter object.
+ * @param {IEditorAdapter} adapter IEditorAdapter object.
  * @param {Pos} cur The position to start from.
  * @param {int} repeat Number of words to move past.
  * @param {boolean} forward True to search forward. False to search
@@ -18,7 +18,7 @@ import { lineLength } from "./vim-utils"
  * @return {Cursor} The position the cursor should move to.
  */
 export function moveToWord(
-  adapter: EditorAdapter,
+  adapter: IEditorAdapter,
   cur: Pos,
   repeat: number,
   forward: boolean,
@@ -73,7 +73,7 @@ export function moveToWord(
  * the cursor. If the cursor is at the start/end of a word, and we are going
  * forward/backward, respectively, find the boundaries of the next word.
  *
- * @param {EditorAdapter} adapter CodeMirror object.
+ * @param {IEditorAdapter} adapter CodeMirror object.
  * @param {Cursor} cur The cursor position.
  * @param {boolean} forward True to search forward. False to search
  *     backward.
@@ -84,7 +84,7 @@ export function moveToWord(
  * @return {Object{from:number, to:number, line: number}} The boundaries of
  *     the word, or null if there are no more words.
  */
-function findWord(adapter: EditorAdapter, cur: Pos, forward: boolean, bigWord: boolean, emptyLineIsWord: boolean) {
+function findWord(adapter: IEditorAdapter, cur: Pos, forward: boolean, bigWord: boolean, emptyLineIsWord: boolean) {
   let lineNum = cur.line
   let pos = cur.ch
   let line = adapter.getLine(lineNum)
@@ -164,7 +164,7 @@ export function charIdxInLine(start: number, line: string, character: string, fo
   return idx
 }
 
-export function moveToCharacter(adapter: EditorAdapter, repeat: number, forward: boolean, character: string) {
+export function moveToCharacter(adapter: IEditorAdapter, repeat: number, forward: boolean, character: string) {
   const cur = adapter.getCursor()
   let start = cur.ch
   let idx = 0
@@ -185,6 +185,6 @@ export function recordLastCharacterSearch(increment: number, args: MotionArgs) {
   vimGlobalState.lastCharacterSearch.selectedCharacter = args.selectedCharacter!
 }
 
-function isLine(adapter: EditorAdapter, line: number) {
+function isLine(adapter: IEditorAdapter, line: number) {
   return line >= adapter.firstLine() && line <= adapter.lastLine()
 }

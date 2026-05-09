@@ -1,4 +1,4 @@
-import type EditorAdapter from "./adapter"
+import type { IEditorAdapter } from "./adapter-interface"
 import { defaultKeymap } from "./default-key-map"
 import { type ExCommandOptionalParameters, exCommands } from "./ex-commands"
 import { vimGlobalState } from "./global"
@@ -51,12 +51,12 @@ export class ExCommandDispatcher {
     this.buildCommandMap_()
   }
 
-  processCommand(adapter: EditorAdapter, input: string, opt_params?: ExCommandOptionalParameters) {
+  processCommand(adapter: IEditorAdapter, input: string, opt_params?: ExCommandOptionalParameters) {
     adapter.curOp.isVimOp = true
     this._processCommand(adapter, input, opt_params)
   }
 
-  private _processCommand(adapter: EditorAdapter, input: string, opt_params?: ExCommandOptionalParameters) {
+  private _processCommand(adapter: IEditorAdapter, input: string, opt_params?: ExCommandOptionalParameters) {
     const vim = adapter.state.vim as VimState
     const commandHistoryRegister = vimGlobalState.registerController.getRegister(":")
     const previousCommand = commandHistoryRegister.toString()
@@ -121,7 +121,7 @@ export class ExCommandDispatcher {
     }
   }
 
-  private parseInput_(adapter: EditorAdapter, inputStream: StringStream, result: ExCommandOptionalParameters) {
+  private parseInput_(adapter: IEditorAdapter, inputStream: StringStream, result: ExCommandOptionalParameters) {
     inputStream.eatWhile(":")
     // Parse range.
     if (inputStream.eat("%")) {
@@ -145,7 +145,7 @@ export class ExCommandDispatcher {
     return result
   }
 
-  private parseLineSpec_(adapter: EditorAdapter, inputStream: StringStream) {
+  private parseLineSpec_(adapter: IEditorAdapter, inputStream: StringStream) {
     const numberMatch = inputStream.match(/^(\d+)/)
     if (numberMatch) {
       // Absolute line number plus offset (N+M or N-M) is probably a typo,
