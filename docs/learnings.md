@@ -1,10 +1,10 @@
 # Learnings
 
-## Types referencing EditorAdapter cannot be extracted to separate module
+## Extracting types that reference EditorAdapter requires an interface, not a structural alias
 **Date**: 2026-05-08
 **Area**: architecture
-**What happened**: Extracting `BindingFunction`, `CallFunction`, `Binding`, and `KeyMapEntry` types from `adapter.ts` to `adapter-types.ts` caused issues because they all reference `EditorAdapter`, creating a circular dependency. Using `any` was rejected, and a structural `Adapter` interface failed due to TypeScript function parameter contravariance (functions typed with `EditorAdapter` aren't assignable to functions expecting the wider `Adapter` type).
-**Takeaway**: Before extracting types from `adapter.ts`, check if they reference `EditorAdapter`. If they do, they must stay in `adapter.ts` — the EditorAdapter class itself cannot be imported into the types module without creating a cycle. Function parameter contravariance (`strictFunctionTypes`) prevents using a wider structural interface in callback signatures when existing callbacks use the narrower concrete type.
+**What happened**: Extracting `BindingFunction`, `CallFunction`, `Binding`, and `KeyMapEntry` from `adapter.ts` failed when using a structural `Adapter` interface — TypeScript's `strictFunctionTypes` contravariance means functions typed with the concrete `EditorAdapter` aren't assignable to functions expecting the wider structural type. The fix was to introduce a proper `IEditorAdapter` interface, have `EditorAdapter implements IEditorAdapter`, and type all callbacks against `IEditorAdapter`. This also enabled moving the entire vim logic into a separate package (`@revim/vim`) with no dependency on the Rust bindings.
+**Takeaway**: When extracting callback-heavy types that reference a concrete class, introduce a named interface (`IEditorAdapter`) rather than a structural alias. Contravariance blocks the structural approach under `strictFunctionTypes`, but an explicit `implements` relationship makes the concrete class assignable everywhere the interface is expected.
 
 ---
 
