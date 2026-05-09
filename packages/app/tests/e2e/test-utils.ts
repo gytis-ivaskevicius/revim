@@ -1,7 +1,7 @@
 import { expect, test } from "@microsoft/tui-test"
 
 export const testConfig = {
-  program: { file: "bun", args: ["run", "app/src/index.ts"] },
+  program: { file: "bun", args: ["run", "packages/app/src/index.ts"] },
   rows: 30,
   columns: 80,
 }
@@ -14,15 +14,15 @@ export const RENDER_DELAY_MS = 100
 export const KEY_PRESS_DELAY_MS = 50
 
 export function withLog(logPath: string) {
-  return { program: { file: "bun", args: ["run", "app/src/index.ts", "--log", logPath] } }
+  return { program: { file: "bun", args: ["run", "packages/app/src/index.ts", "--log", logPath] } }
 }
 
 export function withFile(filePath: string) {
-  return { program: { file: "bun", args: ["run", "app/src/index.ts", filePath] } }
+  return { program: { file: "bun", args: ["run", "packages/app/src/index.ts", filePath] } }
 }
 
 export function withFiles(filePaths: string[]) {
-  return { program: { file: "bun", args: ["run", "app/src/index.ts", ...filePaths] } }
+  return { program: { file: "bun", args: ["run", "packages/app/src/index.ts", ...filePaths] } }
 }
 
 export type KeyInput = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }

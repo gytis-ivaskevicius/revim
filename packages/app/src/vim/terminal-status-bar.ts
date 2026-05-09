@@ -1,7 +1,7 @@
 import path from "node:path"
-import { focusEditor, getCurrentPath, getCursorPos, getTerminalWidth, setStatusText } from "@revim/lib"
+import { focusEditor, getCurrentPath, getCursorPos, getTerminalWidth, setStatusText } from "@revim/core"
 import { TERMINAL_KEY_MAP } from "../terminal-key"
-import type { IStatusBar, ModeChangeEvent, StatusBarInputOptions, StatusBarKeyEvent } from "@revim/vim-keybindings"
+import type { IStatusBar, ModeChangeEvent, StatusBarInputOptions, StatusBarKeyEvent } from "@revim/vim"
 
 function modeLabelFor(event: ModeChangeEvent | undefined): string {
   if (!event) return "NORMAL"

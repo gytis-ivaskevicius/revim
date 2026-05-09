@@ -1,5 +1,5 @@
 {
-  "name": "@revim/lib",
+  "name": "@revim/core",
   "version": "0.1.0",
   "main": "index.js",
   "types": "index.d.ts",

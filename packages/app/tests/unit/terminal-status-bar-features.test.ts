@@ -6,7 +6,7 @@ let mockCursorPos = { line: 0, ch: 0 }
 let mockCurrentPath: string | null = null
 let mockTerminalWidth = 80
 
-mock.module("@revim/lib", () => {
+mock.module("@revim/core", () => {
   return {
     setStatusText: (text: string) => {
       setStatusTextCalls.push(text)

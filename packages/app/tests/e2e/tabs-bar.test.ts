@@ -1,7 +1,7 @@
 import { expect, Keys, test, withFile, withFiles } from "./test-utils.js"
 
-const DEMO_FIXTURE = "app/tests/fixtures/demo-content.md"
-const BUFFER2_FIXTURE = "app/tests/fixtures/buffer2-content.md"
+const DEMO_FIXTURE = "packages/app/tests/fixtures/demo-content.md"
+const BUFFER2_FIXTURE = "packages/app/tests/fixtures/buffer2-content.md"
 
 test.describe("tabs bar", () => {
   test.describe("single buffer mode", () => {

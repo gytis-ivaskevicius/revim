@@ -10,27 +10,27 @@
         "typescript": "^6.0.3",
       },
     },
-    "app": {
+    "packages/app": {
       "name": "@revim/app",
       "version": "0.1.0",
       "dependencies": {
-        "@revim/lib": "workspace:*",
-        "@revim/vim-keybindings": "workspace:*",
+        "@revim/core": "workspace:*",
+        "@revim/vim": "workspace:*",
       },
       "devDependencies": {
         "@microsoft/tui-test": "0.0.3",
         "@types/node": "^25.5.0",
       },
     },
-    "lib": {
-      "name": "@revim/lib",
+    "packages/core": {
+      "name": "@revim/core",
       "version": "0.1.0",
       "devDependencies": {
         "@napi-rs/cli": "3.5.1",
       },
     },
-    "packages/vim-keybindings": {
-      "name": "@revim/vim-keybindings",
+    "packages/vim": {
+      "name": "@revim/vim",
       "version": "0.1.0",
     },
   },
@@ -235,11 +235,11 @@
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
-    "@revim/app": ["@revim/app@workspace:app"],
+    "@revim/app": ["@revim/app@workspace:packages/app"],
 
-    "@revim/lib": ["@revim/lib@workspace:lib"],
+    "@revim/core": ["@revim/core@workspace:packages/core"],
 
-    "@revim/vim-keybindings": ["@revim/vim-keybindings@workspace:packages/vim-keybindings"],
+    "@revim/vim": ["@revim/vim@workspace:packages/vim"],
 
     "@sinclair/typebox": ["@sinclair/typebox@0.27.10", "", {}, "sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA=="],
 

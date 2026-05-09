@@ -4,7 +4,7 @@ async function typeSearch(terminal: any, query: string, prefix = "/") {
   await Keys.pressKeys(terminal, [prefix, ...query.split(""), "Enter"])
 }
 
-const DEMO_FIXTURE = "app/tests/fixtures/demo-content.md"
+const DEMO_FIXTURE = "packages/app/tests/fixtures/demo-content.md"
 
 test.describe("search prompt", () => {
   test.use(withFile(DEMO_FIXTURE))

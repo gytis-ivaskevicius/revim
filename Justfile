@@ -4,38 +4,38 @@ default:
 
 # Build the Rust library and generate .node binary
 build:
-	cd lib && npm run build
+	cd packages/core && npm run build
 
 # Run the demo application
 dev *args: build
-	cd app && bun run src/index.ts {{args}}
+	cd packages/app && bun run src/index.ts {{args}}
 
 # Run TypeScript unit tests
 test-unit:
-	bun test app/tests/unit/
+	bun test packages/app/tests/unit/
 
 # Run Rust unit tests
 test-rust:
-	cd lib && cargo test
+	cd packages/core && cargo test
 
 # Run E2E tests
 test-e2e: build
-	bunx @microsoft/tui-test app/tests/e2e/*.test.ts
+	bunx @microsoft/tui-test packages/app/tests/e2e/*.test.ts
 
 # Run all tests
 test: test-rust test-unit test-e2e
 
 # Run linter
 lint:
-	cd app && npx tsc --noEmit
-	cd lib && cargo clippy -- -D warnings
+	cd packages/app && npx tsc --noEmit
+	cd packages/core && cargo clippy -- -D warnings
 	bunx biome check
 
 # Auto-fix lint issues
 lint-fix:
 	bunx biome check --write --unsafe
-	cd app && npx tsc --noEmit
-	cd lib && cargo clippy --fix --allow-dirty -- -D warnings
+	cd packages/app && npx tsc --noEmit
+	cd packages/core && cargo clippy --fix --allow-dirty -- -D warnings
 
 # Run tests and linter
 check: test lint

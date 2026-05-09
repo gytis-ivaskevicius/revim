@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { expect, test, withFile } from "./test-utils.js"
 
 const LOG = "/tmp/revim-cli-file-open-test.log"
-const DEMO_FIXTURE = "app/tests/fixtures/demo-content.md"
+const DEMO_FIXTURE = "packages/app/tests/fixtures/demo-content.md"
 
 test.describe("CLI file opening", () => {
   test("default launch (no file arg) shows Welcome to ReVim!", async ({ terminal }) => {
@@ -22,7 +22,7 @@ test.describe("CLI with --log and file arg", () => {
   test.use({
     program: {
       file: "bun",
-      args: ["run", "app/src/index.ts", "--log", LOG, DEMO_FIXTURE],
+      args: ["run", "packages/app/src/index.ts", "--log", LOG, DEMO_FIXTURE],
     },
   })
 

@@ -1,9 +1,9 @@
 {
   "name": "revim",
   "workspaces": [
-    "lib",
-    "packages/vim-keybindings",
-    "app"
+    "packages/core",
+    "packages/vim",
+    "packages/app"
   ],
   "private": true,
   "devDependencies": {

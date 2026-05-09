@@ -13,7 +13,7 @@ import {
   startKeyboardListener,
   switchToBuffer,
   waitForKeyboardEvent,
-} from "@revim/lib"
+} from "@revim/core"
 import { createErrorWindow } from "./error-window"
 import { closeLog, initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
