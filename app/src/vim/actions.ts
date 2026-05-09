@@ -1,4 +1,4 @@
-import { CmSelection, doNextBuffer, doPrevBuffer } from "./adapter"
+import { CmSelection } from "./adapter"
 import { commands } from "./vim-registry"
 import type { IEditorAdapter } from "./adapter-interface"
 import {
@@ -573,11 +573,11 @@ export const defineAction = (name: string, fn: ActionFunc) => (actions[name] = f
 
 // Buffer switching actions
 actions.nextBuffer = (_adapter, _actionArgs, _vim) => {
-  doNextBuffer(_adapter)
+  commands.nextBuffer(_adapter, {})
 }
 
 actions.prevBuffer = (_adapter, _actionArgs, _vim) => {
-  doPrevBuffer(_adapter)
+  commands.prevBuffer(_adapter, {})
 }
 
 function executeMacroRegister(

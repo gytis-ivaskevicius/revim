@@ -1,5 +1,5 @@
 import { getCurrentPath, getCursorPos } from "@revim/lib"
-import EditorAdapter from "./adapter"
+import EditorAdapter, { doNextBuffer, doPrevBuffer } from "./adapter"
 import { commands, keyMap } from "./vim-registry"
 import { makePos } from "./common"
 import { clearInputState, exitVisualMode, initVimAdapter, vimApi } from "./keymap_vim"
@@ -180,6 +180,8 @@ export class VimMode implements EventTarget {
       this.dispatchEvent(new FileEvent("open-file", params.argString || ""))
     commands.save = (_adapter, params) =>
       this.dispatchEvent(new FileEvent("save-file", params.argString || ""))
+    commands.nextBuffer = (adapter) => doNextBuffer(adapter)
+    commands.prevBuffer = (adapter) => doPrevBuffer(adapter)
   }
 
   get attached(): boolean {

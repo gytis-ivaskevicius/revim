@@ -1,4 +1,3 @@
-import { doNextBuffer, doPrevBuffer } from "./adapter"
 import type { IEditorAdapter } from "./adapter-interface"
 import { commands } from "./vim-registry"
 import type { SearchCursor } from "./adapter-search"
@@ -703,10 +702,10 @@ export const exCommands: Record<string, ExCommandFunc> = {
     exCommands.quit(adapter, params)
   },
   bnext: (_adapter, _params) => {
-    doNextBuffer(_adapter)
+    commands.nextBuffer(_adapter, {})
   },
   bprev: (_adapter, _params) => {
-    doPrevBuffer(_adapter)
+    commands.prevBuffer(_adapter, {})
   },
   nohlsearch: (adapter) => {
     clearSearchHighlight(adapter)
