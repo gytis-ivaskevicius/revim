@@ -31,18 +31,18 @@ import {
   triggerAction,
 } from "@revim/lib"
 import { log } from "../log"
-import { createSearchCursor, escapeRegex, findMatchingBracket, scanForBracket } from "./adapter-search"
-import { type Change, CmSelection, type ExCommandOptionalParameters, type Operation } from "./adapter-types"
-import type { BindingFunction, IEditorAdapter, IMarker, KeyMapEntry } from "./adapter-interface"
-import { commands, keyMap, lookupKey } from "./vim-registry"
-import { cursorEqual, cursorMax, cursorMin, makePos, type Pos } from "./common"
-import type { ModeChangeEvent, StatusBarInputOptions } from "./statusbar"
+import { createSearchCursor, escapeRegex, findMatchingBracket, scanForBracket } from "@revim/vim-keybindings"
+import { type Change, CmSelection, type ExCommandOptionalParameters, type Operation } from "@revim/vim-keybindings"
+import type { BindingFunction, IEditorAdapter, IMarker, KeyMapEntry } from "@revim/vim-keybindings"
+import { commands, keyMap, lookupKey } from "@revim/vim-keybindings"
+import { cursorEqual, cursorMax, cursorMin, makePos, type Pos } from "@revim/vim-keybindings"
+import type { ModeChangeEvent, StatusBarInputOptions } from "@revim/vim-keybindings"
 
-export type { MatchingBracket, SearchCursor, SearchMatch } from "./adapter-search"
-export type { Change, ExCommandOptionalParameters } from "./adapter-types"
-export { CmSelection } from "./adapter-types"
-export type { Binding, BindingFunction, IEditorAdapter, IMarker, KeyMapEntry } from "./adapter-interface"
-export { commands, keyMap, lookupKey } from "./vim-registry"
+export type { MatchingBracket, SearchCursor, SearchMatch } from "@revim/vim-keybindings"
+export type { Change, ExCommandOptionalParameters } from "@revim/vim-keybindings"
+export { CmSelection } from "@revim/vim-keybindings"
+export type { Binding, BindingFunction, IEditorAdapter, IMarker, KeyMapEntry } from "@revim/vim-keybindings"
+export { commands, keyMap, lookupKey } from "@revim/vim-keybindings"
 
 let _id = 0
 const nextId = () => String(++_id)

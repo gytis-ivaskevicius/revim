@@ -15,6 +15,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@revim/lib": "workspace:*",
+        "@revim/vim-keybindings": "workspace:*",
       },
       "devDependencies": {
         "@microsoft/tui-test": "0.0.3",
@@ -27,6 +28,10 @@
       "devDependencies": {
         "@napi-rs/cli": "3.5.1",
       },
+    },
+    "packages/vim-keybindings": {
+      "name": "@revim/vim-keybindings",
+      "version": "0.1.0",
     },
   },
   "packages": {
@@ -233,6 +238,8 @@
     "@revim/app": ["@revim/app@workspace:app"],
 
     "@revim/lib": ["@revim/lib@workspace:lib"],
+
+    "@revim/vim-keybindings": ["@revim/vim-keybindings@workspace:packages/vim-keybindings"],
 
     "@sinclair/typebox": ["@sinclair/typebox@0.27.10", "", {}, "sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA=="],
 

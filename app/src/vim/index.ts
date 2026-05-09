@@ -1,11 +1,11 @@
 import { getCurrentPath, getCursorPos } from "@revim/lib"
 import EditorAdapter, { doNextBuffer, doPrevBuffer } from "./adapter"
-import { commands, keyMap } from "./vim-registry"
-import { makePos } from "./common"
-import { clearInputState, exitVisualMode, initVimAdapter, vimApi } from "./keymap_vim"
-import type * as Registers from "./register-controller"
-import type * as StatusBar from "./statusbar"
-import type { VimState } from "./types"
+import { commands, keyMap } from "@revim/vim-keybindings"
+import { makePos } from "@revim/vim-keybindings"
+import { clearInputState, exitVisualMode, initVimAdapter, vimApi } from "@revim/vim-keybindings"
+import type * as Registers from "@revim/vim-keybindings"
+import type * as StatusBar from "@revim/vim-keybindings"
+import type { VimState } from "@revim/vim-keybindings"
 
 export type IRegister = Registers.IRegister
 export type IStatusBar = StatusBar.IStatusBar
@@ -285,4 +285,4 @@ export class VimMode implements EventTarget {
 }
 
 export { EditorAdapter }
-export { commands } from "./vim-registry"
+export { commands } from "@revim/vim-keybindings"

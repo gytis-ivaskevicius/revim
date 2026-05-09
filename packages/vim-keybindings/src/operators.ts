@@ -1,5 +1,5 @@
 import { actions } from "./actions"
-import { type CmSelection } from "./adapter"
+import { type CmSelection } from "./adapter-types"
 import { commands } from "./vim-registry"
 import type { IEditorAdapter } from "./adapter-interface"
 import { cursorMin, isUpperCase, isWhiteSpaceString, makePos, type Pos } from "./common"

@@ -1,7 +1,7 @@
 
 import { actions } from "./actions"
 import type { IEditorAdapter } from "./adapter-interface"
-import { CmSelection } from "./adapter"
+import { CmSelection } from "./adapter-types"
 import {
   copyCursor,
   cursorIsBefore,

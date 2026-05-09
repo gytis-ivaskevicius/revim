@@ -1,4 +1,5 @@
-import { CmSelection, type KeyMapEntry } from "./adapter"
+import { CmSelection } from "./adapter-types"
+import type { KeyMapEntry } from "./adapter-interface"
 import type { IEditorAdapter } from "./adapter-interface"
 import { keyMap } from "./vim-registry"
 import {

@@ -1,5 +1,5 @@
 import type { IEditorAdapter } from "./adapter-interface"
-import { CmSelection } from "./adapter"
+import { CmSelection } from "./adapter-types"
 import { isPos, makePos, type Pos } from "./common"
 import type { VimState } from "./types"
 

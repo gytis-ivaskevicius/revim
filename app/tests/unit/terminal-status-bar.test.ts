@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { TERMINAL_KEY_MAP } from "../../src/terminal-key"
-import { getEventKeyName } from "../../src/vim/common"
+import { getEventKeyName } from "@revim/vim-keybindings"
 import { applyKeyToQuery, TerminalStatusBar } from "../../src/vim/terminal-status-bar"
 
 describe("applyKeyToQuery", () => {

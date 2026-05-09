@@ -2,6 +2,7 @@
   "name": "revim",
   "workspaces": [
     "lib",
+    "packages/vim-keybindings",
     "app"
   ],
   "private": true,

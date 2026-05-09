@@ -1,4 +1,5 @@
-import { type BindingFunction, type Change } from "./adapter"
+import { type BindingFunction } from "./adapter-interface"
+import { type Change } from "./adapter-types"
 import { commands, lookupKey } from "./vim-registry"
 import type { IEditorAdapter } from "./adapter-interface"
 import { commandDispatcher } from "./command-dispatcher"

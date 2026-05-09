@@ -1,0 +1,9 @@
+{
+  "name": "@revim/vim-keybindings",
+  "version": "0.1.0",
+  "private": true,
+  "module": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

@@ -1,4 +1,4 @@
-import { CmSelection } from "./adapter"
+import { CmSelection } from "./adapter-types"
 import { commands } from "./vim-registry"
 import type { IEditorAdapter } from "./adapter-interface"
 import {
