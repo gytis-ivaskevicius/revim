@@ -330,6 +330,10 @@ export class EditorAdapter implements IEditorAdapter {
     focusEditor()
   }
 
+  log(...args: unknown[]) {
+    log(...args)
+  }
+
   setSelections(selections: CmSelection[], primIndex?: number) {
     const ordered =
       primIndex !== undefined && selections[primIndex]

@@ -110,4 +110,6 @@ export interface IEditorAdapter {
   dispatch(signal: string, ...args: any[]): void
   on(event: string, handler: (...args: any) => void): void
   off(event: string, handler: (...args: any) => void): void
+
+  log(...args: unknown[]): void
 }

@@ -1,4 +1,4 @@
-import { log } from "../log"
+
 import { actions } from "./actions"
 import type { IEditorAdapter } from "./adapter-interface"
 import { CmSelection } from "./adapter"
@@ -274,7 +274,7 @@ export class CommandDispatcher {
       try {
         handleQuery(query, true /** ignoreCase */, true /** smartCase */)
       } catch (e) {
-        log("search prompt error:", e)
+        adapter.log("search prompt error:", e)
       }
       const macroModeState = vimGlobalState.macroModeState
       if (macroModeState.isRecording) {
