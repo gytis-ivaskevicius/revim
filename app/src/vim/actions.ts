@@ -1,4 +1,5 @@
-import EditorAdapter, { CmSelection, doNextBuffer, doPrevBuffer } from "./adapter"
+import { CmSelection, doNextBuffer, doPrevBuffer } from "./adapter"
+import { commands } from "./vim-registry"
 import type { IEditorAdapter } from "./adapter-interface"
 import {
   copyCursor,
@@ -290,7 +291,7 @@ export const actions: Record<string, ActionFunc> = {
       insertAt.ch = lineLength(adapter, insertAt.line)
       adapter.setCursor(insertAt)
       const newlineFn =
-        EditorAdapter.commands.newlineAndIndentContinueComment || EditorAdapter.commands.newlineAndIndent
+        commands.newlineAndIndentContinueComment || commands.newlineAndIndent
       newlineFn(adapter, {})
     }
     this.enterInsertMode(adapter, { repeat: actionArgs.repeat }, vim)
@@ -441,14 +442,14 @@ export const actions: Record<string, ActionFunc> = {
     adapter.setCursor(curPosFinal)
   },
   undo: (adapter, actionArgs) => {
-    repeatFn(() => EditorAdapter.commands.undo(adapter, {}), actionArgs.repeat!)()
+    repeatFn(() => commands.undo(adapter, {}), actionArgs.repeat!)()
     adapter.setCursor(adapter.getCursor("anchor"))
   },
   redo: (adapter, actionArgs) => {
-    repeatFn(() => EditorAdapter.commands.redo(adapter, {}), actionArgs.repeat!)()
+    repeatFn(() => commands.redo(adapter, {}), actionArgs.repeat!)()
   },
   undoLine: (adapter, actionArgs) => {
-    repeatFn(() => EditorAdapter.commands.undoLine(adapter, {}), actionArgs.repeat!)()
+    repeatFn(() => commands.undoLine(adapter, {}), actionArgs.repeat!)()
   },
   setRegister: (adapter, actionArgs, vim) => {
     vim.inputState.registerName = actionArgs.selectedCharacter
@@ -485,7 +486,7 @@ export const actions: Record<string, ActionFunc> = {
       if (!vim.visualMode)
         adapter.replaceRange("", curStart, curEnd)
         // special case, where vim help says to replace by just one line-break
-      ;(EditorAdapter.commands.newlineAndIndentContinueComment || EditorAdapter.commands.newlineAndIndent)(adapter, {})
+      ;(commands.newlineAndIndentContinueComment || commands.newlineAndIndent)(adapter, {})
     } else {
       if (vim.visualBlock) {
         // Tabs are split in visua block before replacing

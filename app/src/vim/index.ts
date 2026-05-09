@@ -1,5 +1,6 @@
 import { getCurrentPath, getCursorPos } from "@revim/lib"
 import EditorAdapter from "./adapter"
+import { commands, keyMap } from "./vim-registry"
 import { makePos } from "./common"
 import { clearInputState, exitVisualMode, initVimAdapter, vimApi } from "./keymap_vim"
 import type * as Registers from "./register-controller"
@@ -61,7 +62,7 @@ export class VimMode implements EventTarget {
       return
     }
     const keyMapState = this.adapter_.state.keyMap as string
-    const keymap = EditorAdapter.keyMap[keyMapState]
+    const keymap = keyMap[keyMapState]
     const command = keymap?.call?.(key, this.adapter_)
 
     if (typeof command === "function") {
@@ -175,9 +176,9 @@ export class VimMode implements EventTarget {
       })
     }
 
-    EditorAdapter.commands.open = (_adapter, params) =>
+    commands.open = (_adapter, params) =>
       this.dispatchEvent(new FileEvent("open-file", params.argString || ""))
-    EditorAdapter.commands.save = (_adapter, params) =>
+    commands.save = (_adapter, params) =>
       this.dispatchEvent(new FileEvent("save-file", params.argString || ""))
   }
 
@@ -282,3 +283,4 @@ export class VimMode implements EventTarget {
 }
 
 export { EditorAdapter }
+export { commands } from "./vim-registry"

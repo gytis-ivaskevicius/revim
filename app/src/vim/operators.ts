@@ -1,5 +1,6 @@
 import { actions } from "./actions"
-import EditorAdapter, { type CmSelection } from "./adapter"
+import { type CmSelection } from "./adapter"
+import { commands } from "./vim-registry"
 import type { IEditorAdapter } from "./adapter-interface"
 import { cursorMin, isUpperCase, isWhiteSpaceString, makePos, type Pos } from "./common"
 import { vimGlobalState } from "./global"
@@ -48,7 +49,7 @@ export const operators: Record<string, OperatorFunc> = {
         // Push the next line back down, if there is a next line.
         if (!wasLastLine) {
           adapter.setCursor(prevLineEnd)
-          EditorAdapter.commands.newlineAndIndent(adapter, {})
+          commands.newlineAndIndent(adapter, {})
         }
         // make sure cursor ends up at the end of the line.
         anchor.ch = Number.MAX_VALUE

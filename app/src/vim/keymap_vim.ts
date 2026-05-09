@@ -1,5 +1,6 @@
-import EditorAdapter, { CmSelection, type KeyMapEntry } from "./adapter"
+import { CmSelection, type KeyMapEntry } from "./adapter"
 import type { IEditorAdapter } from "./adapter-interface"
+import { keyMap } from "./vim-registry"
 import {
   copyCursor,
   cursorEqual,
@@ -65,7 +66,7 @@ function attachVimMap(
   adapter: IEditorAdapter,
   prev?: KeyMapEntry,
 ) {
-  if ((this as KeyMapEntry) === EditorAdapter.keyMap.vim) {
+  if ((this as KeyMapEntry) === keyMap.vim) {
     adapter.attached = true
     if (adapter.curOp) {
       adapter.curOp.selectionChanged = true
@@ -618,13 +619,13 @@ function createKeyMapping(keys: string, type: string, name: string, args: Mappab
 defineOption("insertModeEscKeysTimeout", 200, "number")
 
 export const initVimAdapter = () => {
-  EditorAdapter.keyMap.vim = {
+  keyMap.vim = {
     attach: attachVimMap,
     detach: detachVimMap,
     call: cmKey,
   }
 
-  EditorAdapter.keyMap["vim-insert"] = {
+  keyMap["vim-insert"] = {
     // TODO: override navigation keys so that Esc will cancel automatic
     // indentation from o, O, i_<CR>
     fallthrough: ["default"],
@@ -633,7 +634,7 @@ export const initVimAdapter = () => {
     call: cmKey,
   }
 
-  EditorAdapter.keyMap["vim-replace"] = {
+  keyMap["vim-replace"] = {
     keys: { Backspace: "goCharLeft" },
     fallthrough: ["vim-insert"],
     attach: attachVimMap,

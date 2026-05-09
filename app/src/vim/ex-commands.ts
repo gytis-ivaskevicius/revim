@@ -1,5 +1,6 @@
-import EditorAdapter, { doNextBuffer, doPrevBuffer } from "./adapter"
+import { doNextBuffer, doPrevBuffer } from "./adapter"
 import type { IEditorAdapter } from "./adapter-interface"
+import { commands } from "./vim-registry"
 import type { SearchCursor } from "./adapter-search"
 import { commandDispatcher } from "./command-dispatcher"
 import {
@@ -661,12 +662,12 @@ export const exCommands: Record<string, ExCommandFunc> = {
       showConfirm(adapter, `${result.count} ${substitutionLabel} on ${result.lines} ${lineLabel}`)
     }
   },
-  redo: EditorAdapter.commands.redo,
-  undo: EditorAdapter.commands.undo,
+  redo: commands.redo,
+  undo: commands.undo,
   edit: (adapter, params) => {
-    if (EditorAdapter.commands.open) {
+    if (commands.open) {
       // If an open command is defined, call it.
-      EditorAdapter.commands.open(adapter, params)
+      commands.open(adapter, params)
     }
   },
   save: (adapter, params) => {
@@ -676,9 +677,9 @@ export const exCommands: Record<string, ExCommandFunc> = {
     } else {
       params.argString = params.args[0]
     }
-    if (EditorAdapter.commands.save) {
+    if (commands.save) {
       // If a save command is defined, call it.
-      EditorAdapter.commands.save(adapter, params)
+      commands.save(adapter, params)
     }
   },
   version: (adapter) => {
@@ -687,14 +688,14 @@ export const exCommands: Record<string, ExCommandFunc> = {
     showConfirm(adapter, versionInfo.join("\n"))
   },
   write: (adapter, params) => {
-    if (EditorAdapter.commands.save) {
+    if (commands.save) {
       // If a save command is defined, call it.
-      EditorAdapter.commands.save(adapter, params)
+      commands.save(adapter, params)
     }
   },
   quit: (adapter, params) => {
     // :q! is accepted but treated the same as :q (no dirty-state checks yet)
-    EditorAdapter.commands.quit?.(adapter, params)
+    commands.quit?.(adapter, params)
   },
   wq: (adapter, params) => {
     // Write the file first, then quit

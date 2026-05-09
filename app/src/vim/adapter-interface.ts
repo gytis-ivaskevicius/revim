@@ -3,6 +3,19 @@ import type { SearchCursor } from "./adapter-search"
 import type { Pos } from "./common"
 import type { ModeChangeEvent, StatusBarInputOptions } from "./statusbar"
 
+export type BindingFunction = (adapter: IEditorAdapter, next?: KeyMapEntry) => void
+export type CallFunction = (key: any, adapter: IEditorAdapter) => any
+export type Binding = string | BindingFunction | string[]
+
+export interface KeyMapEntry {
+  keys?: Record<string, string>
+  find?: (key: string) => boolean
+  fallthrough?: string | string[]
+  attach?: BindingFunction
+  detach?: BindingFunction
+  call?: CallFunction
+}
+
 export interface IMarker extends Pos {
   id: number
   insertRight: boolean

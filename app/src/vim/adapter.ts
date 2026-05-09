@@ -33,15 +33,16 @@ import {
 import { log } from "../log"
 import { createSearchCursor, escapeRegex, findMatchingBracket, scanForBracket } from "./adapter-search"
 import { type Change, CmSelection, type ExCommandOptionalParameters, type Operation } from "./adapter-types"
-import type { IEditorAdapter, IMarker } from "./adapter-interface"
+import type { BindingFunction, IEditorAdapter, IMarker, KeyMapEntry } from "./adapter-interface"
+import { commands, keyMap, lookupKey } from "./vim-registry"
 import { cursorEqual, cursorMax, cursorMin, makePos, type Pos } from "./common"
 import type { ModeChangeEvent, StatusBarInputOptions } from "./statusbar"
 
 export type { MatchingBracket, SearchCursor, SearchMatch } from "./adapter-search"
 export type { Change, ExCommandOptionalParameters } from "./adapter-types"
-// Re-exports for zero-impact on existing import sites
 export { CmSelection } from "./adapter-types"
-export type { IEditorAdapter, IMarker } from "./adapter-interface"
+export type { Binding, BindingFunction, IEditorAdapter, IMarker, KeyMapEntry } from "./adapter-interface"
+export { commands, keyMap, lookupKey } from "./vim-registry"
 
 let _id = 0
 const nextId = () => String(++_id)
@@ -70,61 +71,7 @@ export class Marker implements IMarker {
   }
 }
 
-export type BindingFunction = (adapter: IEditorAdapter, next?: KeyMapEntry) => void
-type CallFunction = (key: any, adapter: IEditorAdapter) => any
-type Binding = string | BindingFunction | string[]
-
-export interface KeyMapEntry {
-  keys?: Record<string, string>
-  find?: (key: string) => boolean
-  fallthrough?: string | string[]
-  attach?: BindingFunction
-  detach?: BindingFunction
-  call?: CallFunction
-}
-
 export class EditorAdapter implements IEditorAdapter {
-  static keyMap: Record<string, KeyMapEntry> = {
-    default: { find: () => true },
-  }
-  static commands: Record<string, (adapter: IEditorAdapter, params: ExCommandOptionalParameters) => void> = {
-    redo: (adapter: IEditorAdapter) => {
-      adapter.redo()
-    },
-    undo: (adapter: IEditorAdapter) => {
-      adapter.undo()
-    },
-    undoLine: (adapter: IEditorAdapter) => {
-      adapter.undoLine()
-    },
-    newlineAndIndent: (adapter: IEditorAdapter) => {
-      adapter.triggerEditorAction("editor.action.insertLineAfter")
-    },
-  }
-
-  static lookupKey(
-    key: string,
-    map: string | KeyMapEntry,
-    handle?: (binding: Binding) => boolean,
-  ): "nothing" | "multi" | "handled" | undefined {
-    if (typeof map === "string") {
-      map = EditorAdapter.keyMap[map]
-    }
-
-    const found = map.find ? map.find(key) : map.keys ? map.keys[key] : undefined
-
-    if (found === false) return "nothing"
-    if (found === "...") return "multi"
-    if (found !== null && found !== undefined && handle?.(found as string)) return "handled"
-
-    if (map.fallthrough) {
-      if (!Array.isArray(map.fallthrough)) return EditorAdapter.lookupKey(key, map.fallthrough, handle)
-      for (let i = 0; i < map.fallthrough.length; i++) {
-        const result = EditorAdapter.lookupKey(key, map.fallthrough[i], handle)
-        if (result) return result
-      }
-    }
-  }
 
   state: Record<string, any> = { keyMap: "vim" }
   marks: Map<number, Marker> = new Map()
@@ -477,14 +424,14 @@ export class EditorAdapter implements IEditorAdapter {
   }
 
   attach() {
-    const vim = EditorAdapter.keyMap.vim
+    const vim = keyMap.vim
     if (vim?.attach) {
       vim.attach(this)
     }
   }
 
   detach() {
-    const vim = EditorAdapter.keyMap.vim
+    const vim = keyMap.vim
     if (vim?.detach) {
       vim.detach(this)
     }

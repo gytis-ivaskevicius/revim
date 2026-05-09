@@ -1,4 +1,5 @@
-import EditorAdapter, { type BindingFunction, type Change } from "./adapter"
+import { type BindingFunction, type Change } from "./adapter"
+import { commands, lookupKey } from "./vim-registry"
 import type { IEditorAdapter } from "./adapter-interface"
 import { commandDispatcher } from "./command-dispatcher"
 import { vimGlobalState } from "./global"
@@ -197,7 +198,7 @@ export function repeatLastEdit(adapter: IEditorAdapter, vim: VimState, repeat: n
 export function repeatInsertModeChanges(adapter: IEditorAdapter, changes: (string | InsertModeKey)[], repeat: number) {
   const keyHandler = (binding: string | string[] | BindingFunction): boolean => {
     if (typeof binding === "string") {
-      EditorAdapter.commands[binding](adapter, {})
+      commands[binding](adapter, {})
     } else if (Array.isArray(binding)) {
     } else {
       binding(adapter)
@@ -219,7 +220,7 @@ export function repeatInsertModeChanges(adapter: IEditorAdapter, changes: (strin
     for (let j = 0; j < changes.length; j++) {
       const change = changes[j]
       if (change instanceof InsertModeKey) {
-        EditorAdapter.lookupKey(change.keyName, "vim-insert", keyHandler)
+        lookupKey(change.keyName, "vim-insert", keyHandler)
       } else if (typeof change === "string") {
         adapter.replaceSelections([change])
       }

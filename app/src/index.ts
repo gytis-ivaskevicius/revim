@@ -17,7 +17,7 @@ import {
 import { createErrorWindow } from "./error-window"
 import { closeLog, initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
-import { EditorAdapter, type FileEvent, VimMode } from "./vim"
+import { EditorAdapter, commands, type FileEvent, VimMode } from "./vim"
 import TerminalStatusBar from "./vim/terminal-status-bar"
 
 interface KeyboardEvent {
@@ -132,7 +132,7 @@ async function main() {
   })
 
   // Register quit command
-  EditorAdapter.commands.quit = (_adapter, _params) => shutdown(0)
+  commands.quit = (_adapter, _params) => shutdown(0)
 
   vimMode.enable()
   let cleanedUp = false
