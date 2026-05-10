@@ -39,3 +39,13 @@ lint-fix:
 
 # Run tests and linter
 check: test lint
+
+# Generate .repomap.md for each package
+gen-context:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for pkg in packages/app packages/core packages/vim; do
+        bunx sigmap --cwd "$pkg"
+        mv "$pkg/.github/copilot-instructions.md" "$pkg/.repomap.md"
+        rm -rf "$pkg/.github"
+    done

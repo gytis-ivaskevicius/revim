@@ -6,6 +6,16 @@
 - **TypeScript compilation**: no explicit build step — Bun runs `.ts` files directly
 - **Native addon**: Rust N-API addon at `packages/core/` (requires `cargo`; auto-built by workspace)
 
+## Codebase navigation
+
+Each package has a `.repomap.md` with a compact symbol map — read it proactively before navigating or editing code in that package.
+
+- [`packages/app/.repomap.md`](packages/app/.repomap.md) — TypeScript entry point: wires the Vim engine to the terminal, owns the event loop, keyboard input, and the error/log windows
+- [`packages/core/.repomap.md`](packages/core/.repomap.md) — Rust N-API addon: manages the terminal (raw mode, resize), drives rendering, and exposes NAPI bindings consumed by `packages/app`
+- [`packages/vim/.repomap.md`](packages/vim/.repomap.md) — Vim engine: modes (normal/insert/visual/ex), motions, operators, registers, macros, search, and jump list; adapter interface decouples it from the terminal
+
+Regenerate with `just gen-context`.
+
 ## Commands
 
 All commands use `just` (see [Justfile](./Justfile)):
