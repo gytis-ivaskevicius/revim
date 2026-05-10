@@ -48,17 +48,15 @@ AC:
 - Ctrl+C in normal mode is encoded as `"Ctrl-c"` and reaches `VimMode.handleKey`.
 - `normalizeCtrlCharacter` is not imported in `index.ts` (but still exported from `terminal-key.ts`).
 
-### Task 2 — Rewrite E2E tests for new Ctrl+C behavior
+### Task 2 — Add E2E tests for new Ctrl+C behavior
 
-- In `packages/app/tests/e2e/exit.test.ts`:
-  - Replace the "Ctrl+C exits cleanly" test with: "Ctrl+C does not exit the app" — press Ctrl+C, wait 300ms, verify the app is still running (`exitResult` is null).
-  - Keep the "app stays running without Ctrl+C" test unchanged.
+- Delete `packages/app/tests/e2e/exit.test.ts` — Ctrl+C no longer exits the app, so the exit test is obsolete.
 - Add a new test file `packages/app/tests/e2e/ctrl-c-esc.test.ts`:
   - "Ctrl+C exits insert mode" — enter insert mode (`i`), verify status bar shows "INSERT", press Ctrl+C, verify status bar shows "NORMAL".
   - "Ctrl+C exits visual mode" — enter visual line mode (`V`), verify status bar shows "V-LINE", press Ctrl+C, verify status bar shows "NORMAL".
 
 AC:
-- `just test-e2e` passes with all new and modified tests.
+- `just test-e2e` passes with all new tests.
 - No test relies on Ctrl+C exiting the process.
 
 ### Task 3 — Update documentation

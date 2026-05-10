@@ -16,7 +16,7 @@ import {
 } from "@revim/core"
 import { createErrorWindow } from "./error-window"
 import { closeLog, initLog, log } from "./log"
-import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
+import { encodeTerminalKey } from "./terminal-key"
 import { commands, type FileEvent, VimMode } from "./vim"
 import TerminalStatusBar from "./vim/terminal-status-bar"
 
@@ -174,11 +174,6 @@ async function main() {
           // but focusEditor() unconditionally calls render_frame_internal()
           focusEditor()
           continue
-        }
-
-        if (event.modifiers.includes("Ctrl") && normalizeCtrlCharacter(event.key) === "c") {
-          shutdown(0)
-          return
         }
 
         processKeyEvent(vimMode, event)
