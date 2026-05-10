@@ -6,7 +6,8 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": false
+    "ignoreUnknown": false,
+    "includes": ["**", "!packages/core/index.js", "!packages/core/index.d.ts"]
   },
   "formatter": {
     "enabled": true,
