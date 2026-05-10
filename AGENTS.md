@@ -21,7 +21,7 @@ just test-e2e     # E2E tests (also builds native addon)
 just test-rust    # Rust unit tests
 
 just lint         # tsc + clippy + biome
-just lint-fix     # auto-fix lint issues
+just lint-fix     # auto-fix lint issues — run this before committing; biome catches many style issues
 
 just check        # test + lint
 ```
