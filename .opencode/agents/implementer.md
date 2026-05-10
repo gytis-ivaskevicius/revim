@@ -54,17 +54,19 @@ Call reflection skill. Report only when all required verdicts are from the curre
 
 ```
 Summary: <what was implemented>
-Acceptance: <SHA> <Pass|Fail> | N/A
-Code review: <SHA> <Pass|Fail> | N/A
+Acceptance: <report SHA> <Pass|Fail> | N/A
+Code review: <report SHA> <Pass|Fail> | N/A
 Tree: clean | dirty
 Blocker: <none | description>
 ```
 
+The `<report SHA>` is the commit hash of the reviewer's verdict report (shown by `git show <HASH> --format=%B -s`), not the implementation commit.
+
 Example:
 ```
 Summary: Added rate limiting middleware to the /api/auth endpoints
-Acceptance: a3f8c12 Pass
-Code review: a3f8c12 Pass
+Acceptance: f7e2b8a Pass
+Code review: c91d4e6 Pass
 Tree: clean
 Blocker: none
 ```
