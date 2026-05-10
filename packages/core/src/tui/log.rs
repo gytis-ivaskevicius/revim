@@ -23,6 +23,7 @@ pub fn set_log_fd(fd: i32) -> Result<()> {
 }
 
 #[napi]
+#[allow(dead_code)]
 pub fn clear_log_fd() {
     let mut guard = LOG_FILE.lock().unwrap_or_else(|e| e.into_inner());
     guard.take();
