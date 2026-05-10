@@ -4,69 +4,39 @@
 
 - **Runtime**: `bun` (not node/npm)
 - **TypeScript compilation**: no explicit build step — Bun runs `.ts` files directly
-- **Native addon**: Rust-based N-API addon at `packages/core/` (requires `cargo` to build; auto-built by workspace)
+- **Native addon**: Rust N-API addon at `packages/core/` (requires `cargo`; auto-built by workspace)
 
-
-## How to run
+## Commands
 
 All commands use `just` (see [Justfile](./Justfile)):
 
 ```sh
-# Build native addon (Rust N-API)
-just build
-
-# Development (builds then runs app)
-just dev
-
-# Development with logging
+just build        # build native addon
+just dev          # build + run app
 just dev -- --log /tmp/revim.log
+
+just test         # all tests
+just test-unit    # TypeScript unit tests
+just test-e2e     # E2E tests (also builds native addon)
+just test-rust    # Rust unit tests
+
+just lint         # tsc + clippy + biome
+just lint-fix     # auto-fix lint issues
+
+just check        # test + lint
 ```
 
-## How to test
-
-```sh
-# TypeScript unit tests
-just test-unit
-
-# E2E tests (requires @microsoft/tui-test; also builds native addon)
-just test-e2e
-
-# Rust unit tests
-just test-rust
-
-# All tests
-just test
-```
-
-## How to lint
-
-```sh
-# Lint everything (tsc + clippy + biome)
-just lint
-
-# Auto-fix lint issues
-just lint-fix
-```
-
-## How to typecheck
-
-```sh
-just lint       # includes tsc --noEmit
-# Or directly:
-cd packages/app && npx tsc --noEmit
-```
+> `just lint` includes `tsc --noEmit`. To run tsc directly: `cd packages/app && bunx tsc --noEmit`
 
 ## Gotchas
 
-- `@microsoft/tui-test` `getByText()` only accepts `string` and `RegExp` — never pass a function (gets `.toString()`'d and never matches). Regex patterns must include the `g` flag or `matchAll` throws a TypeError. If a short string like `":"` matches too many elements on screen, type more characters and match a longer combined string like `getByText(":a")`.
-- For visual/block selection bugs, inspect TS selection shaping and Rust application together.
-- `@microsoft/tui-test` can fail on transient Cargo dirs under `packages/core/target` during cache copy.
-- `@microsoft/tui-test` can also flake when worker reuse is too aggressive; if the suite starts from a blank `>` prompt or tests contaminate each other, inspect `tui-test.config.ts` worker count before assuming an app regression.
-- **E2E tests: use Vim motions, not repeated key presses**. Prefer `G`, `gg`, `0`, `$`, `/pattern` over repeated ArrowUp/ArrowDown/ArrowLeft/ArrowRight — they're faster, less timing-sensitive, and test the actual editing interface.
-- **Mutex deadlock in NAPI functions**: `render_frame_internal()` acquires `TUI_CONTEXT.lock()`. Any NAPI function that holds `TUI_CONTEXT.lock()` or `state.lock()` must drop those locks with a `{ }` block BEFORE calling `render_frame_internal()`. `std::sync::Mutex` is not reentrant — calling it while already held deadlocks the JS thread, freezing all keyboard input. Audit all `render_frame_internal()` call sites for this pattern. To isolate, comment out NAPI calls in the suspect operation one by one until input resumes.
-- **Keyboard input uses queue + async pull**: The keyboard listener pushes events to a `Mutex<VecDeque>` + `Condvar` from a Rust thread. TypeScript calls `await waitForKeyboardEvent()` in a loop to pull events. Do NOT revert to `ThreadsafeFunction` callback approach — it was the original mechanism but was replaced due to the deadlock issue above (the callback appeared to stop working when the JS thread deadlocked).
-- **Prompt closing uses return-value pattern**: `onKeyDown` receives `(evt, text, setQuery)` where `setQuery` updates the query text. The prompt is closed when `onKeyDown` returns `true`. This replaced the old `close(value?)` callback to avoid ambiguous overloading (`close()` vs `close("")`).
-- **`ex-commands.ts` has its own `onPromptKeyDown`**: The `doReplace` function in `ex-commands.ts` uses the status bar prompt for `:s///c` confirm/reject. If you change the `StatusBarInputOptions.onKeyDown` callback signature, update this handler too. It's the only prompt caller outside `command-dispatcher.ts`.
-- **Ctrl-C is intercepted at the event loop, not prompt handlers**: `packages/app/src/index.ts:69-72` catches Ctrl-C at the main event loop and calls `shutdown(0)`. Ctrl-C never reaches prompt handlers or the Vim key handler. Do not write E2E tests expecting Ctrl-C to close a prompt — use Esc instead. Also, `encodeTerminalKey` normalizes Ctrl characters to lowercase, so checks like `keyName === "Ctrl-C"` (uppercase) in prompt handlers are dead code — they never match.
-- **`@microsoft/tui-test` `testMatch` must be scoped to e2e/**: `testIgnore` in `tui-test.config.ts` prevents unit tests from *running* but does not prevent the framework from *transpiling* them (which can crash on ESM resolution). Always scope `testMatch` to `packages/app/tests/e2e/**/*.test.ts` — do not rely on `testIgnore` alone.
-- **NAPI-RS type declarations are auto-generated**: `packages/core/index.d.ts` is generated by `napi build` (run via `just build`). After adding a new `#[napi]` function in Rust, you must rebuild — otherwise `tsc --noEmit` fails with "Module has no exported member". Run `just build` before `just lint` after any NAPI changes.
+- **`getByText()` quirks**: only accepts `string` or `RegExp` (functions get `.toString()`'d and never match). Regex must include the `g` flag or `matchAll` throws. If a short string matches too many elements, match a longer one (e.g. `getByText(":a")` instead of `getByText(":")`).
+- **tui-test flake**: can fail on transient Cargo dirs under `packages/core/target` during cache copy.
+- **E2E tests: use Vim motions** (`G`, `gg`, `0`, `$`, `/pattern`) over repeated arrow keys — faster, less timing-sensitive, tests the actual interface.
+- **Mutex deadlock**: `render_frame_internal()` acquires `TUI_CONTEXT.lock()`. Any NAPI function holding `TUI_CONTEXT.lock()` or `state.lock()` must drop those locks in a `{ }` block before calling `render_frame_internal()`. `std::sync::Mutex` is not reentrant — holding it deadlocks the JS thread and freezes keyboard input. Audit all `render_frame_internal()` call sites for this pattern. To isolate, comment out NAPI calls one by one until input resumes.
+- **Keyboard input — do not revert to ThreadsafeFunction**: input uses a `Mutex<VecDeque>` + `Condvar` queue; TypeScript pulls events with `await waitForKeyboardEvent()`. The old `ThreadsafeFunction` callback approach caused the deadlock above and was replaced.
+- **Prompt closing — return-value pattern**: `onKeyDown(evt, text, setQuery)` closes the prompt by returning `true`. (`setQuery` updates query text.) Do not reintroduce the old `close(value?)` callback.
+- **`ex-commands.ts` has its own `onPromptKeyDown`**: `doReplace` uses the status bar prompt for `:s///c` confirm/reject — the only prompt caller outside `command-dispatcher.ts`. Update it if `StatusBarInputOptions.onKeyDown` signature changes.
+- **Ctrl-C is intercepted at the event loop** (`index.ts:69-72`) and calls `shutdown(0)` — it never reaches prompt handlers or the Vim key handler. Use Esc in E2E tests, not Ctrl-C. Also, `encodeTerminalKey` lowercases Ctrl combos, so `keyName === "Ctrl-C"` (uppercase) in handlers is dead code.
+- **`testMatch` must be scoped to `e2e/`**: `testIgnore` prevents unit tests from running but not from being transpiled (which crashes on ESM resolution). Always set `testMatch` to `packages/app/tests/e2e/**/*.test.ts`.
+- **NAPI-RS declarations are auto-generated**: `packages/core/index.d.ts` is produced by `napi build`. After adding a `#[napi]` function, run `just build` before `just lint` or `tsc --noEmit` will fail with "Module has no exported member".

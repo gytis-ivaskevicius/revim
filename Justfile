@@ -4,7 +4,7 @@ default:
 
 # Build the Rust library and generate .node binary
 build:
-	cd packages/core && npm run build
+	cd packages/core && bun run build
 
 # Run the demo application
 dev *args: build
@@ -27,14 +27,14 @@ test: test-rust test-unit test-e2e
 
 # Run linter
 lint:
-	cd packages/app && npx tsc --noEmit
+	cd packages/app && bunx tsc --noEmit
 	cd packages/core && cargo clippy -- -D warnings
 	bunx biome check
 
 # Auto-fix lint issues
 lint-fix:
 	bunx biome check --write --unsafe
-	cd packages/app && npx tsc --noEmit
+	cd packages/app && bunx tsc --noEmit
 	cd packages/core && cargo clippy --fix --allow-dirty -- -D warnings
 
 # Run tests and linter
