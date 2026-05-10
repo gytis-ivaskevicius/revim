@@ -44,5 +44,5 @@ just check        # test + lint
 - **tui-test flake**: can fail on transient Cargo dirs under `packages/core/target` during cache copy.
 - **E2E tests: use Vim motions** (`G`, `gg`, `0`, `$`, `/pattern`) over repeated arrow keys — faster, less timing-sensitive, tests the actual interface.
 - **Mutex deadlock**: `render_frame_internal()` acquires `TUI_CONTEXT.lock()`. Any NAPI function holding `TUI_CONTEXT.lock()` or `state.lock()` must drop those locks in a `{ }` block before calling `render_frame_internal()`. `std::sync::Mutex` is not reentrant — holding it deadlocks the JS thread and freezes keyboard input. Audit all `render_frame_internal()` call sites for this pattern. To isolate, comment out NAPI calls one by one until input resumes.
-- **Ctrl-C reaches the Vim engine** via the `<C-c> → <Esc>` keymap mapping. In prompt mode (ex commands, search), Ctrl-C cancels the prompt. `:q` is the way to quit. `encodeTerminalKey` lowercases Ctrl combos, so `keyName === "Ctrl-C"` (uppercase) in handlers is dead code — always use lowercase `Ctrl-c`.
+
 - **NAPI-RS declarations are auto-generated**: `packages/core/index.d.ts` is produced by `napi build`. After adding a `#[napi]` function, run `just build` before `just lint` or `tsc --noEmit` will fail with "Module has no exported member".
