@@ -4,7 +4,7 @@ import { expect, Keys, RENDER_DELAY_MS, test, withLog } from "./test-utils.js"
 const LOG = "/tmp/revim-logging-test.log"
 
 test.describe("logging", () => {
-  test.use(withLog(LOG))
+  test.beforeEach(withLog(LOG))
 
   test("logs key events and render cycles", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()

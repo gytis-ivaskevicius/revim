@@ -1,11 +1,9 @@
 import { getCurrentPath, getCursorPos } from "@revim/core"
-import EditorAdapter, { doNextBuffer, doPrevBuffer } from "./adapter"
-import { commands, keyMap } from "@revim/vim"
-import { makePos } from "@revim/vim"
-import { clearInputState, exitVisualMode, initVimAdapter, vimApi } from "@revim/vim"
 import type * as Registers from "@revim/vim"
 import type * as StatusBar from "@revim/vim"
 import type { VimState } from "@revim/vim"
+import { clearInputState, commands, exitVisualMode, initVimAdapter, keyMap, makePos, vimApi } from "@revim/vim"
+import EditorAdapter, { doNextBuffer, doPrevBuffer } from "./adapter"
 
 export type IRegister = Registers.IRegister
 export type IStatusBar = StatusBar.IStatusBar
@@ -176,10 +174,8 @@ export class VimMode implements EventTarget {
       })
     }
 
-    commands.open = (_adapter, params) =>
-      this.dispatchEvent(new FileEvent("open-file", params.argString || ""))
-    commands.save = (_adapter, params) =>
-      this.dispatchEvent(new FileEvent("save-file", params.argString || ""))
+    commands.open = (_adapter, params) => this.dispatchEvent(new FileEvent("open-file", params.argString || ""))
+    commands.save = (_adapter, params) => this.dispatchEvent(new FileEvent("save-file", params.argString || ""))
     commands.nextBuffer = (adapter) => doNextBuffer(adapter)
     commands.prevBuffer = (adapter) => doPrevBuffer(adapter)
   }
@@ -284,5 +280,5 @@ export class VimMode implements EventTarget {
   }
 }
 
-export { EditorAdapter }
 export { commands } from "@revim/vim"
+export { EditorAdapter }

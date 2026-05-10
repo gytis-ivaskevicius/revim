@@ -1,11 +1,10 @@
-import { type BindingFunction } from "./adapter-interface"
-import { type Change } from "./adapter-types"
-import { commands, lookupKey } from "./vim-registry"
-import type { IEditorAdapter } from "./adapter-interface"
+import type { BindingFunction, IEditorAdapter } from "./adapter-interface"
+import type { Change } from "./adapter-types"
 import { commandDispatcher } from "./command-dispatcher"
 import { vimGlobalState } from "./global"
 import type { MacroModeState } from "./macro-mode-state"
 import type { VimState } from "./types"
+import { commands, lookupKey } from "./vim-registry"
 import { offsetCursor, selectForInsert } from "./vim-utils"
 
 export interface InsertModeChanges {

@@ -1,4 +1,3 @@
-
 import { actions } from "./actions"
 import type { IEditorAdapter } from "./adapter-interface"
 import { CmSelection } from "./adapter-types"

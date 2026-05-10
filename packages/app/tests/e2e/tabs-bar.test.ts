@@ -1,11 +1,11 @@
-import { expect, Keys, test, withFile, withFiles } from "./test-utils.js"
+import { expect, Keys, startRevim, test, withFile, withFiles } from "./test-utils.js"
 
 const DEMO_FIXTURE = "packages/app/tests/fixtures/demo-content.md"
 const BUFFER2_FIXTURE = "packages/app/tests/fixtures/buffer2-content.md"
 
 test.describe("tabs bar", () => {
   test.describe("single buffer mode", () => {
-    test.use(withFile(DEMO_FIXTURE))
+    test.beforeEach(withFile(DEMO_FIXTURE))
 
     test("single buffer does NOT show the tabs bar", async ({ terminal }) => {
       // With a single file opened via CLI, the tabs bar should not appear
@@ -18,6 +18,7 @@ test.describe("tabs bar", () => {
   })
 
   test.describe("default dev mode (2 demo buffers)", () => {
+    test.beforeEach(startRevim())
     // Default config (no CLI args) opens 2 demo buffers
 
     test("tabs bar is visible showing both filenames", async ({ terminal }) => {
@@ -61,7 +62,7 @@ test.describe("tabs bar", () => {
   })
 
   test.describe("CLI with two files", () => {
-    test.use(withFiles([DEMO_FIXTURE, BUFFER2_FIXTURE]))
+    test.beforeEach(withFiles([DEMO_FIXTURE, BUFFER2_FIXTURE]))
 
     test("tabs bar is visible showing both filenames", async ({ terminal }) => {
       await expect(terminal.getByText(/1.*demo-content/g)).toBeVisible()

@@ -5,7 +5,7 @@ const BUFFER2_FIXTURE = "packages/app/tests/fixtures/buffer2-content.md"
 const BUFFER3_FIXTURE = "packages/app/tests/fixtures/buffer3-content.md"
 
 test.describe("buffer switching", () => {
-  test.use(withFile(DEMO_FIXTURE))
+  test.beforeEach(withFile(DEMO_FIXTURE))
   test("single file mode works as before (no regression)", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
   })
@@ -22,7 +22,7 @@ test.describe("buffer switching", () => {
 })
 
 test.describe("buffer switching with two files", () => {
-  test.use(withFiles([DEMO_FIXTURE, BUFFER2_FIXTURE]))
+  test.beforeEach(withFiles([DEMO_FIXTURE, BUFFER2_FIXTURE]))
 
   test("opening two files from CLI, pressing gt, verifies second file's content", async ({ terminal }) => {
     // First file should be visible initially
@@ -130,7 +130,7 @@ test.describe("buffer switching with two files", () => {
 })
 
 test.describe("buffer switching with three files", () => {
-  test.use(withFiles([DEMO_FIXTURE, BUFFER2_FIXTURE, BUFFER3_FIXTURE]))
+  test.beforeEach(withFiles([DEMO_FIXTURE, BUFFER2_FIXTURE, BUFFER3_FIXTURE]))
 
   test("gt wraps from last buffer to first", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()

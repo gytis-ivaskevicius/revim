@@ -1,12 +1,14 @@
-import { expect, Keys, test } from "./test-utils.js"
+import { expect, KEY_PRESS_DELAY_MS, Keys, startRevim, test } from "./test-utils.js"
 
-test("keys.delay() resolves after ~50ms", async ({ terminal }) => {
+test.beforeEach(startRevim())
+
+test("keys.delay() resolves after ~KEY_PRESS_DELAY_MS", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
   const before = Date.now()
   await Keys.delay()
   const after = Date.now()
-  expect(after - before).toBeGreaterThanOrEqual(45)
-  expect(after - before).toBeLessThan(150)
+  expect(after - before).toBeGreaterThanOrEqual(KEY_PRESS_DELAY_MS - 2)
+  expect(after - before).toBeLessThan(KEY_PRESS_DELAY_MS + 50)
 })
 
 test("keys.delay(100) resolves after ~100ms", async ({ terminal }) => {

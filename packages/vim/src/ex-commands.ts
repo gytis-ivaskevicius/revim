@@ -1,5 +1,4 @@
 import type { IEditorAdapter } from "./adapter-interface"
-import { commands } from "./vim-registry"
 import type { SearchCursor } from "./adapter-search"
 import { commandDispatcher } from "./command-dispatcher"
 import {
@@ -31,6 +30,7 @@ import {
 import { StringStream } from "./string-stream"
 import type { Context, VimState } from "./types"
 import { PACKAGE_INFO } from "./version"
+import { commands } from "./vim-registry"
 import { clipCursorToContent, lineLength, trim } from "./vim-utils"
 
 export interface ExCommandOptionalParameters {

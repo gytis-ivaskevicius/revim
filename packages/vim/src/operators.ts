@@ -1,11 +1,11 @@
 import { actions } from "./actions"
-import { type CmSelection } from "./adapter-types"
-import { commands } from "./vim-registry"
 import type { IEditorAdapter } from "./adapter-interface"
+import type { CmSelection } from "./adapter-types"
 import { cursorMin, isUpperCase, isWhiteSpaceString, makePos, type Pos } from "./common"
 import { vimGlobalState } from "./global"
 import { motions } from "./motions"
 import type { OperatorArgs, VimState } from "./types"
+import { commands } from "./vim-registry"
 import { clipCursorToContent, lineLength, offsetCursor } from "./vim-utils"
 
 /**

@@ -1,5 +1,4 @@
-import type { Binding, KeyMapEntry } from "./adapter-interface"
-import type { IEditorAdapter } from "./adapter-interface"
+import type { Binding, IEditorAdapter, KeyMapEntry } from "./adapter-interface"
 import type { ExCommandOptionalParameters } from "./adapter-types"
 
 export const keyMap: Record<string, KeyMapEntry> = {

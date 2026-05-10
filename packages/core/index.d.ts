@@ -76,7 +76,13 @@ export declare function pushUndoStop(): void
 
 export declare function redo(): CursorPosition
 
-export declare function replaceRange(text: string, startLine: number, startCh: number, endLine: number, endCh: number): void
+export declare function replaceRange(
+  text: string,
+  startLine: number,
+  startCh: number,
+  endLine: number,
+  endCh: number,
+): void
 
 export declare function replaceSelections(texts: Array<string>): void
 

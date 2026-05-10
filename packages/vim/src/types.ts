@@ -1,5 +1,5 @@
-import type { CmSelection } from "./adapter-types"
 import type { IMarker } from "./adapter-interface"
+import type { CmSelection } from "./adapter-types"
 import type { Pos } from "./common"
 import type { InputState } from "./input-state"
 import type { MotionFunc } from "./motions"

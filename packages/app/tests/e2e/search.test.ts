@@ -7,7 +7,7 @@ async function typeSearch(terminal: any, query: string, prefix = "/") {
 const DEMO_FIXTURE = "packages/app/tests/fixtures/demo-content.md"
 
 test.describe("search prompt", () => {
-  test.use(withFile(DEMO_FIXTURE))
+  test.beforeEach(withFile(DEMO_FIXTURE))
   test("status bar shows prompt prefix while typing - press / shows /", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     await Keys.pressKeys(terminal, ["/"])

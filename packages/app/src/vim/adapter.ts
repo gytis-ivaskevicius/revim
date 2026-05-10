@@ -30,19 +30,37 @@ import {
   setVisualMode,
   triggerAction,
 } from "@revim/core"
+import type { IEditorAdapter, IMarker, ModeChangeEvent, StatusBarInputOptions } from "@revim/vim"
+import {
+  type Change,
+  CmSelection,
+  createSearchCursor,
+  cursorEqual,
+  cursorMax,
+  cursorMin,
+  escapeRegex,
+  findMatchingBracket,
+  keyMap,
+  makePos,
+  type Operation,
+  type Pos,
+  scanForBracket,
+} from "@revim/vim"
 import { log } from "../log"
-import { createSearchCursor, escapeRegex, findMatchingBracket, scanForBracket } from "@revim/vim"
-import { type Change, CmSelection, type ExCommandOptionalParameters, type Operation } from "@revim/vim"
-import type { BindingFunction, IEditorAdapter, IMarker, KeyMapEntry } from "@revim/vim"
-import { commands, keyMap, lookupKey } from "@revim/vim"
-import { cursorEqual, cursorMax, cursorMin, makePos, type Pos } from "@revim/vim"
-import type { ModeChangeEvent, StatusBarInputOptions } from "@revim/vim"
 
-export type { MatchingBracket, SearchCursor, SearchMatch } from "@revim/vim"
-export type { Change, ExCommandOptionalParameters } from "@revim/vim"
-export { CmSelection } from "@revim/vim"
-export type { Binding, BindingFunction, IEditorAdapter, IMarker, KeyMapEntry } from "@revim/vim"
-export { commands, keyMap, lookupKey } from "@revim/vim"
+export type {
+  Binding,
+  BindingFunction,
+  Change,
+  ExCommandOptionalParameters,
+  IEditorAdapter,
+  IMarker,
+  KeyMapEntry,
+  MatchingBracket,
+  SearchCursor,
+  SearchMatch,
+} from "@revim/vim"
+export { CmSelection, commands, keyMap, lookupKey } from "@revim/vim"
 
 let _id = 0
 const nextId = () => String(++_id)
@@ -72,7 +90,6 @@ export class Marker implements IMarker {
 }
 
 export class EditorAdapter implements IEditorAdapter {
-
   state: Record<string, any> = { keyMap: "vim" }
   marks: Map<number, Marker> = new Map()
   uid: number = 0

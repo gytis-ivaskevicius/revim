@@ -53,7 +53,12 @@ export function defineOption(
   }
 }
 
-export function setOption(name: string, value: string | number | boolean, adapter?: IEditorAdapter, cfg?: OptionConfig) {
+export function setOption(
+  name: string,
+  value: string | number | boolean,
+  adapter?: IEditorAdapter,
+  cfg?: OptionConfig,
+) {
   const option = options.get(name)
   if (!option) {
     return new Error(`Unknown option: ${name}`)

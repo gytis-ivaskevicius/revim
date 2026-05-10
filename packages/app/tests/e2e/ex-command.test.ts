@@ -1,6 +1,7 @@
-import { expect, Keys, RENDER_DELAY_MS, test } from "./test-utils.js"
+import { expect, Keys, RENDER_DELAY_MS, startRevim, test } from "./test-utils.js"
 
 test.describe("ex command prompt", () => {
+  test.beforeEach(startRevim())
   test("pressing : opens ex command prompt and accepts input", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
     await Keys.pressKeys(terminal, [":"])

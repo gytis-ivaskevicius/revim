@@ -1,4 +1,6 @@
-import { expect, RENDER_DELAY_MS, test } from "./test-utils.js"
+import { expect, RENDER_DELAY_MS, startRevim, test } from "./test-utils.js"
+
+test.beforeEach(startRevim())
 
 const movements = [
   { name: "ArrowDown moves cursor down", key: "down", axis: "y" as const, delta: 1 },

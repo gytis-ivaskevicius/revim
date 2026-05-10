@@ -1,7 +1,6 @@
 import { expect, test } from "@microsoft/tui-test"
 
 export const testConfig = {
-  program: { file: "bun", args: ["run", "packages/app/src/index.ts"] },
   rows: 30,
   columns: 80,
 }
@@ -10,22 +9,34 @@ test.use(testConfig)
 
 export { expect, test }
 
-export const RENDER_DELAY_MS = 100
-export const KEY_PRESS_DELAY_MS = 50
-
-export function withLog(logPath: string) {
-  return { program: { file: "bun", args: ["run", "packages/app/src/index.ts", "--log", logPath] } }
-}
-
-export function withFile(filePath: string) {
-  return { program: { file: "bun", args: ["run", "packages/app/src/index.ts", filePath] } }
-}
-
-export function withFiles(filePaths: string[]) {
-  return { program: { file: "bun", args: ["run", "packages/app/src/index.ts", ...filePaths] } }
-}
+export const RENDER_DELAY_MS = 30
+export const KEY_PRESS_DELAY_MS = 10
 
 export type KeyInput = string | { key: string; ctrl?: boolean; alt?: boolean; shift?: boolean }
+
+const REVIM_CMD = "bun run packages/app/src/index.ts"
+
+// Returns a beforeEach hook that launches revim in the shell and waits until the
+// welcome screen is visible. Use as: test.beforeEach(startRevim()) or
+// test.beforeEach(startRevim(["--log", path, "file.txt"])).
+export function startRevim(args: string[] = []) {
+  return async ({ terminal }: any) => {
+    terminal.write([REVIM_CMD, ...args].join(" "))
+    terminal.keyPress("Enter")
+    await expect(terminal.getByText("NORMAL")).toBeVisible()
+  }
+}
+
+export const withFile = (filePath: string) => startRevim([filePath])
+export const withFiles = (filePaths: string[]) => startRevim(filePaths)
+export const withLog = (logPath: string) => startRevim(["--log", logPath])
+
+// Use in test.use() for tests that need to inspect the exit code (terminal.onExit,
+// terminal.exitResult). These tests cannot use shell mode because the shell process
+// stays alive after revim exits, so onExit never fires.
+export const programConfig = (args: string[] = []) => ({
+  program: { file: "bun", args: ["run", "packages/app/src/index.ts", ...args] },
+})
 
 type TerminalKeyApi = {
   keyPress: (key: string, options?: { ctrl?: boolean; alt?: boolean; shift?: boolean }) => void
@@ -38,7 +49,6 @@ type TerminalKeyApi = {
   keyDown: () => void
 }
 
-// Unified key dispatch helper - handles special keys and delegates to terminal methods
 function dispatchKey(terminal: any, key: string): boolean {
   if (key === "<Esc>" || key === "Escape") {
     terminal.keyEscape()

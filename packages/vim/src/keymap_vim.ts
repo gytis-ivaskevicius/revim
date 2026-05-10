@@ -1,7 +1,5 @@
+import type { IEditorAdapter, KeyMapEntry } from "./adapter-interface"
 import { CmSelection } from "./adapter-types"
-import type { KeyMapEntry } from "./adapter-interface"
-import type { IEditorAdapter } from "./adapter-interface"
-import { keyMap } from "./vim-registry"
 import {
   copyCursor,
   cursorEqual,
@@ -32,6 +30,7 @@ import type {
   VimState,
 } from "./types"
 import { VimApi } from "./vim-api"
+import { keyMap } from "./vim-registry"
 import { clipCursorToContent, lineLength, offsetCursor } from "./vim-utils"
 
 function enterVimMode(adapter: IEditorAdapter) {

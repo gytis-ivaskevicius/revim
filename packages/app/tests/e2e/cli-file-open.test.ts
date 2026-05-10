@@ -1,17 +1,19 @@
 import { readFileSync } from "node:fs"
-import { expect, test, withFile } from "./test-utils.js"
+import { expect, startRevim, test, withFile } from "./test-utils.js"
 
 const LOG = "/tmp/revim-cli-file-open-test.log"
 const DEMO_FIXTURE = "packages/app/tests/fixtures/demo-content.md"
 
 test.describe("CLI file opening", () => {
+  test.beforeEach(startRevim())
+
   test("default launch (no file arg) shows Welcome to ReVim!", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
   })
 })
 
 test.describe("CLI with explicit file arg", () => {
-  test.use(withFile(DEMO_FIXTURE))
+  test.beforeEach(withFile(DEMO_FIXTURE))
 
   test("shows the file's first line", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
@@ -19,12 +21,7 @@ test.describe("CLI with explicit file arg", () => {
 })
 
 test.describe("CLI with --log and file arg", () => {
-  test.use({
-    program: {
-      file: "bun",
-      args: ["run", "packages/app/src/index.ts", "--log", LOG, DEMO_FIXTURE],
-    },
-  })
+  test.beforeEach(startRevim(["--log", LOG, DEMO_FIXTURE]))
 
   test("shows file content and creates log", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()

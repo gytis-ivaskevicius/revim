@@ -1,4 +1,6 @@
-import { expect, Keys, test } from "./test-utils.js"
+import { expect, Keys, startRevim, test } from "./test-utils.js"
+
+test.beforeEach(startRevim())
 
 const cellShift = (
   terminal: { serialize: () => { shifts: Map<string, { inverse?: number }> } },

@@ -1,4 +1,6 @@
-import { expect, Keys, RENDER_DELAY_MS, test } from "./test-utils.js"
+import { expect, Keys, RENDER_DELAY_MS, startRevim, test } from "./test-utils.js"
+
+test.beforeEach(startRevim())
 
 test("initial render snapshot has no inverse on cursor cell", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()

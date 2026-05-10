@@ -1,5 +1,5 @@
-import type { Change, CmSelection, ExCommandOptionalParameters, Operation } from "./adapter-types"
 import type { SearchCursor } from "./adapter-search"
+import type { CmSelection, Operation } from "./adapter-types"
 import type { Pos } from "./common"
 import type { ModeChangeEvent, StatusBarInputOptions } from "./statusbar"
 
@@ -80,7 +80,13 @@ export interface IEditorAdapter {
   getSearchCursor(pattern: string | RegExp, startPos: Pos): SearchCursor
   findMatchingBracket(cur: Pos): { pos: Pos } | undefined
   findFirstNonWhiteSpaceCharacter(line: number): number
-  scanForBracket(pos: Pos, dir: number, bracketRegex: RegExp, openChar?: string, closeChar?: string): { pos: Pos } | undefined
+  scanForBracket(
+    pos: Pos,
+    dir: number,
+    bracketRegex: RegExp,
+    openChar?: string,
+    closeChar?: string,
+  ): { pos: Pos } | undefined
 
   // Highlights
   addOverlay(query: string | RegExp): void

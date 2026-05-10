@@ -7,7 +7,12 @@ import { lineLength, offsetCursor } from "./vim-utils"
 
 // TODO: perhaps this finagling of start and end positions belongs
 // in codemirror/replaceRange?
-export function selectCompanionObject(adapter: IEditorAdapter, head: Pos, symb: string, inclusive: boolean): [Pos, Pos] {
+export function selectCompanionObject(
+  adapter: IEditorAdapter,
+  head: Pos,
+  symb: string,
+  inclusive: boolean,
+): [Pos, Pos] {
   const cur = head
 
   const bracketRegexpMatcher: Record<string, RegExp> = {

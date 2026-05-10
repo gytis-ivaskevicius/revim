@@ -1,6 +1,5 @@
-import { CmSelection } from "./adapter-types"
-import { commands } from "./vim-registry"
 import type { IEditorAdapter } from "./adapter-interface"
+import { CmSelection } from "./adapter-types"
 import {
   copyCursor,
   cursorEqual,
@@ -18,6 +17,7 @@ import { exitVisualMode, updateCmSelection, updateLastSelection, updateMark, vim
 import type { MacroModeState } from "./macro-mode-state"
 import { motions } from "./motions"
 import type { ActionArgs, VimState } from "./types"
+import { commands } from "./vim-registry"
 import { clipCursorToContent, lineLength, offsetCursor, selectForInsert } from "./vim-utils"
 
 export type ActionFunc = (adapter: IEditorAdapter, actionArgs: ActionArgs, vim: VimState) => void
@@ -290,8 +290,7 @@ export const actions: Record<string, ActionFunc> = {
       insertAt.line = actionArgs.after ? insertAt.line : insertAt.line - 1
       insertAt.ch = lineLength(adapter, insertAt.line)
       adapter.setCursor(insertAt)
-      const newlineFn =
-        commands.newlineAndIndentContinueComment || commands.newlineAndIndent
+      const newlineFn = commands.newlineAndIndentContinueComment || commands.newlineAndIndent
       newlineFn(adapter, {})
     }
     this.enterInsertMode(adapter, { repeat: actionArgs.repeat }, vim)

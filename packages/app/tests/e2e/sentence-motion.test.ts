@@ -1,4 +1,6 @@
-import { expect, Keys, test } from "./test-utils.js"
+import { expect, Keys, startRevim, test } from "./test-utils.js"
+
+test.beforeEach(startRevim())
 
 test(") moves forward across sentence boundaries", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()

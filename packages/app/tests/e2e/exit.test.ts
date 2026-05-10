@@ -1,4 +1,6 @@
-import { expect, test } from "./test-utils.js"
+import { expect, programConfig, test } from "./test-utils.js"
+
+test.use(programConfig())
 
 test("Ctrl+C exits cleanly", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome")).toBeVisible()

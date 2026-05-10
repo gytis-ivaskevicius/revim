@@ -17,7 +17,7 @@ import {
 import { createErrorWindow } from "./error-window"
 import { closeLog, initLog, log } from "./log"
 import { encodeTerminalKey, normalizeCtrlCharacter } from "./terminal-key"
-import { EditorAdapter, commands, type FileEvent, VimMode } from "./vim"
+import { commands, type FileEvent, VimMode } from "./vim"
 import TerminalStatusBar from "./vim/terminal-status-bar"
 
 interface KeyboardEvent {

@@ -1,4 +1,6 @@
-import { expect, Keys, RENDER_DELAY_MS, test } from "./test-utils.js"
+import { expect, Keys, RENDER_DELAY_MS, startRevim, test } from "./test-utils.js"
+
+test.beforeEach(startRevim())
 
 test("initial state: first viewport lines visible, content beyond viewport not visible", async ({ terminal }) => {
   await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()

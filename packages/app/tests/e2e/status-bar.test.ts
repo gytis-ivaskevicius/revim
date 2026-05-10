@@ -1,37 +1,41 @@
 import { unlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { expect, Keys, RENDER_DELAY_MS, test, withFile } from "./test-utils.js"
+import { expect, Keys, RENDER_DELAY_MS, startRevim, test, withFile } from "./test-utils.js"
 
-test("status bar shows mode and key buffer", async ({ terminal }) => {
-  // initial should show NORMAL (TerminalStatusBar writes initial state)
-  await Keys.delay()
-  await expect(terminal.getByText("NORMAL")).toBeVisible()
+test.describe("status bar modes", () => {
+  test.beforeEach(startRevim())
 
-  // enter insert mode
-  await Keys.pressKeys(terminal, ["i"])
-  await expect(terminal.getByText("INSERT")).toBeVisible()
+  test("status bar shows mode and key buffer", async ({ terminal }) => {
+    // initial should show NORMAL (TerminalStatusBar writes initial state)
+    await Keys.delay()
+    await expect(terminal.getByText("NORMAL")).toBeVisible()
 
-  // exit to normal
-  await Keys.pressKeys(terminal, ["<Esc>"])
-  await expect(terminal.getByText("NORMAL")).toBeVisible()
+    // enter insert mode
+    await Keys.pressKeys(terminal, ["i"])
+    await expect(terminal.getByText("INSERT")).toBeVisible()
 
-  // visual modes
-  await Keys.pressKeys(terminal, ["v"])
-  await expect(terminal.getByText("VISUAL")).toBeVisible()
-  await Keys.pressKeys(terminal, ["<Esc>"])
+    // exit to normal
+    await Keys.pressKeys(terminal, ["<Esc>"])
+    await expect(terminal.getByText("NORMAL")).toBeVisible()
 
-  await Keys.pressKeys(terminal, ["V"])
-  await expect(terminal.getByText("V-LINE")).toBeVisible()
-  await Keys.pressKeys(terminal, ["<Esc>"])
+    // visual modes
+    await Keys.pressKeys(terminal, ["v"])
+    await expect(terminal.getByText("VISUAL")).toBeVisible()
+    await Keys.pressKeys(terminal, ["<Esc>"])
 
-  // pending keys: 2d shows in status
-  await Keys.pressKeys(terminal, ["2", "d"])
-  await expect(terminal.getByText("2d")).toBeVisible()
+    await Keys.pressKeys(terminal, ["V"])
+    await expect(terminal.getByText("V-LINE")).toBeVisible()
+    await Keys.pressKeys(terminal, ["<Esc>"])
 
-  // complete command 2dd
-  await Keys.pressKeys(terminal, ["d"])
-  // After command, key buffer should clear — visual assertion covered above
+    // pending keys: 2d shows in status
+    await Keys.pressKeys(terminal, ["2", "d"])
+    await expect(terminal.getByText("2d")).toBeVisible()
+
+    // complete command 2dd
+    await Keys.pressKeys(terminal, ["d"])
+    // After command, key buffer should clear — visual assertion covered above
+  })
 })
 
 test.describe("status bar with file path", () => {
@@ -40,7 +44,7 @@ test.describe("status bar with file path", () => {
   // Create file with content
   writeFileSync(testFile, "line one\nline two\nline three\nline four\nline five\n")
 
-  test.use(withFile(testFile))
+  test.beforeEach(withFile(testFile))
 
   test("status bar shows filename and cursor position", async ({ terminal }) => {
     // Should show the filename in the status bar
@@ -78,6 +82,7 @@ test.describe("status bar with file path", () => {
 })
 
 test.describe("status bar notifications", () => {
+  test.beforeEach(startRevim())
   test(":set with unknown option shows notification", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
 
@@ -113,6 +118,7 @@ test.describe("status bar notifications", () => {
 })
 
 test.describe("status bar display messages", () => {
+  test.beforeEach(startRevim())
   test(":s///g command replaces text and returns to normal mode", async ({ terminal }) => {
     await expect(terminal.getByText("Welcome")).toBeVisible()
 

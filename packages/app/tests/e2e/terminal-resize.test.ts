@@ -1,6 +1,7 @@
-import { expect, Keys, RENDER_DELAY_MS, test } from "./test-utils.js"
+import { expect, Keys, RENDER_DELAY_MS, startRevim, test } from "./test-utils.js"
 
 test.describe("terminal resize", () => {
+  test.beforeEach(startRevim())
   test("wider dimensions update display", async ({ terminal }) => {
     // Initial render at 80x30
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
@@ -21,7 +22,7 @@ test.describe("terminal resize", () => {
     await expect(terminal.getByText("Welcome to ReVim!")).toBeVisible()
 
     // Get initial cursor position
-    const beforeCursor = terminal.getCursor()
+    const _beforeCursor = terminal.getCursor()
 
     // Resize to 40x15
     terminal.resize(40, 15)
